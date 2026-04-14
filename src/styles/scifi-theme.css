@@ -1,0 +1,52 @@
+/* OMNI-CORE Sci-Fi Theme
+ * Color palette from 02-OMNI-CORE-Marketing-Brand.md
+ * Integrates with Arwes frame/text/bg components
+ */
+
+:root {
+  --oc-space-deep: #0a1428;
+  --oc-space-mid: #0f1b2e;
+  --oc-space-light: #1a2a3e;
+  --oc-cyan: #00d9ff;
+  --oc-cyan-dim: hsla(190, 100%, 50%, 0.3);
+  --oc-cyan-glow: hsla(190, 100%, 50%, 0.15);
+  --oc-purple: #b300ff;
+  --oc-green: #00ff88;
+  --oc-orange: #ff6b00;
+  --oc-red: #ff0055;
+  --oc-gray: #1a1a2e;
+  --oc-text: #c1d0e0;
+  --oc-text-dim: #6b7f96;
+}
+
+/* Arwes frame SVG color overrides */
+.scifi-frame [data-name="bg"] {
+  color: var(--oc-space-mid);
+}
+.scifi-frame [data-name="line"] {
+  color: var(--oc-cyan);
+}
+
+/* Glow effect for frames */
+.scifi-frame svg {
+  filter: drop-shadow(0 0 4px var(--oc-cyan-dim));
+}
+
+/* Sci-fi card — use on Mantine Card for consistent look */
+.scifi-card {
+  background: var(--oc-space-mid) !important;
+  border: 1px solid var(--oc-cyan-dim) !important;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.scifi-card:hover {
+  border-color: var(--oc-cyan) !important;
+  box-shadow: 0 0 12px var(--oc-cyan-glow), inset 0 0 12px var(--oc-cyan-glow);
+}
+
+/* Sci-fi heading style */
+.scifi-heading {
+  color: var(--oc-cyan);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px var(--oc-cyan-dim);
+}
