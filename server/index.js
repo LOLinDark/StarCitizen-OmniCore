@@ -30,10 +30,13 @@ const SERVER_VERSION = 'v0.1.0';
 // --- SECURITY: Input validation constants ---
 const MAX_MESSAGE_LENGTH = 10000;
 const MAX_LOG_FIELD_LENGTH = 2000;
+const MAX_ANALYTICS_EVENTS_PER_BATCH = 20;
 const ALLOWED_ORIGINS = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
+  'http://localhost:4242',
+  'http://127.0.0.1:4242',
 ];
+const ANALYTICS_EVENT_NAME_PATTERN = /^[a-z0-9][a-z0-9._:-]{2,63}$/;
+const SENSITIVE_KEY_PATTERN = /(email|password|token|secret|phone|address|auth|apikey|api-key|key)/i;
 
 // --- Rate limiting ---
 const DAILY_REQUEST_LIMIT = parseInt(process.env.MAX_DAILY_REQUESTS || '20');
@@ -110,6 +113,7 @@ function log(...args) {
  */
 function sanitizeForLog(str, maxLen = MAX_LOG_FIELD_LENGTH) {
   if (typeof str !== 'string') return '';
+  // eslint-disable-next-line no-control-regex
   return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '').slice(0, maxLen);
 }
 
@@ -145,7 +149,7 @@ async function getGeminiModelName() {
       modelCacheTime = Date.now();
       return cachedGeminiModel;
     }
-  } catch (e) {
+  } catch {
     log('Model list fetch failed, using default');
   }
   return 'gemini-2.0-flash';
@@ -206,6 +210,37 @@ const modelMap = {
 let currentModel = 'sonnet-3.5';
 
 let usageStats = { totalRequests: 0, totalTokens: 0, totalCost: 0, requestsByModel: {}, lastRequest: null };
+let analyticsStats = { totalEvents: 0, eventsByName: {}, lastEventAt: null, lastBatchAt: null };
+
+function sanitizeAnalyticsProperties(properties) {
+  if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(properties)
+      .slice(0, 24)
+      .filter(([key]) => typeof key === 'string' && key && !SENSITIVE_KEY_PATTERN.test(key))
+      .map(([key, value]) => [sanitizeForLog(key, 48), sanitizeForLog(String(value ?? ''), 200)])
+  );
+}
+
+function sanitizeAnalyticsEvent(event) {
+  if (!event || typeof event !== 'object') {
+    return null;
+  }
+
+  const name = sanitizeForLog(String(event.name || '').toLowerCase(), 64);
+  if (!ANALYTICS_EVENT_NAME_PATTERN.test(name)) {
+    return null;
+  }
+
+  return {
+    name,
+    timestamp: sanitizeForLog(String(event.timestamp || new Date().toISOString()), 64),
+    properties: sanitizeAnalyticsProperties(event.properties)
+  };
+}
 
 // --- Admin/monitoring endpoints ---
 app.get('/api/usage', (req, res) => { res.json(usageStats); });
@@ -221,6 +256,30 @@ app.get('/api/rate-limits', (req, res) => {
 });
 
 app.get('/api/pricing', (req, res) => { res.json({ pricing: PRICING, threshold: COST_ALERT_THRESHOLD }); });
+
+app.get('/api/analytics/summary', (req, res) => {
+  res.json(analyticsStats);
+});
+
+app.post('/api/analytics/events', (req, res) => {
+  const events = Array.isArray(req.body?.events) ? req.body.events.slice(0, MAX_ANALYTICS_EVENTS_PER_BATCH) : [];
+  let accepted = 0;
+
+  events.forEach((event) => {
+    const safeEvent = sanitizeAnalyticsEvent(event);
+    if (!safeEvent) {
+      return;
+    }
+
+    accepted += 1;
+    analyticsStats.totalEvents += 1;
+    analyticsStats.lastEventAt = safeEvent.timestamp;
+    analyticsStats.lastBatchAt = new Date().toISOString();
+    analyticsStats.eventsByName[safeEvent.name] = (analyticsStats.eventsByName[safeEvent.name] || 0) + 1;
+  });
+
+  res.status(202).json({ accepted });
+});
 
 app.post('/api/pricing/calculate', (req, res) => {
   const { model, inputTokens, outputTokens } = req.body;
@@ -260,7 +319,7 @@ app.get('/api/gemini/models', async (req, res) => {
   try {
     const modelName = await getGeminiModelName();
     res.json({ models: [modelName], recommended: modelName });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to fetch models' });
   }
 });
@@ -379,7 +438,6 @@ app.post('/api/chat', async (req, res) => {
       });
 
       const response = await bedrockClient.send(command);
-      let fullText = '';
       let inputTokens = 0;
       let outputTokens = 0;
 
@@ -387,7 +445,6 @@ app.post('/api/chat', async (req, res) => {
         const parsed = JSON.parse(new TextDecoder().decode(chunk));
         if (parsed.type === 'content_block_delta') {
           const text = parsed.delta?.text || '';
-          fullText += text;
           res.write(`data: ${JSON.stringify({ text })}\n\n`);
         }
         if (parsed.type === 'message_delta') outputTokens = parsed.usage?.output_tokens || 0;

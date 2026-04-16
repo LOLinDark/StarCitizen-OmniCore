@@ -1,11 +1,13 @@
-import { Container, Title, Checkbox, Stack, Text, Tabs, Divider, Card, Group, NumberInput, Button, Alert, Select } from '@mantine/core';
+import { Container, Title, Stack, Text, Tabs, Card, NumberInput, Button, Alert, Select } from '@mantine/core';
 import { useState, useEffect } from 'react';
+import { apiGet, apiPost, appendErrorLog, clearOmniCoreStorage, useSettingsStore } from '../platform-core';
 
 export default function SettingsPage() {
-  const [costThreshold, setCostThreshold] = useState(() => {
-    const saved = localStorage.getItem('costThreshold');
-    return saved ? parseFloat(saved) : 10.0;
-  });
+  const costThreshold = useSettingsStore((s) => s.costThreshold);
+  const setCostThreshold = useSettingsStore((s) => s.setCostThreshold);
+  const defaultAI = useSettingsStore((s) => s.defaultAI);
+  const setDefaultAI = useSettingsStore((s) => s.setDefaultAI);
+  const resetSettings = useSettingsStore((s) => s.resetSettings);
 
   const [pricing, setPricing] = useState(null);
   const [calcModel, setCalcModel] = useState('sonnet-3.5');
@@ -14,29 +16,32 @@ export default function SettingsPage() {
   const [calcResult, setCalcResult] = useState(null);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/pricing')
-      .then(r => r.json())
-      .then(data => setPricing(data))
-      .catch(console.error);
+    apiGet('/api/pricing')
+      .then((data) => setPricing(data))
+      .catch((error) => {
+        appendErrorLog({
+          page: '/settings',
+          button: 'loadPricing',
+          error: error.message,
+          stack: error.stack,
+          timestamp: new Date().toISOString()
+        });
+      });
   }, []);
 
   const calculateCost = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/pricing/calculate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: calcModel, inputTokens: calcInput, outputTokens: calcOutput })
-      });
-      setCalcResult(await res.json());
+      setCalcResult(await apiPost('/api/pricing/calculate', { model: calcModel, inputTokens: calcInput, outputTokens: calcOutput }));
     } catch (error) {
-      console.error('Cost calculation error:', error);
+      appendErrorLog({
+        page: '/settings',
+        button: 'calculateCost',
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
     }
   };
-
-  useEffect(() => {
-    localStorage.setItem('costThreshold', costThreshold.toString());
-  }, [costThreshold]);
-
   return (
     <Container size="lg">
       <Title mb="md">Settings</Title>
@@ -89,8 +94,8 @@ export default function SettingsPage() {
               <Title order={3} mb="md">AI Provider</Title>
               <Text size="sm" c="dimmed" mb="md">Select the default AI provider for OMNI-CORE</Text>
               <Select
-                value={localStorage.getItem('defaultAI') || 'gemini'}
-                onChange={(value) => localStorage.setItem('defaultAI', value)}
+                value={defaultAI}
+                onChange={(value) => value && setDefaultAI(value)}
                 data={[
                   { value: 'gemini', label: 'Google Gemini (Free Tier)' },
                   { value: 'claude', label: 'AWS Claude (Requires Config)' }
@@ -101,7 +106,8 @@ export default function SettingsPage() {
               <Title order={3} mb="md">Data</Title>
               <Button color="red" variant="light" onClick={() => {
                 if (confirm('Clear all local data? This cannot be undone.')) {
-                  localStorage.clear();
+                  resetSettings();
+                  clearOmniCoreStorage();
                   window.location.reload();
                 }
               }}>Reset All Local Data</Button>

@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "check:bundle": "node scripts/check-bundle-budget.mjs",
+    "build:guard": "npm run build && npm run check:bundle",
+    "lint": "eslint .",
     "preview": "vite preview",
     "server": "nodemon server/index.js"
   },
@@ -38,11 +41,17 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.14.0",
+    "web-vitals": "^4.2.4",
     "zod": "^4.3.6",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@eslint/js": "^9.25.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.25.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.0.0",
     "nodemon": "^3.1.11",
     "vite": "^6.0.3",
     "vite-plugin-pwa": "^1.2.0"

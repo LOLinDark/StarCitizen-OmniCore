@@ -1,4 +1,5 @@
 // History Manager - Tracks all field changes with versioning
+import { getStorageKeysByPrefix, readJsonStorage, removeStorageKey, writeJsonStorage } from '../platform-core';
 
 export const historyManager = {
   // Save a field change
@@ -18,14 +19,13 @@ export const historyManager = {
     }
     history[fieldName].push(change);
     
-    localStorage.setItem(`history_${documentId}`, JSON.stringify(history));
+    writeJsonStorage(`history_${documentId}`, history);
     return change.id;
   },
 
   // Get full history for a document
   getHistory(documentId) {
-    const stored = localStorage.getItem(`history_${documentId}`);
-    return stored ? JSON.parse(stored) : {};
+    return readJsonStorage(`history_${documentId}`, {});
   },
 
   // Get history for specific field
@@ -60,18 +60,11 @@ export const historyManager = {
 
   // Get all documents with history
   getAllDocuments() {
-    const docs = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith('history_')) {
-        docs.push(key.replace('history_', ''));
-      }
-    }
-    return docs;
+    return getStorageKeysByPrefix('history_').map((key) => key.replace('history_', ''));
   },
 
   // Clear history for document
   clearHistory(documentId) {
-    localStorage.removeItem(`history_${documentId}`);
+    removeStorageKey(`history_${documentId}`);
   }
 };

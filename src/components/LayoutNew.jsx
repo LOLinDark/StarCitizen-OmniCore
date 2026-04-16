@@ -2,7 +2,7 @@ import { AppShell, NavLink, Badge, Button, Stack, Title, Indicator, Text, Divide
 import { notifications } from '@mantine/notifications';
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAppStore, useSettingsStore } from '../stores';
+import { apiGet, useAppStore, useSettingsStore } from '../platform-core';
 import DevFooter from './DevFooter';
 
 const FRONTEND_VERSION = 'v0.1.0';
@@ -37,16 +37,11 @@ export default function Layout() {
     const checkServer = async () => {
       try {
         logActivity('API', 'GET /api/version');
-        const response = await fetch('http://localhost:3001/api/version');
-        if (response.ok) {
-          const data = await response.json();
-          logActivity('DATA', `Server v${data.version} - ${data.projectHours}h`);
-          setServerVersion(data.version);
-          setProjectHours(data.projectHours || 0);
-          setServerOnline(true);
-        } else {
-          setServerOnline(false);
-        }
+        const data = await apiGet('/api/version');
+        logActivity('DATA', `Server v${data.version} - ${data.projectHours}h`);
+        setServerVersion(data.version);
+        setProjectHours(data.projectHours || 0);
+        setServerOnline(true);
       } catch {
         logActivity('ERROR', 'Server offline');
         setServerOnline(false);
@@ -55,23 +50,23 @@ export default function Layout() {
 
     const checkUsage = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/usage');
-        if (response.ok) setUsage(await response.json());
-      } catch {}
+        setUsage(await apiGet('/api/usage'));
+      } catch {
+        setUsage(null);
+      }
     };
 
     const checkRateLimits = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/rate-limits');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.hourly.percent >= 80 || data.daily.percent >= 80) {
-            setRateLimitAlert({ type: data.hourly.percent >= 100 || data.daily.percent >= 100 ? 'error' : 'warning', hourly: data.hourly, daily: data.daily });
-          } else {
-            setRateLimitAlert(null);
-          }
+        const data = await apiGet('/api/rate-limits');
+        if (data.hourly.percent >= 80 || data.daily.percent >= 80) {
+          setRateLimitAlert({ type: data.hourly.percent >= 100 || data.daily.percent >= 100 ? 'error' : 'warning', hourly: data.hourly, daily: data.daily });
+        } else {
+          setRateLimitAlert(null);
         }
-      } catch {}
+      } catch {
+        setRateLimitAlert(null);
+      }
     };
 
     checkServer();
@@ -85,7 +80,7 @@ export default function Layout() {
       }
     }, 300000);
     return () => clearInterval(interval);
-  }, []);
+  }, [logActivity]);
 
   const isActive = (route) => path === route || path.startsWith(route + '/');
 
@@ -199,8 +194,7 @@ export default function Layout() {
 
           <Button onClick={async () => {
             try {
-              const response = await fetch('http://localhost:3001/api/usage');
-              const data = await response.json();
+              const data = await apiGet('/api/usage');
               notifications.show({
                 title: 'Usage Stats',
                 message: `Requests: ${data.totalRequests} | Cost: $${data.totalCost?.toFixed(4) || '0.00'}`,

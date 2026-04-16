@@ -1,6 +1,7 @@
 import { Container, Title, Textarea, Button, Stack, Text, Card, Group } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useState } from 'react';
+import { readJsonStorage, writeJsonStorage } from '../platform-core';
 
 const DEFAULT_RULES = {
   general: `You are an assistant for OMNI-CORE, a Star Citizen companion dashboard. Be concise, informative, and use in-verse terminology where appropriate.`,
@@ -10,19 +11,18 @@ const DEFAULT_RULES = {
 
 export default function AIRulesPage() {
   const [rules, setRules] = useState(() => {
-    const saved = localStorage.getItem('aiRules');
-    return saved ? JSON.parse(saved) : DEFAULT_RULES;
+    return readJsonStorage('aiRules', DEFAULT_RULES);
   });
 
   const handleSave = () => {
-    localStorage.setItem('aiRules', JSON.stringify(rules));
+    writeJsonStorage('aiRules', rules);
     notifications.show({ title: 'Saved', message: 'AI Rules saved', color: 'green' });
   };
 
   const handleReset = () => {
     if (confirm('Reset to default rules?')) {
       setRules(DEFAULT_RULES);
-      localStorage.setItem('aiRules', JSON.stringify(DEFAULT_RULES));
+      writeJsonStorage('aiRules', DEFAULT_RULES);
     }
   };
 

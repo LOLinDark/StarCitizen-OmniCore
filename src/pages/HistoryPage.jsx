@@ -1,5 +1,5 @@
 import { Container, Title, Card, Text, Stack, Group, Badge, Button, Select, Timeline } from '@mantine/core';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { historyManager } from '../utils/historyManager';
 
 export default function HistoryPage() {
@@ -7,23 +7,23 @@ export default function HistoryPage() {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [history, setHistory] = useState({});
 
+  const loadDocuments = useCallback(() => {
+    const docs = historyManager.getAllDocuments();
+    setDocuments(docs);
+    if (docs.length > 0 && !selectedDoc) {
+      setSelectedDoc(docs[0]);
+    }
+  }, [selectedDoc]);
+
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [loadDocuments]);
 
   useEffect(() => {
     if (selectedDoc) {
       setHistory(historyManager.getHistory(selectedDoc));
     }
   }, [selectedDoc]);
-
-  const loadDocuments = () => {
-    const docs = historyManager.getAllDocuments();
-    setDocuments(docs);
-    if (docs.length > 0 && !selectedDoc) {
-      setSelectedDoc(docs[0]);
-    }
-  };
 
   const handleRollback = (fieldName, changeId) => {
     const value = historyManager.rollback(selectedDoc, fieldName, changeId);

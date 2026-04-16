@@ -1,5 +1,6 @@
 import { Container, Title, Card, Text, Stack, Button, Badge, Code, Group } from '@mantine/core';
 import { useState, useEffect } from 'react';
+import { clearErrorLog, getErrorLog } from '../platform-core';
 
 export default function ErrorLogPage() {
   const [errors, setErrors] = useState([]);
@@ -9,12 +10,11 @@ export default function ErrorLogPage() {
   }, []);
 
   const loadErrors = () => {
-    const log = JSON.parse(localStorage.getItem('errorLog') || '[]');
-    setErrors(log);
+    setErrors(getErrorLog());
   };
 
   const clearErrors = () => {
-    localStorage.removeItem('errorLog');
+    clearErrorLog();
     setErrors([]);
   };
 

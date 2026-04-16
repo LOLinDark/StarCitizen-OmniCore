@@ -1,5 +1,6 @@
 import { Container, Title, Card, Text, Stack, Group, Badge, Progress, Alert, Timeline } from '@mantine/core';
 import { useState, useEffect } from 'react';
+import { apiGet, appendErrorLog } from '../platform-core';
 
 export default function RateLimitPage() {
   const [limits, setLimits] = useState(null);
@@ -8,24 +9,27 @@ export default function RateLimitPage() {
   useEffect(() => {
     const fetchLimits = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/rate-limits');
-        if (res.ok) {
-          const data = await res.json();
-          setLimits(data);
-          
-          if (data.hourly.percent >= 80 || data.daily.percent >= 80) {
-            setNotification({
-              type: data.hourly.percent >= 100 || data.daily.percent >= 100 ? 'error' : 'warning',
-              message: data.hourly.percent >= 100 || data.daily.percent >= 100 
-                ? 'Rate limit reached! API calls are blocked.' 
-                : 'Warning: Approaching rate limit threshold'
-            });
-          } else {
-            setNotification(null);
-          }
+        const data = await apiGet('/api/rate-limits');
+        setLimits(data);
+
+        if (data.hourly.percent >= 80 || data.daily.percent >= 80) {
+          setNotification({
+            type: data.hourly.percent >= 100 || data.daily.percent >= 100 ? 'error' : 'warning',
+            message: data.hourly.percent >= 100 || data.daily.percent >= 100
+              ? 'Rate limit reached! API calls are blocked.'
+              : 'Warning: Approaching rate limit threshold'
+          });
+        } else {
+          setNotification(null);
         }
       } catch (error) {
-        console.error('Failed to fetch limits:', error);
+        appendErrorLog({
+          page: '/admin/rate-limits',
+          button: 'fetchLimits',
+          error: error.message,
+          stack: error.stack,
+          timestamp: new Date().toISOString()
+        });
       }
     };
     

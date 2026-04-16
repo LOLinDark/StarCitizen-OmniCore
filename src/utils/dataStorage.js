@@ -1,55 +1,53 @@
 // Data Storage Manager - Stores structured nursery content data
+import { readJsonStorage, removeStorageKey, writeJsonStorage } from '../platform-core';
 
 export const dataStorage = {
   // Save complete observation data
   saveObservation(documentId, data) {
     const key = `data_${documentId}_observation`;
-    localStorage.setItem(key, JSON.stringify({
+    writeJsonStorage(key, {
       ...data,
       timestamp: new Date().toISOString(),
       type: 'observation'
-    }));
+    });
   },
 
   // Save complete story data
   saveStory(documentId, data) {
     const key = `data_${documentId}_story`;
-    localStorage.setItem(key, JSON.stringify({
+    writeJsonStorage(key, {
       ...data,
       timestamp: new Date().toISOString(),
       type: 'story'
-    }));
+    });
   },
 
   // Save complete responsive plan data
   saveResponsivePlan(documentId, data) {
     const key = `data_${documentId}_responsive`;
-    localStorage.setItem(key, JSON.stringify({
+    writeJsonStorage(key, {
       ...data,
       timestamp: new Date().toISOString(),
       type: 'responsive'
-    }));
+    });
   },
 
   // Get observation
   getObservation(documentId) {
     const key = `data_${documentId}_observation`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : null;
+    return readJsonStorage(key, null);
   },
 
   // Get story
   getStory(documentId) {
     const key = `data_${documentId}_story`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : null;
+    return readJsonStorage(key, null);
   },
 
   // Get responsive plan
   getResponsivePlan(documentId) {
     const key = `data_${documentId}_responsive`;
-    const stored = localStorage.getItem(key);
-    return stored ? JSON.parse(stored) : null;
+    return readJsonStorage(key, null);
   },
 
   // Get most recent content type
@@ -72,8 +70,8 @@ export const dataStorage = {
 
   // Clear all data for document
   clearDocument(documentId) {
-    localStorage.removeItem(`data_${documentId}_observation`);
-    localStorage.removeItem(`data_${documentId}_story`);
-    localStorage.removeItem(`data_${documentId}_responsive`);
+    removeStorageKey(`data_${documentId}_observation`);
+    removeStorageKey(`data_${documentId}_story`);
+    removeStorageKey(`data_${documentId}_responsive`);
   }
 };

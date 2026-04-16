@@ -9,7 +9,7 @@ import { persist } from 'zustand/middleware';
 
 const useAppStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       colorScheme: 'dark',
       devMode: false,
       welcomeCompleted: false,

@@ -1,12 +1,14 @@
 import { Container, Title, TextInput, Button, Paper, Text, Stack, Group, Badge, Switch, Loader, FileInput, ActionIcon } from '@mantine/core';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { apiFetch, apiGet, apiPost, appendErrorLog, usePromptStore } from '../platform-core';
 
 export default function AmazonQPage() {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activePrompt, setActivePrompt] = useState(null);
   const [usage, setUsage] = useState(null);
+    const activePrompt = usePromptStore((state) => state.getActivePrompt());
+
   const [streaming, setStreaming] = useState(true);
   const [streamingText, setStreamingText] = useState('');
   const [image, setImage] = useState(null);
@@ -18,38 +20,7 @@ export default function AmazonQPage() {
     ? messages.filter(m => m.content.toLowerCase().includes(searchTerm.toLowerCase()))
     : messages;
 
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recog = new SpeechRecognition();
-      recog.continuous = false;
-      recog.interimResults = false;
-      recog.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setMessage(transcript);
-      };
-      recog.onend = () => setIsListening(false);
-      setRecognition(recog);
-    }
-
-    const handleKeyboard = (e) => {
-      if (e.ctrlKey && e.key === 'Enter') {
-        sendMessage();
-      }
-      if (e.ctrlKey && e.key === 'm') {
-        e.preventDefault();
-        toggleVoice();
-      }
-      if (e.ctrlKey && e.key === 'f') {
-        e.preventDefault();
-        document.querySelector('input[placeholder*="Search"]')?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyboard);
-    return () => window.removeEventListener('keydown', handleKeyboard);
-  }, []);
-
-  const toggleVoice = () => {
+  const toggleVoice = useCallback(() => {
     if (!recognition) return;
     if (isListening) {
       recognition.stop();
@@ -57,25 +28,14 @@ export default function AmazonQPage() {
       recognition.start();
       setIsListening(true);
     }
-  };
-
-  // Load active prompt from localStorage
-  useEffect(() => {
-    const prompts = JSON.parse(localStorage.getItem('aiPrompts') || '[]');
-    const active = prompts.find(p => p.active);
-    setActivePrompt(active);
-  }, []);
+  }, [isListening, recognition]);
 
   // Fetch usage stats
   useEffect(() => {
     const fetchUsage = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/usage');
-        if (response.ok) {
-          const data = await response.json();
-          setUsage(data);
-        }
-      } catch (error) {
+        setUsage(await apiGet('/api/usage'));
+      } catch {
         // Silently fail - server might not be running
       }
     };
@@ -88,7 +48,7 @@ export default function AmazonQPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!message.trim() && !image) return;
 
     const imageUrl = image ? URL.createObjectURL(image) : null;
@@ -118,11 +78,15 @@ export default function AmazonQPage() {
         body.image = base64;
       }
       if (streaming && !currentImage) {
-        const response = await fetch('http://localhost:3001/api/chat', {
+        const response = await apiFetch('/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body,
         });
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.error || `Request failed with ${response.status}`);
+        }
         
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -151,13 +115,7 @@ export default function AmazonQPage() {
         setMessages(prev => [...prev, { role: 'assistant', content: fullText, usage }]);
         setStreamingText('');
       } else {
-        const response = await fetch('http://localhost:3001/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-
-        const data = await response.json();
+        const data = await apiPost('/api/chat', body);
         setMessages(prev => [...prev, { 
           role: 'assistant', 
           content: data.systemMessage || 'No response',
@@ -165,17 +123,51 @@ export default function AmazonQPage() {
         }]);
       }
       
-      const usageResponse = await fetch('http://localhost:3001/api/usage');
-      if (usageResponse.ok) {
-        const usageData = await usageResponse.json();
-        setUsage(usageData);
-      }
+      setUsage(await apiGet('/api/usage'));
     } catch (error) {
+      appendErrorLog({
+        page: '/admin/chat/claude',
+        button: 'sendMessage',
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
       setMessages(prev => [...prev, { role: 'error', content: error.message }]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [activePrompt?.systemPrompt, image, message, messages, streaming]);
+
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recog = new SpeechRecognition();
+      recog.continuous = false;
+      recog.interimResults = false;
+      recog.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setMessage(transcript);
+      };
+      recog.onend = () => setIsListening(false);
+      setRecognition(recog);
+    }
+
+    const handleKeyboard = (event) => {
+      if (event.ctrlKey && event.key === 'Enter') {
+        sendMessage();
+      }
+      if (event.ctrlKey && event.key === 'm') {
+        event.preventDefault();
+        toggleVoice();
+      }
+      if (event.ctrlKey && event.key === 'f') {
+        event.preventDefault();
+        document.querySelector('input[placeholder*="Search"]')?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
+  }, [sendMessage, toggleVoice]);
 
   return (
     <Container size="lg">

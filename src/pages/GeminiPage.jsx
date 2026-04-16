@@ -1,6 +1,6 @@
 import { Container, Title, TextInput, Button, Paper, Text, Stack, Group, ActionIcon } from '@mantine/core';
-import { useState, useEffect } from 'react';
-import { useAppStore } from '../stores';
+import { useState, useEffect, useCallback } from 'react';
+import { apiPost, appendErrorLog, useAppStore } from '../platform-core';
 
 export default function GeminiPage() {
   const [message, setMessage] = useState('');
@@ -9,6 +9,47 @@ export default function GeminiPage() {
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState(null);
   const logActivity = useAppStore((s) => s.logActivity);
+
+  const toggleVoice = useCallback(() => {
+    if (!recognition) return;
+    if (isListening) {
+      recognition.stop();
+    } else {
+      recognition.start();
+      setIsListening(true);
+    }
+  }, [isListening, recognition]);
+
+  const sendMessage = useCallback(async () => {
+    if (!message.trim()) return;
+
+    const userMessage = { role: 'user', content: message };
+    setMessages(prev => [...prev, userMessage]);
+    setMessage('');
+    setLoading(true);
+    window.dispatchEvent(new Event('ai-request-start'));
+
+    try {
+      logActivity('API', 'POST /api/gemini');
+      logActivity('DATA', `Sent: ${message.substring(0, 50)}...`);
+      const data = await apiPost('/api/gemini', { message });
+      logActivity('DATA', `Received: ${data.response?.substring(0, 50)}...`);
+      setMessages(prev => [...prev, { role: 'assistant', content: data.response || 'No response' }]);
+    } catch (error) {
+      logActivity('ERROR', error.message);
+      appendErrorLog({
+        page: '/admin/chat/gemini',
+        button: 'sendMessage',
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
+      setMessages(prev => [...prev, { role: 'error', content: error.message }]);
+    } finally {
+      setLoading(false);
+      window.dispatchEvent(new Event('ai-request-end'));
+    }
+  }, [logActivity, message]);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -24,58 +65,18 @@ export default function GeminiPage() {
       setRecognition(recog);
     }
 
-    const handleKeyboard = (e) => {
-      if (e.ctrlKey && e.key === 'Enter') {
+    const handleKeyboard = (event) => {
+      if (event.ctrlKey && event.key === 'Enter') {
         sendMessage();
       }
-      if (e.ctrlKey && e.key === 'm') {
-        e.preventDefault();
+      if (event.ctrlKey && event.key === 'm') {
+        event.preventDefault();
         toggleVoice();
       }
     };
     window.addEventListener('keydown', handleKeyboard);
     return () => window.removeEventListener('keydown', handleKeyboard);
-  }, []);
-
-  const toggleVoice = () => {
-    if (!recognition) return;
-    if (isListening) {
-      recognition.stop();
-    } else {
-      recognition.start();
-      setIsListening(true);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!message.trim()) return;
-
-    const userMessage = { role: 'user', content: message };
-    setMessages(prev => [...prev, userMessage]);
-    setMessage('');
-    setLoading(true);
-    window.dispatchEvent(new Event('ai-request-start'));
-
-    try {
-      logActivity('API', 'POST /api/gemini');
-      logActivity('DATA', `Sent: ${message.substring(0, 50)}...`);
-      const response = await fetch('http://localhost:3001/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
-      });
-
-      const data = await response.json();
-      logActivity('DATA', `Received: ${data.response?.substring(0, 50)}...`);
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response || 'No response' }]);
-    } catch (error) {
-      logActivity('ERROR', error.message);
-      setMessages(prev => [...prev, { role: 'error', content: error.message }]);
-    } finally {
-      setLoading(false);
-      window.dispatchEvent(new Event('ai-request-end'));
-    }
-  };
+  }, [sendMessage, toggleVoice]);
 
   return (
     <Container size="lg">

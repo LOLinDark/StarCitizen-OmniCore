@@ -17,6 +17,7 @@ const useSettingsStore = create(
       setDefaultAI: (provider) => set({ defaultAI: provider }),
       setCustomTheme: (theme) => set({ customTheme: theme }),
       resetCustomTheme: () => set({ customTheme: null }),
+      resetSettings: () => set({ costThreshold: 10.0, defaultAI: 'gemini', customTheme: null }),
     }),
     { name: 'omni-core-settings' }
   )
