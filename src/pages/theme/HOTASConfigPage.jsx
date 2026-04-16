@@ -114,6 +114,27 @@ export default function HOTASConfigPage() {
     }
   };
 
+  const handleLoadProfile = async (profileName) => {
+    if (!profileName) {
+      setSelectedProfile('');
+      return;
+    }
+    try {
+      console.log(`[HC01] Loading profile: ${profileName}`);
+      setSelectedProfile(profileName);
+      const response = await fetch(`/api/hotas/profile/${profileName}`);
+      if (!response.ok) throw new Error('Failed to load profile');
+      const data = await response.json();
+      console.log(`[HC01] Profile loaded:`, data.profile);
+      console.log('[HC01] Profile content length:', data.xmlContent?.length);
+      // TODO: Parse XML and merge keybindings
+    } catch (error) {
+      console.error(`[HC01] Error loading profile:`, error);
+      alert(`Could not load profile: ${error.message}`);
+      setSelectedProfile('');
+    }
+  };
+
   return (
     <div
       style={{
