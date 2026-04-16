@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiGet, useAppStore, useSettingsStore } from '../platform-core';
 import DevFooter from './DevFooter';
+import AerobookBar from './AerobookBar';
 
 const FRONTEND_VERSION = 'v0.1.0';
 
@@ -209,6 +210,7 @@ export default function Layout() {
       </AppShell.Aside>
 
       <AppShell.Main>
+        <AerobookBar />
         <Outlet />
       </AppShell.Main>
       <DevFooter />

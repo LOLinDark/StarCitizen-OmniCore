@@ -30,6 +30,7 @@
     "@mantine/form": "^8.3.14",
     "@mantine/hooks": "^8.3.13",
     "@mantine/notifications": "^8.3.14",
+    "@tabler/icons-react": "^3.41.1",
     "@tanstack/react-query": "^5.96.2",
     "arwes": "1.0.0-next.25020502",
     "cors": "^2.8.5",

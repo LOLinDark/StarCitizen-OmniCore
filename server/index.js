@@ -20,8 +20,9 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { BedrockRuntimeClient, InvokeModelCommand, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { appendFileSync } from 'fs';
+import { appendFileSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
+import { execSync } from 'child_process';
 
 dotenv.config();
 
@@ -518,6 +519,80 @@ app.post('/api/chat', async (req, res) => {
     }
     // SECURITY: Don't leak internal error details to client
     res.status(500).json({ error: 'AI request failed. Please try again.' });
+  }
+});
+
+// --- HOTAS Profile Endpoints ---
+const STAR_CITIZEN_MAPPINGS_PATH = 'C:\\Program Files\\Roberts Space Industries\\StarCitizen\\LIVE\\user\\client\\0\\controls\\mappings';
+
+// SECURITY: Validate profile name to prevent directory traversal
+function validateProfileName(name) {
+  if (!name || typeof name !== 'string') return null;
+  if (!/^[a-zA-Z0-9._-]+$/.test(name)) return null;
+  if (name.includes('..') || name.includes('/') || name.includes('\\')) return null;
+  return name.substring(0, 100);
+}
+
+app.get('/api/hotas/profiles', (req, res) => {
+  try {
+    if (!statSync(STAR_CITIZEN_MAPPINGS_PATH)) {
+      return res.status(404).json({ error: 'Star Citizen mappings folder not found' });
+    }
+
+    const profiles = readdirSync(STAR_CITIZEN_MAPPINGS_PATH)
+      .filter(file => file.endsWith('.xml'))
+      .map(file => ({
+        name: file.replace('.xml', ''),
+        path: file,
+        filename: file
+      }));
+
+    log(`HOTAS: Loaded ${profiles.length} profiles from Star Citizen mappings directory`);
+    res.json({ profiles });
+  } catch (error) {
+    log('HOTAS profiles error:', error.message);
+    res.status(500).json({ error: 'Failed to load profiles' });
+  }
+});
+
+app.get('/api/hotas/profile/:profileName', (req, res) => {
+  try {
+    const profileName = validateProfileName(req.params.profileName);
+    if (!profileName) {
+      return res.status(400).json({ error: 'Invalid profile name' });
+    }
+
+    const filePath = join(STAR_CITIZEN_MAPPINGS_PATH, `${profileName}.xml`);
+    
+    // SECURITY: Validate file path is within allowed directory
+    if (!filePath.startsWith(STAR_CITIZEN_MAPPINGS_PATH)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const fileContent = readFileSync(filePath, 'utf-8');
+    
+    log(`HOTAS: Loaded profile "${profileName}"`);
+    res.json({ profile: profileName, xmlContent: fileContent });
+  } catch (error) {
+    log('HOTAS profile load error:', error.message);
+    res.status(500).json({ error: 'Failed to load profile' });
+  }
+});
+
+app.post('/api/hotas/open-folder', (req, res) => {
+  try {
+    if (!statSync(STAR_CITIZEN_MAPPINGS_PATH)) {
+      return res.status(404).json({ error: 'Star Citizen mappings folder not found' });
+    }
+    
+    // Open folder with Windows explorer (works on Windows)
+    execSync(`start "" "${STAR_CITIZEN_MAPPINGS_PATH}"`, { stdio: 'ignore' });
+    
+    log('HOTAS: Opened mappings folder');
+    res.json({ success: true, path: STAR_CITIZEN_MAPPINGS_PATH });
+  } catch (error) {
+    log('HOTAS open folder error:', error.message);
+    res.status(500).json({ error: 'Failed to open folder' });
   }
 });
 

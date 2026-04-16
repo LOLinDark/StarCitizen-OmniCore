@@ -1,8 +1,11 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/LayoutNew';
-import WelcomePage from './pages/WelcomePage';
+import DevPanel from './components/DevPanel';
+import RSILoginPage from './pages/RSILoginPage';
 import DashboardPage from './pages/DashboardPage';
+import AerobookPage from './pages/AerobookPage';
+import OnboardingChecklistPage from './pages/OnboardingChecklistPage';
 import { trackAppView, installGlobalErrorHandlers, startPerformanceMonitoring, useAppStore } from './platform-core';
 import { Loader, Center } from '@mantine/core';
 
@@ -18,6 +21,15 @@ const DeveloperPage = lazy(() => import('./pages/DeveloperPage'));
 const ChangesPage = lazy(() => import('./pages/ChangesPage'));
 const ErrorLogPage = lazy(() => import('./pages/ErrorLogPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+
+// Theme Lab Pages
+const WelcomeOnline = lazy(() => import('./pages/theme/WelcomeOnline'));
+const StarCitizenDetail = lazy(() => import('./pages/theme/StarCitizenDetail'));
+const Squadron42Detail = lazy(() => import('./pages/theme/Squadron42Detail'));
+const HOTASConfigPage = lazy(() => import('./pages/theme/HOTASConfigPage'));
+const HOTASConfigPageDark = lazy(() => import('./pages/theme/HOTASConfigPageDark'));
+const HOTASConfigPageToggle = lazy(() => import('./pages/theme/HOTASConfigPageToggle'));
+const HOTASTestPage = lazy(() => import('./pages/theme/HOTASTestPage'));
 
 function LazyFallback() {
   return <Center h={200}><Loader color="cyan" type="dots" /></Center>;
@@ -49,12 +61,25 @@ function App() {
 
   return (
     <>
+      <DevPanel />
       <RuntimeObservers />
       <Routes>
-        <Route path="/welcome" element={<WelcomePage onComplete={() => { completeWelcome(); window.location.href = '/'; }} />} />
-        {!welcomeCompleted && <Route path="*" element={<Navigate to="/welcome" replace />} />}
+        {/* Theme Lab Routes - Public, no auth required */}
+        <Route path="/theme" element={<Lazy Component={WelcomeOnline} />} />
+        <Route path="/theme/star-citizen" element={<Lazy Component={StarCitizenDetail} />} />
+        <Route path="/theme/squadron-42" element={<Lazy Component={Squadron42Detail} />} />
+        <Route path="/theme/hotas-config" element={<Lazy Component={HOTASConfigPage} />} />
+        <Route path="/theme/hotas-config-dark" element={<Lazy Component={HOTASConfigPageDark} />} />
+        <Route path="/theme/hotas-config-toggle" element={<Lazy Component={HOTASConfigPageToggle} />} />
+        <Route path="/theme/hotas-test" element={<Lazy Component={HOTASTestPage} />} />
+
+        {/* Login and Dashboard Routes */}
+        <Route path="/login" element={<RSILoginPage onComplete={() => { completeWelcome(); window.location.href = '/'; }} />} />
+        {!welcomeCompleted && <Route path="*" element={<Navigate to="/login" replace />} />}
         <Route element={<Layout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="aerobook" element={<AerobookPage />} />
+          <Route path="onboarding" element={<OnboardingChecklistPage />} />
           <Route path="admin/chat/claude" element={<Lazy Component={AmazonQPage} />} />
           <Route path="admin/chat/gemini" element={<Lazy Component={GeminiPage} />} />
           <Route path="admin/ai-rules" element={<Lazy Component={AIRulesPage} />} />
