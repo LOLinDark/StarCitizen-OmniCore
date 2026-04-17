@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Container,
   Stack,
@@ -10,130 +10,73 @@ import {
   SimpleGrid,
   Box,
   Badge,
+  Table,
 } from '@mantine/core';
-import { IconSearch, IconFilter, IconFolderOpen } from '@tabler/icons-react';
-import { SciFiFrame, SciFiBackground } from '../../components/ui';
-import { HOTASTable } from '../../components/HOTASTable';
-import { StateIndicator } from '../../components/StateIndicator';
-import { useHOTASFiltering } from '../../hooks/useHOTASFiltering';
-import { shipControlsCategories } from '../../data/starcitizen-keybindings';
+import { IconSearch, IconArrowUp, IconArrowDown } from '@tabler/icons-react';
+import { SciFiFrame } from '../../components/ui';
+
+// Sample generic data for demo
+const SAMPLE_DATA = [
+  { id: 1, name: 'Alice Johnson', department: 'Engineering', role: 'Senior Developer', status: 'Active' },
+  { id: 2, name: 'Bob Smith', department: 'Design', role: 'UI/UX Designer', status: 'Active' },
+  { id: 3, name: 'Carol Davis', department: 'Product', role: 'Product Manager', status: 'On Leave' },
+  { id: 4, name: 'David Wilson', department: 'Engineering', role: 'DevOps Engineer', status: 'Active' },
+  { id: 5, name: 'Emma Brown', department: 'Marketing', role: 'Marketing Manager', status: 'Active' },
+  { id: 6, name: 'Frank Miller', department: 'Engineering', role: 'Backend Developer', status: 'Active' },
+  { id: 7, name: 'Grace Lee', department: 'Design', role: 'Graphic Designer', status: 'Inactive' },
+  { id: 8, name: 'Henry Taylor', department: 'Product', role: 'Analyst', status: 'Active' },
+];
 
 export default function HOTASConfigPage() {
-  const [selectedProfile, setSelectedProfile] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('flight');
+  const [selectedDepartment, setSelectedDepartment] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('feature');
+  const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [profiles, setProfiles] = useState([]);
-  const [profilesLoading, setProfilesLoading] = useState(true);
-  const [profilesError, setProfilesError] = useState(null);
 
-  // Load profiles from backend
-  useEffect(() => {
-    const loadProfiles = async () => {
-      try {
-        setProfilesLoading(true);
-        console.log('[HC01] Attempting to load profiles from /api/hotas/profiles');
-        const response = await fetch('/api/hotas/profiles');
-        console.log('[HC01] Response status:', response.status);
-        if (!response.ok) {
-          const error = await response.text();
-          console.error('[HC01] Response error:', error);
-          throw new Error(`Failed to load profiles (${response.status})`);
-        }
-        const data = await response.json();
-        console.log('[HC01] Profiles loaded:', data.profiles?.length);
-        setProfiles(data.profiles || []);
-        setProfilesError(null);
-      } catch (error) {
-        console.error('[HC01] Error loading profiles:', error);
-        setProfilesError(`Could not load profiles: ${error.message}`);
-        setProfiles([]);
-      } finally {
-        setProfilesLoading(false);
-      }
-    };
-    loadProfiles();
-  }, []);
-
-  // Use shared filtering hook
-  const { sortedBindings, currentCategory, categoryList } = useHOTASFiltering(
-    selectedCategory,
-    searchQuery,
-    sortBy,
-    sortOrder
-  );
-
-  // HC01 Blue/Sci-Fi theme colors - mostly-blue table styling
+  // Generic table colors
   const colors = {
     headerBg: '#e8f4fd',
     headerBorder: '#1e90ff',
     headerText: '#0052cc',
-    headerTextShadow: undefined,
-    featureText: '#0052cc',
-    featureTextShadow: undefined,
     tableBg: '#f0f8ff',
     tableBoxShadow: '0 0 15px rgba(30, 144, 255, 0.1)',
-    primaryKeyHeaderColor: '#1e90ff',
-    primaryKeyBorder: undefined,
-    primaryKeyHeaderShadow: undefined,
-    primaryKeyBadgeBg: '#e3f2fd',
-    primaryKeyBadgeColor: 'blue',
-    primaryKeyBadgeBorder: undefined,
-    alternativeHeaderColor: '#1e90ff',
-    alternativeBorder: undefined,
-    alternativeHeaderShadow: undefined,
-    alternativeBadgeBg: '#f3e5f5',
-    alternativeBadgeColor: 'grape',
-    alternativeBadgeBorder: undefined,
-    categoryText: '#333333',
-    categoryTextShadow: undefined,
-    statusHeaderColor: '#1e90ff',
-    statusBorder: undefined,
-    statusHeaderShadow: undefined,
     rowBg: '#ffffff',
     rowBorderColor: '#d4e6f1',
     alternateRowBg: '#f8fbff',
-    emptyKeyColor: '#999999',
   };
 
-  const getRowBackground = (binding) => {
-    if (binding.changed) return '#fff3cd';
-    if (binding.pendingApply) return '#d1ecf1';
-    return undefined;
-  };
+  // Get unique departments
+  const departments = ['', ...Array.from(new Set(SAMPLE_DATA.map(d => d.department)))];
 
-  const handleOpenFolder = async () => {
-    try {
-      const response = await fetch('/api/hotas/open-folder', { method: 'POST' });
-      if (!response.ok) throw new Error('Failed to open folder');
-      console.log('[HC01] Profiles folder opened');
-    } catch (error) {
-      console.error('[HC01] Error opening folder:', error);
-      alert('Could not open profiles folder');
+  // Filter and sort data
+  const filteredData = useMemo(() => {
+    let result = SAMPLE_DATA;
+    
+    // Filter by department
+    if (selectedDepartment) {
+      result = result.filter(item => item.department === selectedDepartment);
     }
-  };
-
-  const handleLoadProfile = async (profileName) => {
-    if (!profileName) {
-      setSelectedProfile('');
-      return;
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(item =>
+        item.name.toLowerCase().includes(query) ||
+        item.role.toLowerCase().includes(query) ||
+        item.department.toLowerCase().includes(query)
+      );
     }
-    try {
-      console.log(`[HC01] Loading profile: ${profileName}`);
-      setSelectedProfile(profileName);
-      const response = await fetch(`/api/hotas/profile/${profileName}`);
-      if (!response.ok) throw new Error('Failed to load profile');
-      const data = await response.json();
-      console.log(`[HC01] Profile loaded:`, data.profile);
-      console.log('[HC01] Profile content length:', data.xmlContent?.length);
-      // TODO: Parse XML and merge keybindings
-    } catch (error) {
-      console.error(`[HC01] Error loading profile:`, error);
-      alert(`Could not load profile: ${error.message}`);
-      setSelectedProfile('');
-    }
-  };
+    
+    // Sort
+    result.sort((a, b) => {
+      const aVal = a[sortBy];
+      const bVal = b[sortBy];
+      const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+    
+    return result;
+  }, [selectedDepartment, searchQuery, sortBy, sortOrder]);
 
   return (
     <div
@@ -144,7 +87,6 @@ export default function HOTASConfigPage() {
         overflow: 'hidden',
       }}
     >
-
       <Container size="xl" py="xl" style={{ position: 'relative', zIndex: 1 }}>
         {/* Header */}
         <Stack gap="xl">
@@ -160,70 +102,22 @@ export default function HOTASConfigPage() {
                 marginBottom: '0.5rem',
               }}
             >
-              [HC01] HOTAS Configuration
+              [HC01] Data Table Demo
               {import.meta.env.DEV && (
                 <span style={{ fontSize: '0.6em', marginLeft: '0.5em', color: '#ff9800' }}>
-                  (DEV MODE)
+                  (DEV MODE - GENERIC VIEW)
                 </span>
               )}
             </Text>
             <Text size="sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Manage keybindings across different flight and combat modes
+              Generic table view with search, filtering, and sorting capabilities
             </Text>
           </div>
 
-          {/* Error Display */}
-          {profilesError && (
-            <Box
-              p="md"
-              style={{
-                background: 'rgba(255, 107, 107, 0.1)',
-                border: '1px solid rgba(255, 107, 107, 0.3)',
-                borderRadius: '8px',
-              }}
-            >
-              <Text size="sm" style={{ color: '#ff6b6b' }}>
-                ⚠️ {profilesError}
-              </Text>
-            </Box>
-          )}
-
-          {/* Profile & State Controls */}
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-            {/* Profile Selector */}
-            <Select
-              label="Load Game Profile"
-              placeholder={profilesLoading ? 'Loading profiles...' : 'Select a profile from Star Citizen'}
-              value={selectedProfile}
-              onChange={handleLoadProfile}
-              data={profiles.map(p => ({ value: p.name, label: p.name }))}
-              searchable
-              clearable
-              disabled={profilesLoading || profiles.length === 0}
-              style={{
-                '--input-border-color': '#00d9ff',
-                '--input-focus-border-color': '#00d9ff',
-              }}
-            />
-
-            {/* Controls Group */}
-            <Group gap="xs" align="flex-end">
-              <Button
-                variant="outline"
-                color="cyan"
-                size="sm"
-                leftSection={<IconFolderOpen size={16} />}
-                onClick={handleOpenFolder}
-              >
-                Open Folder
-              </Button>
-            </Group>
-          </SimpleGrid>
-
-          {/* Search & Category Filter on Same Row */}
+          {/* Search & Filter on Same Row */}
           <Group grow align="flex-end" gap="md">
             <TextInput
-              placeholder="Search keybindings..."
+              placeholder="Search by name, role, or department..."
               leftSection={<IconSearch size={16} />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.currentTarget.value)}
@@ -233,17 +127,14 @@ export default function HOTASConfigPage() {
               }}
             />
             <Select
-              label="Category"
-              placeholder="Select category"
-              value={selectedCategory}
-              onChange={(value) => setSelectedCategory(value || '')}
-              data={[
-                { value: '', label: 'All Categories' },
-                ...categoryList.map(([key, category]) => ({
-                  value: key,
-                  label: category.label,
-                })),
-              ]}
+              label="Department"
+              placeholder="All departments"
+              value={selectedDepartment}
+              onChange={(value) => setSelectedDepartment(value || '')}
+              data={departments.map(d => ({
+                value: d,
+                label: d || 'All Departments',
+              }))}
               searchable
               style={{
                 '--input-border-color': '#00d9ff',
@@ -255,29 +146,113 @@ export default function HOTASConfigPage() {
           {/* Info Bar */}
           <Group justify="space-between" style={{ color: 'rgba(0, 217, 255, 0.8)' }}>
             <Text size="sm">
-              {selectedCategory && currentCategory ? (
+              {selectedDepartment ? (
                 <>
-                  <strong>{currentCategory.label}</strong> — {currentCategory.description}
+                  <strong>{selectedDepartment}</strong> department
                 </>
               ) : (
-                'All Categories'
+                'All Departments'
               )}
             </Text>
             <Text size="sm" fw={600}>
-              {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
+              {filteredData.length} record{filteredData.length !== 1 ? 's' : ''}
             </Text>
           </Group>
 
-          {/* Table */}
-          <HOTASTable
-            sortedBindings={sortedBindings}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            setSortBy={setSortBy}
-            setSortOrder={setSortOrder}
-            colors={colors}
-            getRowBackground={getRowBackground}
-          />
+          {/* Generic Table */}
+          <Box
+            style={{
+              background: colors.tableBg,
+              border: `1px solid ${colors.rowBorderColor}`,
+              borderRadius: '8px',
+              overflow: 'hidden',
+              boxShadow: colors.tableBoxShadow,
+            }}
+          >
+            <div style={{ overflowX: 'auto' }}>
+              <Table striped highlightOnHover style={{ minWidth: '100%' }}>
+                <Table.Thead
+                  style={{
+                    background: colors.headerBg,
+                    borderBottom: `2px solid ${colors.headerBorder}`,
+                  }}
+                >
+                  <Table.Tr>
+                    {['name', 'department', 'role', 'status'].map((col) => (
+                      <Table.Th
+                        key={col}
+                        onClick={() => {
+                          if (sortBy === col) {
+                            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setSortBy(col);
+                            setSortOrder('asc');
+                          }
+                        }}
+                        style={{
+                          color: colors.headerText,
+                          cursor: 'pointer',
+                          userSelect: 'none',
+                          padding: '1rem',
+                          textTransform: 'capitalize',
+                          fontWeight: 700,
+                        }}
+                      >
+                        <Group gap={6} wrap="nowrap">
+                          {col}
+                          {sortBy === col && (
+                            sortOrder === 'asc' ? (
+                              <IconArrowUp size={14} />
+                            ) : (
+                              <IconArrowDown size={14} />
+                            )
+                          )}
+                        </Group>
+                      </Table.Th>
+                    ))}
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {filteredData.length === 0 ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: '#999' }}>
+                        No records found
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : (
+                    filteredData.map((item, idx) => (
+                      <Table.Tr
+                        key={item.id}
+                        style={{
+                          background: idx % 2 === 0 ? colors.rowBg : colors.alternateRowBg,
+                          borderBottom: `1px solid ${colors.rowBorderColor}`,
+                        }}
+                      >
+                        <Table.Td style={{ padding: '0.75rem 1rem', color: colors.headerText, fontWeight: 600 }}>
+                          {item.name}
+                        </Table.Td>
+                        <Table.Td style={{ padding: '0.75rem 1rem', color: '#666' }}>
+                          {item.department}
+                        </Table.Td>
+                        <Table.Td style={{ padding: '0.75rem 1rem', color: '#666' }}>
+                          {item.role}
+                        </Table.Td>
+                        <Table.Td style={{ padding: '0.75rem 1rem' }}>
+                          <Badge
+                            color={item.status === 'Active' ? 'green' : item.status === 'On Leave' ? 'yellow' : 'gray'}
+                            variant="filled"
+                            size="sm"
+                          >
+                            {item.status}
+                          </Badge>
+                        </Table.Td>
+                      </Table.Tr>
+                    ))
+                  )}
+                </Table.Tbody>
+              </Table>
+            </div>
+          </Box>
 
           {/* Legend */}
           <Box
@@ -289,61 +264,20 @@ export default function HOTASConfigPage() {
             }}
           >
             <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.5rem' }}>
-              Status Legend
-            </Text>
-            <SimpleGrid cols={3} spacing="sm">
-              <Group gap="xs">
-                <Badge color="green" variant="filled" size="sm">
-                  ✓ Applied
-                </Badge>
-                <Text size="xs" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                  Matches default
-                </Text>
-              </Group>
-              <Group gap="xs">
-                <Badge color="orange" variant="filled" size="sm">
-                  ◆ Changed
-                </Badge>
-                <Text size="xs" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                  Modified by user
-                </Text>
-              </Group>
-              <Group gap="xs">
-                <Badge color="yellow" variant="filled" size="sm">
-                  ⧗ Pending
-                </Badge>
-                <Text size="xs" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                  Will apply on exit
-                </Text>
-              </Group>
-            </SimpleGrid>
-          </Box>
-
-          {/* Notes Section */}
-          <Box
-            style={{
-              background: 'rgba(0, 217, 255, 0.05)',
-              border: '1px solid rgba(0, 217, 255, 0.2)',
-              borderRadius: '8px',
-              padding: '1rem',
-            }}
-          >
-            <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.5rem' }}>
-              ℹ️ Notes
+              ℹ️ How to Use
             </Text>
             <Stack gap="xs">
               <Text size="xs" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                • <strong>Profiles</strong>: Load pre-made profiles or create your own. Export to XML for backup.
+                • <strong>Search</strong>: Type in the search box to filter by name, role, or department
               </Text>
               <Text size="xs" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                • <strong>States</strong>: Filter by context (ground, space flight, weapons, etc.) to reduce noise.
+                • <strong>Department Filter</strong>: Select a department to show only those records
               </Text>
               <Text size="xs" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                • <strong>Modifiers</strong>: SHIFT, CTRL, ALT can be combined with any key.
+                • <strong>Sorting</strong>: Click any column header to sort by that column (ascending/descending)
               </Text>
               <Text size="xs" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                • <strong>Binding Editor</strong> (Coming Soon): Click any row to edit. HOTAS device detection
-                coming Phase 2.
+                • <strong>Generic View</strong>: This is a template for building data tables. Replace with your own data source.
               </Text>
             </Stack>
           </Box>

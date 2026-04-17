@@ -1,6 +1,7 @@
 import { Container, Title, Card, Text, Stack, Group, Badge, Button, Select, Timeline } from '@mantine/core';
 import { useState, useEffect, useCallback } from 'react';
 import { historyManager } from '../utils/historyManager';
+import DevTag from '../components/DevTag';
 
 export default function HistoryPage() {
   const [documents, setDocuments] = useState([]);
@@ -55,7 +56,7 @@ export default function HistoryPage() {
   return (
     <Container size="xl">
       <Group justify="space-between" mb="md">
-        <Title>Field History</Title>
+        <Title><DevTag tag="ADM08" />Field History</Title>
         <Select
           placeholder="Select document"
           value={selectedDoc}

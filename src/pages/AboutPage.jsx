@@ -1,4 +1,5 @@
 import { Container, Title, Text, Stack, Card, Anchor, Table } from '@mantine/core';
+import DevTag from '../components/DevTag';
 
 const DEPENDENCIES = [
   { name: 'Arwes', author: 'Romel Pérez', url: 'https://github.com/arwes/arwes', license: 'MIT', desc: 'Futuristic Sci-Fi UI Web Framework — frames, text effects, backgrounds' },
@@ -13,7 +14,7 @@ const DEPENDENCIES = [
 export default function AboutPage() {
   return (
     <Container size="md">
-      <Title mb="md">About OMNI-CORE</Title>
+      <Title mb="md"><DevTag tag="ADM05" />About OMNI-CORE</Title>
       <Stack gap="md">
         <Card withBorder p="lg">
           <Title order={3} mb="sm">Project</Title>

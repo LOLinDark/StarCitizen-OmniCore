@@ -170,8 +170,66 @@ app.use(cors({ origin: ALLOWED_ORIGINS, methods: ['GET', 'POST'] }));
 app.use(express.json({ limit: '1mb' }));
 
 // --- Public endpoints ---
+app.get('/', (req, res) => {
+  res.json({
+    message: 'OMNI-CORE Backend API Server',
+    version: SERVER_VERSION,
+    status: 'running',
+    endpoints: '/api/version, /api/gemini, /api/chat, /api/hotas/profiles'
+  });
+});
+
 app.get('/api/version', (req, res) => {
   res.json({ version: SERVER_VERSION, projectHours: projectHours.totalHours, lastActive: projectHours.lastActiveHour });
+});
+
+// --- RSI Citizen API endpoint ---
+app.get('/api/citizen/:handle', async (req, res) => {
+  const { handle } = req.params;
+
+  // Validate handle
+  if (!handle || handle.length > 64 || !/^[a-zA-Z0-9_-]+$/.test(handle)) {
+    return res.status(400).json({ error: 'Invalid citizen handle' });
+  }
+
+  try {
+    const apiKey = process.env.RSI_API_KEY;
+    if (!apiKey) {
+      log('ERROR', 'RSI_API_KEY not configured');
+      return res.status(500).json({ error: 'API not configured' });
+    }
+
+    log('CITIZEN', `Fetching profile: ${handle}`);
+
+    // Star Citizen API endpoint: GET /{apikey}/v1/{mode}/user/{handle}
+    // API is at api.starcitizen-api.com (not starcitizen-api.com)
+    // Mode can be: live, cache, auto, eager
+    const response = await fetch(
+      `https://api.starcitizen-api.com/${apiKey}/v1/live/user/${encodeURIComponent(handle)}`,
+      {
+        headers: {
+          'User-Agent': 'OmniCore/0.1.0'
+        },
+        timeout: 10000
+      }
+    );
+
+    if (!response.ok) {
+      log('CITIZEN', `Profile not found: ${handle} (${response.status})`);
+      return res.status(404).json({ error: 'Citizen not found', handle });
+    }
+
+    const data = await response.json();
+
+    // Cache result for 1 hour to reduce API calls
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.json(data.data || data);
+
+    log('CITIZEN', `Successfully fetched: ${handle}`);
+  } catch (error) {
+    log('ERROR', `Citizen API error: ${error.message}`);
+    res.status(500).json({ error: 'Failed to fetch citizen data', details: error.message });
+  }
 });
 
 // SECURITY: Rate limit all API routes to prevent abuse.

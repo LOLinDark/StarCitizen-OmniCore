@@ -1,6 +1,7 @@
 import { Container, Title, Card, Text, Stack, Button, Badge, Code, Group } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { clearErrorLog, getErrorLog } from '../platform-core';
+import DevTag from '../components/DevTag';
 
 export default function ErrorLogPage() {
   const [errors, setErrors] = useState([]);
@@ -21,7 +22,7 @@ export default function ErrorLogPage() {
   return (
     <Container size="lg" py="xl">
       <Group justify="space-between" mb="xl">
-        <Title order={1}>Error Log</Title>
+        <Title order={1}><DevTag tag="DEV04" />Error Log</Title>
         <Group>
           <Button onClick={loadErrors} variant="outline">Refresh</Button>
           <Button onClick={clearErrors} color="red">Clear All</Button>

@@ -1,9 +1,10 @@
-import { AppShell, NavLink, Badge, Button, Stack, Title, Indicator, Text, Divider, Alert, Switch, Group, Menu } from '@mantine/core';
+import { AppShell, NavLink, Badge, Button, Stack, Title, Indicator, Text, Divider, Alert, Switch, Group, Menu, Container } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiGet, useAppStore, useSettingsStore } from '../platform-core';
 import DevFooter from './DevFooter';
+import DeveloperNotes from './DeveloperNotes';
 import AerobookBar from './AerobookBar';
 
 const FRONTEND_VERSION = 'v0.1.0';
@@ -211,7 +212,10 @@ export default function Layout() {
 
       <AppShell.Main>
         <AerobookBar />
-        <Outlet />
+        <Container size="xl" py="md">
+          <DeveloperNotes />
+          <Outlet />
+        </Container>
       </AppShell.Main>
       <DevFooter />
     </AppShell>

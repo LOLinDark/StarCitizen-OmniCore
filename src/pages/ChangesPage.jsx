@@ -1,9 +1,10 @@
 import { Container, Title, Timeline, Text, Badge, Paper, Stack } from '@mantine/core';
+import DevTag from '../components/DevTag';
 
 export default function ChangesPage() {
   return (
     <Container size="lg" py="xl">
-      <Title order={1} mb="xl">Changelog</Title>
+      <Title order={1} mb="xl"><DevTag tag="DEV05" />Changelog</Title>
       <Timeline active={0} bulletSize={24} lineWidth={2}>
         <Timeline.Item title="v0.1.0" bullet={<Badge size="sm">Latest</Badge>}>
           <Text c="dimmed" size="sm">Initial OMNI-CORE Setup</Text>

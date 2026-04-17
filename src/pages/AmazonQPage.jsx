@@ -1,6 +1,7 @@
 import { Container, Title, TextInput, Button, Paper, Text, Stack, Group, Badge, Switch, Loader, FileInput, ActionIcon } from '@mantine/core';
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch, apiGet, apiPost, appendErrorLog, usePromptStore } from '../platform-core';
+import DevTag from '../components/DevTag';
 
 export default function AmazonQPage() {
   const [message, setMessage] = useState('');
@@ -172,7 +173,7 @@ export default function AmazonQPage() {
   return (
     <Container size="lg">
       <Group justify="space-between" mb="md">
-        <Title>Claude Opus 4.5 Chat</Title>
+        <Title><DevTag tag="ADM06" />Claude Opus 4.5 Chat</Title>
         <Group gap="xs">
           <Switch label="Stream" checked={streaming} onChange={(e) => setStreaming(e.currentTarget.checked)} size="sm" />
           {usage && (

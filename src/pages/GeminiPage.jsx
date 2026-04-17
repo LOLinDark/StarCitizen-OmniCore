@@ -1,6 +1,7 @@
 import { Container, Title, TextInput, Button, Paper, Text, Stack, Group, ActionIcon } from '@mantine/core';
 import { useState, useEffect, useCallback } from 'react';
 import { apiPost, appendErrorLog, useAppStore } from '../platform-core';
+import DevTag from '../components/DevTag';
 
 export default function GeminiPage() {
   const [message, setMessage] = useState('');
@@ -80,7 +81,7 @@ export default function GeminiPage() {
 
   return (
     <Container size="lg">
-      <Title mb="md">Gemini Chat</Title>
+      <Title mb="md"><DevTag tag="ADM02" />Gemini Chat</Title>
       
       <Stack gap="md" mb="md" style={{ maxHeight: '500px', overflowY: 'auto' }}>
         {messages.map((msg, i) => (

@@ -1,6 +1,7 @@
 import { Container, Title, Card, Text, Stack, Group, Badge, Progress, Alert, Timeline } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { apiGet, appendErrorLog } from '../platform-core';
+import DevTag from '../components/DevTag';
 
 export default function RateLimitPage() {
   const [limits, setLimits] = useState(null);
@@ -45,7 +46,7 @@ export default function RateLimitPage() {
 
   return (
     <Container size="lg">
-      <Title mb="md">Rate Limit Monitor</Title>
+      <Title mb="md"><DevTag tag="ADM07" />Rate Limit Monitor</Title>
       
       {notification && (
         <Alert color={notification.type === 'error' ? 'red' : 'orange'} mb="md" title={notification.type === 'error' ? 'Blocked' : 'Warning'}>

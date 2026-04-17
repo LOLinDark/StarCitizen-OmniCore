@@ -25,6 +25,7 @@ import {
   THEME_LAB_STANDARD_VERSION,
   THEME_PRESETS
 } from '../theme/themeLabStandard';
+import DevTag from '../components/DevTag';
 
 export default function ThemePage() {
   const customTheme = useSettingsStore((s) => s.customTheme);
@@ -101,7 +102,7 @@ export default function ThemePage() {
   return (
     <Container size="lg">
       <Group justify="space-between" mb="md">
-        <Title>Theme Lab Standard v1</Title>
+        <Title><DevTag tag="TL01" />Theme Lab Standard v1</Title>
         <Badge color="cyan" variant="filled">v{THEME_LAB_STANDARD_VERSION}</Badge>
       </Group>
 

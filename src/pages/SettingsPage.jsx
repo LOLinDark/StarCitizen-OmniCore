@@ -1,6 +1,7 @@
 import { Container, Title, Stack, Text, Tabs, Card, NumberInput, Button, Alert, Select } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { apiGet, apiPost, appendErrorLog, clearOmniCoreStorage, useSettingsStore } from '../platform-core';
+import DevTag from '../components/DevTag';
 
 export default function SettingsPage() {
   const costThreshold = useSettingsStore((s) => s.costThreshold);
@@ -44,7 +45,7 @@ export default function SettingsPage() {
   };
   return (
     <Container size="lg">
-      <Title mb="md">Settings</Title>
+      <Title mb="md"><DevTag tag="ADM01" />Settings</Title>
       <Tabs defaultValue="aws">
         <Tabs.List>
           <Tabs.Tab value="aws">AWS & Costs</Tabs.Tab>

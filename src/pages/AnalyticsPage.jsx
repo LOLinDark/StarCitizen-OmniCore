@@ -12,6 +12,7 @@ import {
   getErrorLog,
   getPerformanceSnapshot
 } from '../platform-core';
+import DevTag from '../components/DevTag';
 
 export default function AnalyticsPage() {
   const [usage, setUsage] = useState(null);
@@ -107,7 +108,7 @@ export default function AnalyticsPage() {
 
   return (
     <Container size="lg">
-      <Title mb="md">Analytics Dashboard</Title>
+      <Title mb="md"><DevTag tag="ADM04" />Analytics Dashboard</Title>
       
       <Stack gap="md">
         <Card withBorder>
