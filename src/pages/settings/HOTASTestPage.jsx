@@ -1,4 +1,3 @@
-import { useState, useEffect, useRef } from 'react';
 import {
   Container,
   Stack,
@@ -13,379 +12,65 @@ import {
   Table,
   Tabs,
 } from '@mantine/core';
-import { IconDownload, IconUpload } from '@tabler/icons-react';
 import { SciFiFrame } from '../../components/ui';
+import {
+  useHotasInput,
+  X52_BUTTONS,
+  X52_AXES,
+  X52_MODES as MODES,
+  LogitechX52Device,
+} from '../../libraries/hotas/index.js';
 
-// X52 Button Mapping Reference
-const X52_BUTTONS = {
-  // Joystick buttons
-  0: { name: 'Hair Trigger', group: 'Stick', type: 'button', code: 'BTN_STICK_TRIG' },
-  1: { name: 'Safe Button', group: 'Stick', type: 'button', code: 'BTN_STICK_SAFE' },
-  2: { name: 'Button A', group: 'Stick', type: 'button', code: 'BTN_STICK_A' },
-  3: { name: 'Button B', group: 'Stick', type: 'button', code: 'BTN_STICK_B' },
-  4: { name: 'Button C', group: 'Stick', type: 'button', code: 'BTN_STICK_C' },
-  5: { name: 'Pinkie Switch', group: 'Stick', type: 'button', code: 'BTN_PINKIE', note: 'Modifier' },
-  6: { name: 'D', group: 'Throttle', type: 'button', code: 'BTN_THR_D' },
-  // Throttle buttons
-  7: { name: 'Fire D', group: 'Throttle', type: 'button', code: 'BTN_THR_FIRED' },
-  8: { name: 'Button E', group: 'Throttle', type: 'button', code: 'BTN_THR_E' },
-  // Toggle Switches T1-T6
-  9: { name: 'Toggle T1', group: 'Throttle', type: 'button', code: 'BTN_TOG_T1' },
-  10: { name: 'Toggle T2', group: 'Throttle', type: 'button', code: 'BTN_TOG_T2' },
-  11: { name: 'Toggle T3', group: 'Throttle', type: 'button', code: 'BTN_TOG_T3' },
-  12: { name: 'Toggle T4', group: 'Throttle', type: 'button', code: 'BTN_TOG_T4' },
-  13: { name: 'Toggle T5', group: 'Throttle', type: 'button', code: 'BTN_TOG_T5' },
-  14: { name: 'Trigger Full (Full Press)', group: 'Stick', type: 'button', code: 'BTN_STICK_TRIG_FULL' },
-  15: { name: 'Toggle T6', group: 'Throttle', type: 'button', code: 'BTN_TOG_T6' },
-  // Mouse Button (on throttle)
-  16: { name: 'Mouse Button', group: 'Throttle', type: 'button', code: 'BTN_THR_MOUSE' },
-  // HAT 1 on Stick (8-way)
-  17: { name: 'HAT 1 North', group: 'Stick', type: 'button', code: 'HAT_1_N' },
-  18: { name: 'HAT 1 Northeast', group: 'Stick', type: 'button', code: 'HAT_1_NE' },
-  19: { name: 'HAT 1 East', group: 'Stick', type: 'button', code: 'HAT_1_E' },
-  20: { name: 'HAT 1 Southeast', group: 'Stick', type: 'button', code: 'HAT_1_SE' },
-  // Throttle HAT 2 (8-way)
-  21: { name: 'HAT 2 North', group: 'Throttle', type: 'button', code: 'HAT_2_N' },
-  22: { name: 'HAT 2 Northeast', group: 'Throttle', type: 'button', code: 'HAT_2_NE' },
-  23: { name: 'HAT 2 East', group: 'Throttle', type: 'button', code: 'HAT_2_E' },
-  24: { name: 'HAT 2 Southeast', group: 'Throttle', type: 'button', code: 'HAT_2_SE' },
-  25: { name: 'Button 25 (Extended)', group: 'Extended', type: 'button', code: 'BTN_EXT_25' },
-  26: { name: 'Button 26 (Extended)', group: 'Extended', type: 'button', code: 'BTN_EXT_26' },
-  27: { name: 'Button 27 (Extended)', group: 'Extended', type: 'button', code: 'BTN_EXT_27' },
-  28: { name: 'Button 28 (Extended)', group: 'Extended', type: 'button', code: 'BTN_EXT_28' },
-  29: { name: 'Button 29 (Extended)', group: 'Extended', type: 'button', code: 'BTN_EXT_29' },
-  // Axes
-  '0-axis': { name: 'X Axis (Stick)', group: 'Axes', type: 'axis', code: 'AX_X' },
-  '1-axis': { name: 'Y Axis (Stick)', group: 'Axes', type: 'axis', code: 'AX_Y' },
-  '2-axis': { name: 'Z Rotation', group: 'Axes', type: 'axis', code: 'AX_Z' },
-  '3-axis': { name: 'Throttle Main', group: 'Axes', type: 'axis', code: 'AX_THR' },
-  '4-axis': { name: 'Rotary 1 (Large)', group: 'Axes', type: 'axis', code: 'AX_ROT1' },
-  '5-axis': { name: 'Rotary 2 (Small)', group: 'Axes', type: 'axis', code: 'AX_ROT2' },
-  '6-axis': { name: 'Slider', group: 'Axes', type: 'axis', code: 'AX_SLD' },
-  // Axis 9 mapped as 8-directional POV HAT (Point of View)
-  '9-hat-n': { name: 'POV HAT North', group: 'Look Around', type: 'button', code: 'POV_N', note: 'POV 8-way' },
+// Build a unified lookup map matching the old X52_BUTTONS shape so the JSX
+// below can continue using X52_BUTTONS[index] and X52_BUTTONS[`${i}-axis`]
+// without any changes to the render tree.
+// Axes are also keyed as `${index}-axis` for backward compatibility.
+const AXIS_COMPAT = Object.fromEntries(
+  Object.entries(X52_AXES).map(([i, meta]) => [`${i}-axis`, meta])
+);
+// Merge buttons + axis compat + POV hat directions into one map
+const POV_HAT_COMPAT = {
+  '9-hat-n':  { name: 'POV HAT North',     group: 'Look Around', type: 'button', code: 'POV_N',  note: 'POV 8-way' },
   '9-hat-ne': { name: 'POV HAT Northeast', group: 'Look Around', type: 'button', code: 'POV_NE', note: 'POV 8-way' },
-  '9-hat-e': { name: 'POV HAT East', group: 'Look Around', type: 'button', code: 'POV_E', note: 'POV 8-way' },
+  '9-hat-e':  { name: 'POV HAT East',      group: 'Look Around', type: 'button', code: 'POV_E',  note: 'POV 8-way' },
   '9-hat-se': { name: 'POV HAT Southeast', group: 'Look Around', type: 'button', code: 'POV_SE', note: 'POV 8-way' },
-  '9-hat-s': { name: 'POV HAT South', group: 'Look Around', type: 'button', code: 'POV_S', note: 'POV 8-way' },
+  '9-hat-s':  { name: 'POV HAT South',     group: 'Look Around', type: 'button', code: 'POV_S',  note: 'POV 8-way' },
   '9-hat-sw': { name: 'POV HAT Southwest', group: 'Look Around', type: 'button', code: 'POV_SW', note: 'POV 8-way' },
-  '9-hat-w': { name: 'POV HAT West', group: 'Look Around', type: 'button', code: 'POV_W', note: 'POV 8-way' },
+  '9-hat-w':  { name: 'POV HAT West',      group: 'Look Around', type: 'button', code: 'POV_W',  note: 'POV 8-way' },
   '9-hat-nw': { name: 'POV HAT Northwest', group: 'Look Around', type: 'button', code: 'POV_NW', note: 'POV 8-way' },
 };
-
-const MODES = {
-  0: { name: 'Red Mode', color: 'red' },
-  1: { name: 'Purple Mode', color: 'violet' },
-  2: { name: 'Blue Mode', color: 'blue' },
-};
+const X52_LOOKUP = { ...X52_BUTTONS, ...AXIS_COMPAT, ...POV_HAT_COMPAT };
+const getDisplayButtonNumber = (btnIndex) => X52_LOOKUP[btnIndex]?.windowsIndex ?? (btnIndex + 1);
 
 export default function HOTASTestPage() {
-  const [gamepadConnected, setGamepadConnected] = useState(false);
-  const [gamepadInfo, setGamepadInfo] = useState(null);
-  const [lastInput, setLastInput] = useState(null);
-  const [inputHistory, setInputHistory] = useState([]);
-  const [axisValues, setAxisValues] = useState({});
-  const [axis9RawValue, setAxis9RawValue] = useState(0);
-  const [currentMode, setCurrentMode] = useState(0);
-  const [keyboardEvents, setKeyboardEvents] = useState([]);
-  const [isMonitoring, setIsMonitoring] = useState(false);
-  const [previousButtonState, setPreviousButtonState] = useState({});
-  const [previousAxisState, setPreviousAxisState] = useState({});
-  const [activeInputs, setActiveInputs] = useState(new Set());
-  
-  // Use refs for synchronous state tracking between frames
-  const previousButtonStateRef = useRef({});
-  const previousAxisStateRef = useRef({});
-  const previousAxis9StateRef = useRef({ n: false, ne: false, e: false, se: false, s: false, sw: false, w: false, nw: false, rawValue: null });
+  const {
+    gamepadConnected,
+    gamepadInfo,
+    lastInput,
+    inputHistory,
+    axisValues,
+    currentMode,
+    activeInputs,
+    isMonitoring,
+    startMonitoring,
+    stopMonitoring,
+    clearHistory,
+  } = useHotasInput({ device: LogitechX52Device, trackKeyboard: true });
 
-  // Keyboard event listener
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (isMonitoring) {
-        const eventData = {
-          id: Date.now(),
-          type: 'KeyDown',
-          key: e.key,
-          code: e.code,
-          timestamp: new Date().toLocaleTimeString(),
-        };
-        setLastInput(eventData);
-        setKeyboardEvents((prev) => [eventData, ...prev.slice(0, 19)]);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMonitoring]);
-
-  // Gamepad API monitoring
-  useEffect(() => {
-    let animationFrameId;
-
-    const handleGamepadConnected = (e) => {
-      setGamepadConnected(true);
-      setGamepadInfo(e.gamepad);
-    };
-
-    const handleGamepadDisconnected = () => {
-      setGamepadConnected(false);
-      setGamepadInfo(null);
-    };
-
-    const pollGamepad = () => {
-      const gamepads = navigator.getGamepads?.() || [];
-      const gamepad = gamepads[0];
-
-      if (gamepad && isMonitoring) {
-        setGamepadInfo(gamepad);
-        const currentActiveInputs = new Set();
-
-        // Check buttons using ref for proper state tracking
-        gamepad.buttons.forEach((button, index) => {
-          const isPressed = button.pressed;
-          const wasPressed = previousButtonStateRef.current[index] || false;
-          
-          // Update ref immediately for next frame
-          previousButtonStateRef.current[index] = isPressed;
-
-          // Track active inputs
-          if (isPressed) {
-            currentActiveInputs.add(`button-${index}`);
-          }
-
-          // Only log on state change (press or release)
-          if (isPressed && !wasPressed) {
-            // Button just pressed
-            const eventData = {
-              id: Date.now() + Math.random(),
-              type: 'Button',
-              action: 'Pressed',
-              index,
-              name: X52_BUTTONS[index]?.name || `Button ${index}`,
-              timestamp: new Date().toLocaleTimeString(),
-            };
-            setLastInput(eventData);
-            setInputHistory((prev) => [eventData, ...prev.slice(0, 49)]);
-          } else if (!isPressed && wasPressed) {
-            // Button just released
-            const eventData = {
-              id: Date.now() + Math.random(),
-              type: 'Button',
-              action: 'Released',
-              index,
-              name: X52_BUTTONS[index]?.name || `Button ${index}`,
-              timestamp: new Date().toLocaleTimeString(),
-            };
-            setLastInput(eventData);
-            setInputHistory((prev) => [eventData, ...prev.slice(0, 49)]);
-          }
-        });
-
-        // Track axis state changes (significant movement only)
-        const newAxisValues = {};
-
-        gamepad.axes.forEach((value, index) => {
-          // IMPORTANT: Validate axis value - skip if outside valid range
-          // Valid gamepad axes are always between -1 and 1
-          // Anything outside this range is garbage/corruption data to ignore
-          if (typeof value !== 'number' || value < -1 || value > 1) {
-            return; // Skip invalid values
-          }
-
-          // Special handling for axis 9 (POV HAT - 8-way directional for looking around)
-          if (index === 9) {
-            // SIMPLE RAW VALUE LOGGING - NO MAPPING YET
-            const previousValue = previousAxis9StateRef.current?.rawValue;
-            
-            // Log whenever value changes by more than 0.05 (significant movement)
-            if (previousValue === null || Math.abs(value - previousValue) > 0.05) {
-              console.log(`🎮 POV HAT RAW VALUE: ${value.toFixed(3)}`);
-            }
-            
-            // Update display
-            setAxis9RawValue(value);
-            
-            // Map analog value to 8 compass directions based on actual hardware values:
-            // N: -1.000, NE: -0.714, E: -0.429, SE: -0.143, S: 0.143, SW: 0.143, W: 0.714, NW: 1.000
-            let direction = null;
-            
-            // Center/neutral zone
-            if (value > -0.1 && value < 0.1) {
-              direction = null;
-            }
-            // North
-            else if (value < -0.857) direction = 'n';
-            // Northeast
-            else if (value >= -0.857 && value < -0.571) direction = 'ne';
-            // East
-            else if (value >= -0.571 && value < -0.286) direction = 'e';
-            // Southeast
-            else if (value >= -0.286 && value < 0) direction = 'se';
-            // South
-            else if (value >= 0 && value < 0.286) direction = 's';
-            // Southwest
-            else if (value >= 0.286 && value < 0.571) direction = 'sw';
-            // West
-            else if (value >= 0.571 && value < 0.857) direction = 'w';
-            // Northwest
-            else if (value >= 0.857) direction = 'nw';
-            
-            // Set the active direction
-            let newAxis9State = { n: false, ne: false, e: false, se: false, s: false, sw: false, w: false, nw: false };
-            if (direction) {
-              newAxis9State[direction] = true;
-            }
-            
-            // Log direction changes using ref
-            const previousAxis9StateCheck = previousAxis9StateRef.current;
-            ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'].forEach((dir) => {
-              if (newAxis9State[dir] && !previousAxis9StateCheck[dir]) {
-                // Direction just activated
-                const dirName = dir.toUpperCase();
-                const eventData = {
-                  id: Date.now() + Math.random(),
-                  type: 'Button',
-                  action: 'Pressed',
-                  index: `9-hat-${dir}`,
-                  name: `POV HAT ${dirName}`,
-                  timestamp: new Date().toLocaleTimeString(),
-                };
-                setLastInput(eventData);
-                setInputHistory((prev) => [eventData, ...prev.slice(0, 49)]);
-                currentActiveInputs.add(`button-9-hat-${dir}`);
-              } else if (!newAxis9State[dir] && previousAxis9StateCheck[dir]) {
-                // Direction just deactivated
-                const dirName = dir.toUpperCase();
-                const eventData = {
-                  id: Date.now() + Math.random(),
-                  type: 'Button',
-                  action: 'Released',
-                  index: `9-hat-${dir}`,
-                  name: `POV HAT ${dirName}`,
-                  timestamp: new Date().toLocaleTimeString(),
-                };
-                setLastInput(eventData);
-                setInputHistory((prev) => [eventData, ...prev.slice(0, 49)]);
-              } else if (newAxis9State[dir]) {
-                // Direction is still active
-                currentActiveInputs.add(`button-9-hat-${dir}`);
-              }
-            });
-            
-            // Store raw value in ref for next frame
-            previousAxis9StateRef.current = { ...newAxis9State, rawValue: value };
-            return;
-          }
-
-          const previousValue = previousAxisStateRef.current[index] || 0;
-          
-          // Update ref immediately for next frame
-          previousAxisStateRef.current[index] = value;
-
-          // Skip axis 9 (handled separately as POV HAT)
-          if (index === 9) return;
-
-          // Continuous axes: Rotary 1 (4), Rotary 2 (5), Slider (6) - log VALUE CHANGES
-          const continuousAxes = [4, 5, 6];
-          if (continuousAxes.includes(index)) {
-            const valueChangeThreshold = 0.05; // Log changes larger than 5%
-            const valueDifference = Math.abs(value - previousValue);
-            
-            // Log if value changed significantly
-            if (valueDifference > valueChangeThreshold) {
-              const eventData = {
-                id: Date.now() + Math.random(),
-                type: 'Axis',
-                action: 'Value Changed',
-                index,
-                name: X52_BUTTONS[`${index}-axis`]?.name || `Axis ${index}`,
-                value: value.toFixed(3),
-                previousValue: previousValue.toFixed(3),
-                timestamp: new Date().toLocaleTimeString(),
-              };
-              setLastInput(eventData);
-              setInputHistory((prev) => [eventData, ...prev.slice(0, 49)]);
-            }
-            
-            // Always track and display continuous axes
-            currentActiveInputs.add(`axis-${index}`);
-            newAxisValues[index] = value.toFixed(3);
-            return;
-          }
-
-          // Binary axes: Stick (0,1,2), Throttle (3) - use deadzone-based edge detection
-          const deadzone = 0.15;
-          const isActive = Math.abs(value) > deadzone;
-          const previousActive = Math.abs(previousValue) > deadzone;
-
-          // Track active axes
-          if (isActive) {
-            currentActiveInputs.add(`axis-${index}`);
-          }
-
-          // Only log on deadzone crossing (edge detection)
-          if (isActive && !previousActive) {
-            const eventData = {
-              id: Date.now() + Math.random(),
-              type: 'Axis',
-              action: 'Engaged',
-              index,
-              name: X52_BUTTONS[`${index}-axis`]?.name || `Axis ${index}`,
-              value: value.toFixed(3),
-              timestamp: new Date().toLocaleTimeString(),
-            };
-            setLastInput(eventData);
-            setInputHistory((prev) => [eventData, ...prev.slice(0, 49)]);
-          }
-
-          // Update display values
-          if (isActive) {
-            newAxisValues[index] = value.toFixed(2);
-          }
-        });
-        
-        setAxisValues(newAxisValues);
-        setActiveInputs(currentActiveInputs);
-
-        // Detect mode from pinkie switch or other logic
-        if (gamepad.buttons[6]?.pressed) {
-          // Pinkie switch affects mode detection
-          setCurrentMode((prev) => (prev + 1) % 3);
-        }
-      }
-
-      if (isMonitoring) {
-        animationFrameId = requestAnimationFrame(pollGamepad);
-      }
-    };
-
-    window.addEventListener('gamepadconnected', handleGamepadConnected);
-    window.addEventListener('gamepaddisconnected', handleGamepadDisconnected);
-
-    if (isMonitoring) {
-      pollGamepad();
-    }
-
-    return () => {
-      window.removeEventListener('gamepadconnected', handleGamepadConnected);
-      window.removeEventListener('gamepaddisconnected', handleGamepadDisconnected);
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    };
-  }, [isMonitoring]);
+  // Derive axis9 raw value from axisValues for the debug panel
+  const axis9RawValue = parseFloat(axisValues[9] ?? 0);
 
   const handleStartMonitoring = () => {
-    setIsMonitoring(true);
-    // Request gamepad access
+    startMonitoring();
     navigator.getGamepads?.();
   };
 
   const handleStopMonitoring = () => {
-    setIsMonitoring(false);
+    stopMonitoring();
   };
 
   const handleClearHistory = () => {
-    setInputHistory([]);
-    setKeyboardEvents([]);
+    clearHistory();
   };
 
   return (
@@ -513,7 +198,8 @@ export default function HOTASTestPage() {
                   {/* Button Indicators (0-29) */}
                   {Array.from({ length: 30 }, (_, i) => i).map((btnIndex) => {
                     const isActive = activeInputs.has(`button-${btnIndex}`);
-                    const btnInfo = X52_BUTTONS[btnIndex];
+                    const btnInfo = X52_LOOKUP[btnIndex];
+                    const displayNumber = getDisplayButtonNumber(btnIndex);
                     return (
                       <div
                         key={`btn-${btnIndex}`}
@@ -534,11 +220,11 @@ export default function HOTASTestPage() {
                           fontWeight: 600,
                           color: isActive ? '#000000' : 'rgba(0, 217, 255, 0.6)',
                           textShadow: isActive ? 'none' : 'none',
-                          title: btnInfo?.name || `Button ${btnIndex + 1}`,
+                          title: btnInfo?.name || `Button ${displayNumber}`,
                         }}
-                        title={btnInfo?.name || `Button ${btnIndex + 1}`}
+                        title={btnInfo?.name || `Button ${displayNumber}`}
                       >
-                        B{btnIndex + 1}
+                        B{displayNumber}
                       </div>
                     );
                   })}
@@ -546,7 +232,7 @@ export default function HOTASTestPage() {
                   {/* Axis Indicators (0-8, skipping 9 which is treated as HAT) */}
                   {Array.from({ length: 9 }, (_, i) => i).map((axisIndex) => {
                     const isActive = activeInputs.has(`axis-${axisIndex}`);
-                    const axisInfo = X52_BUTTONS[`${axisIndex}-axis`];
+                    const axisInfo = X52_LOOKUP[`${axisIndex}-axis`];
                     return (
                       <div
                         key={`axis-${axisIndex}`}
@@ -751,7 +437,7 @@ export default function HOTASTestPage() {
                             >
                               <Group justify="space-between" mb="xs">
                                 <Text size="sm" fw={600}>
-                                  {X52_BUTTONS[`${index}-axis`]?.name || `Axis ${index}`}
+                                  {X52_LOOKUP[`${index}-axis`]?.name || `Axis ${index}`}
                                 </Text>
                                 <Badge color="cyan">{value}</Badge>
                               </Group>
@@ -915,7 +601,7 @@ export default function HOTASTestPage() {
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
-                            {Object.entries(X52_BUTTONS)
+                            {Object.entries(X52_LOOKUP)
                               .filter(([_, btn]) => btn.type !== 'axis')
                               .map(([index, btn]) => (
                                 <Table.Tr
@@ -964,7 +650,8 @@ export default function HOTASTestPage() {
                         {/* All Buttons (0-29) */}
                         {Array.from({ length: 30 }, (_, i) => i).map((btnIndex) => {
                           const isActive = activeInputs.has(`button-${btnIndex}`);
-                          const btnInfo = X52_BUTTONS[btnIndex];
+                          const btnInfo = X52_LOOKUP[btnIndex];
+                          const displayNumber = getDisplayButtonNumber(btnIndex);
                           return (
                             <Box
                               key={`ref-btn-${btnIndex}`}
@@ -985,7 +672,7 @@ export default function HOTASTestPage() {
                                 fw={isActive ? 700 : 600}
                                 style={{ color: isActive ? '#00d9ff' : 'rgba(255, 255, 255, 0.8)' }}
                               >
-                                {btnIndex + 1}: {btnInfo?.name || `Button ${btnIndex + 1}`}
+                                {displayNumber}: {btnInfo?.name || `Button ${displayNumber}`}
                               </Text>
                               {btnInfo?.code && (
                                 <Text
@@ -1002,7 +689,7 @@ export default function HOTASTestPage() {
                         {/* All Axes (0-8, skipping 9 which is treated as HAT) */}
                         {Array.from({ length: 9 }, (_, i) => i).map((axisIndex) => {
                           const isActive = activeInputs.has(`axis-${axisIndex}`);
-                          const axisInfo = X52_BUTTONS[`${axisIndex}-axis`];
+                          const axisInfo = X52_LOOKUP[`${axisIndex}-axis`];
                           return (
                             <Box
                               key={`ref-axis-${axisIndex}`}
@@ -1041,7 +728,7 @@ export default function HOTASTestPage() {
                         {['9-hat-n', '9-hat-ne', '9-hat-e', '9-hat-se', '9-hat-s', '9-hat-sw', '9-hat-w', '9-hat-nw'].map((hatDir) => {
                           const isActive = activeInputs.has(`button-${hatDir}`);
                           const dirLabel = hatDir.split('-').pop().toUpperCase();
-                          const hatInfo = X52_BUTTONS[hatDir];
+                          const hatInfo = X52_LOOKUP[hatDir];
                           return (
                             <Box
                               key={`ref-${hatDir}`}

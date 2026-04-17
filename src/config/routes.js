@@ -72,7 +72,7 @@ export const routeConfig = {
       color: 'orange',
     },
     {
-      label: '[TEST] /theme/hotas-test',
+      label: '[LEGACY] /theme/hotas-test -> /settings/hotas',
       path: '/theme/hotas-test',
       category: 'Theme Lab',
       color: 'yellow',
@@ -83,6 +83,12 @@ export const routeConfig = {
     {
       label: '/settings',
       path: '/settings',
+      category: 'Admin & Tools',
+      color: 'grape',
+    },
+    {
+      label: '/settings/hotas',
+      path: '/settings/hotas',
       category: 'Admin & Tools',
       color: 'grape',
     },

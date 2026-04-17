@@ -6,6 +6,7 @@ import AerobookPost from '../components/AerobookPost';
 import YouTubePlayer from '../components/YouTubePlayer';
 import { aeroBookContent, aeroBookCategories } from '../data/aeroBookContent';
 import { useAerobookStore } from '../stores/useAerobookStore';
+import DevTag from '../components/DevTag';
 
 export default function AerobookPage() {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ export default function AerobookPage() {
           <div>
             <Group gap="sm" mb="xs">
               <Text size="xl" fw={700} style={{ color: '#00d9ff', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                📸 Aerobook
+                <DevTag tag="APP02" />📸 Aerobook
               </Text>
               <Badge color="cyan" variant="light">
                 Verse Media

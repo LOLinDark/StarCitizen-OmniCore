@@ -6,7 +6,7 @@ import { routeConfig, getCategories } from '../config/routes';
 
 export default function DevPanel() {
   const navigate = useNavigate();
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
 
   const handleMouseDown = (e) => {
     if (e.target.closest('button') || e.target.closest('a')) return;
@@ -21,6 +21,7 @@ export default function DevPanel() {
       paper.style.top = (e.clientY - startY + window.scrollY) + 'px';
       paper.style.bottom = 'auto';
       paper.style.right = 'auto';
+      paper.style.transform = 'none';
     };
 
     const onMouseUp = () => {
@@ -38,8 +39,9 @@ export default function DevPanel() {
         radius="sm"
         style={{
           position: 'absolute',
-          bottom: '10px',
-          right: '10px',
+          top: '10px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           width: isMinimized ? 'auto' : '350px',
           maxHeight: isMinimized ? 'auto' : '600px',
           zIndex: 999,

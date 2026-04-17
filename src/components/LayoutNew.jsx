@@ -144,6 +144,7 @@ export default function Layout() {
           <Divider my="xs" label="Config" labelPosition="center" />
           <NavLink label="Settings" active={path === '/settings'} component={Link} to="/settings" />
           <NavLink label="Theme" active={isActive('/settings/theme')} component={Link} to="/settings/theme" />
+          <NavLink label="HOTAS" active={isActive('/settings/hotas')} component={Link} to="/settings/hotas" />
           <NavLink label="Error Log" active={isActive('/developer/errors')} component={Link} to="/developer/errors" />
           <NavLink label="Changes" active={isActive('/developer/changes')} component={Link} to="/developer/changes" />
           <NavLink label="About" active={isActive('/about')} component={Link} to="/about" />

@@ -2,6 +2,7 @@ import { Container, Text, SimpleGrid, Stack, Image, Group } from '@mantine/core'
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SciFiFrame } from '../components/ui';
+import DevTag from '../components/DevTag';
 
 const TOOLS = [
   {
@@ -150,7 +151,7 @@ export default function MainDashboardPage() {
       {/* Header */}
       <div style={{ marginBottom: '3rem' }}>
         <h1 className="scifi-heading" style={{ marginBottom: '0.5rem', fontSize: '2rem', margin: 0 }}>
-          Verse Operations Hub
+          <DevTag tag="APP01" />Verse Operations Hub
         </h1>
         <Text c="dimmed" size="sm" style={{ letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '0.5rem' }}>
           Access your tools and resources

@@ -12,6 +12,7 @@ import { StateIndicator } from './StateIndicator';
  * @param {Function} props.setSortOrder - Callback to change sort order
  * @param {Object} props.colors - Theme colors { headerBg, headerBorder, headerText, featureText, tableRowBg, rowBorderColor, alternateRowBg }
  * @param {Function} props.getRowBackground - Optional function to determine row background based on binding
+ * @param {Function} props.isBindingLive - Optional function to determine if a row matches current live HOTAS input
  */
 export const HOTASTable = ({
   sortedBindings,
@@ -21,6 +22,7 @@ export const HOTASTable = ({
   setSortOrder,
   colors,
   getRowBackground,
+  isBindingLive,
 }) => {
   const handleHeaderClick = (column) => {
     if (sortBy === column) {
@@ -76,18 +78,33 @@ export const HOTASTable = ({
                 }}
                 onClick={() => handleHeaderClick('primaryKey')}
               >
-                Primary Key {sortBy === 'primaryKey' && (sortOrder === 'asc' ? '↑' : '↓')}
+                Default {sortBy === 'primaryKey' && (sortOrder === 'asc' ? '↑' : '↓')}
               </Table.Th>
               <Table.Th
                 style={{
-                  color: colors.alternativeHeaderColor,
+                  cursor: 'pointer',
+                  color: '#ff9800',
                   padding: '1rem',
                   fontWeight: 600,
-                  borderBottom: colors.alternativeBorder,
-                  textShadow: colors.alternativeHeaderShadow,
+                  borderBottom: '1px solid #ffb74d',
+                  textShadow: undefined,
                 }}
+                onClick={() => handleHeaderClick('keyboardBinding')}
               >
-                Alternative
+                ⌨️ Keyboard/Mouse {sortBy === 'keyboardBinding' && (sortOrder === 'asc' ? '↑' : '↓')}
+              </Table.Th>
+              <Table.Th
+                style={{
+                  cursor: 'pointer',
+                  color: '#e91e63',
+                  padding: '1rem',
+                  fontWeight: 600,
+                  borderBottom: '1px solid #f48fb1',
+                  textShadow: undefined,
+                }}
+                onClick={() => handleHeaderClick('hotasBinding')}
+              >
+                🎮 HOTAS {sortBy === 'hotasBinding' && (sortOrder === 'asc' ? '↑' : '↓')}
               </Table.Th>
               <Table.Th
                 style={{
@@ -116,19 +133,26 @@ export const HOTASTable = ({
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {sortedBindings.map((binding) => (
-              <Table.Tr
-                key={binding.id}
-                style={{
-                  background: getRowBackground ? getRowBackground(binding) : colors.rowBg,
-                  borderBottom: `1px solid ${colors.rowBorderColor}`,
-                }}
-              >
+            {sortedBindings.map((binding) => {
+              const rowIsLive = isBindingLive ? isBindingLive(binding) : false;
+              const baseRowBg = getRowBackground ? getRowBackground(binding) : colors.rowBg;
+
+              return (
+                <Table.Tr
+                  key={binding.id}
+                  style={{
+                    background: rowIsLive ? '#ecfff4' : baseRowBg,
+                    borderBottom: rowIsLive
+                      ? '1px solid #66bb6a'
+                      : `1px solid ${colors.rowBorderColor}`,
+                    boxShadow: rowIsLive ? 'inset 0 0 0 1px #66bb6a' : undefined,
+                  }}
+                >
                 <Table.Td style={{ padding: '1rem' }}>
                   <Tooltip label={binding.description}>
                     <Text
                       size="sm"
-                      fw={500}
+                      fw={rowIsLive ? 700 : 500}
                       style={{
                         color: colors.featureText,
                         cursor: 'help',
@@ -140,28 +164,52 @@ export const HOTASTable = ({
                   </Tooltip>
                 </Table.Td>
                 <Table.Td style={{ padding: '1rem' }}>
-                  <Badge
-                    style={{
-                      backgroundColor: colors.primaryKeyBadgeBg,
-                      color: colors.primaryKeyBadgeColor,
-                      border: colors.primaryKeyBadgeBorder,
-                    }}
-                    size="lg"
-                  >
-                    {binding.primaryKey}
-                  </Badge>
-                </Table.Td>
-                <Table.Td style={{ padding: '1rem' }}>
-                  {binding.secondaryKey ? (
+                  {binding.primaryKey ? (
                     <Badge
                       style={{
-                        backgroundColor: colors.alternativeBadgeBg,
-                        color: colors.alternativeBadgeColor,
-                        border: colors.alternativeBadgeBorder,
+                        backgroundColor: colors.primaryKeyBadgeBg,
+                        color: colors.primaryKeyBadgeColor,
+                        border: colors.primaryKeyBadgeBorder,
                       }}
                       size="sm"
                     >
-                      {binding.secondaryKey}
+                      {binding.primaryKey}
+                    </Badge>
+                  ) : (
+                    <Text size="xs" style={{ color: colors.emptyKeyColor }}>
+                      —
+                    </Text>
+                  )}
+                </Table.Td>
+                <Table.Td style={{ padding: '1rem' }}>
+                  {binding.keyboardBinding ? (
+                    <Badge
+                      style={{
+                        backgroundColor: '#fff3e0',
+                        color: '#e65100',
+                        border: '1px solid #ffb74d',
+                      }}
+                      size="sm"
+                    >
+                      {binding.keyboardBinding}
+                    </Badge>
+                  ) : (
+                    <Text size="xs" style={{ color: colors.emptyKeyColor }}>
+                      —
+                    </Text>
+                  )}
+                </Table.Td>
+                <Table.Td style={{ padding: '1rem' }}>
+                  {binding.hotasBinding ? (
+                    <Badge
+                      style={{
+                        backgroundColor: '#fce4ec',
+                        color: '#c2185b',
+                        border: '1px solid #f48fb1',
+                      }}
+                      size="sm"
+                    >
+                      {binding.hotasBinding}
                     </Badge>
                   ) : (
                     <Text size="xs" style={{ color: colors.emptyKeyColor }}>
@@ -175,10 +223,18 @@ export const HOTASTable = ({
                   </Text>
                 </Table.Td>
                 <Table.Td style={{ padding: '1rem' }}>
-                  <StateIndicator changed={binding.changed} pendingApply={binding.pendingApply} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <StateIndicator changed={binding.changed} pendingApply={binding.pendingApply} />
+                    {rowIsLive && (
+                      <Badge color="green" size="xs" variant="filled">
+                        LIVE
+                      </Badge>
+                    )}
+                  </div>
                 </Table.Td>
               </Table.Tr>
-            ))}
+              );
+            })}
           </Table.Tbody>
         </Table>
       </div>

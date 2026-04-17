@@ -39,7 +39,7 @@ const Squadron42Detail = lazy(() => import('./pages/theme/Squadron42Detail'));
 const HOTASConfigPage = lazy(() => import('./pages/theme/HOTASConfigPage'));
 const HOTASConfigPageDark = lazy(() => import('./pages/theme/HOTASConfigPageDark'));
 const HOTASConfigPageToggle = lazy(() => import('./pages/theme/HOTASConfigPageToggle'));
-const HOTASTestPage = lazy(() => import('./pages/theme/HOTASTestPage'));
+const HOTASTestPage = lazy(() => import('./pages/settings/HOTASTestPage'));
 
 function LazyFallback() {
   return <Center h={200}><Loader color="cyan" type="dots" /></Center>;
@@ -81,7 +81,7 @@ function App() {
         <Route path="/theme/hotas-config" element={<Lazy Component={HOTASConfigPage} />} />
         <Route path="/theme/hotas-config-dark" element={<Lazy Component={HOTASConfigPageDark} />} />
         <Route path="/theme/hotas-config-toggle" element={<Lazy Component={HOTASConfigPageToggle} />} />
-        <Route path="/theme/hotas-test" element={<Lazy Component={HOTASTestPage} />} />
+        <Route path="/theme/hotas-test" element={<Navigate to="/settings/hotas" replace />} />
 
         {/* Login and Dashboard Routes */}
         <Route path="/login" element={<RSILoginPage onComplete={() => { completeWelcome(); window.location.href = '/'; }} />} />
@@ -110,6 +110,7 @@ function App() {
           <Route path="admin/rate-limits" element={<Lazy Component={RateLimitPage} />} />
           <Route path="admin/history" element={<Lazy Component={HistoryPage} />} />
           <Route path="settings" element={<Lazy Component={SettingsPage} />} />
+          <Route path="settings/hotas" element={<Lazy Component={HOTASTestPage} />} />
           <Route path="settings/theme" element={<Lazy Component={ThemePage} />} />
           <Route path="developer" element={<Lazy Component={DeveloperPage} />} />
           <Route path="developer/context" element={<Lazy Component={DeveloperContextIndexPage} />} />

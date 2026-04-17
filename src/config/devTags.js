@@ -54,7 +54,7 @@ const devTags = {
   HC03:      { label: 'HOTAS Config (Dark)',     path: '/theme/hotas-config-dark',    file: 'pages/theme/HOTASConfigPageDark.jsx' },
   HC04:      { label: 'HOTAS Config (Toggle)',   path: '/theme/hotas-config-toggle',  file: 'pages/theme/HOTASConfigPageToggle.jsx' },
   HC05:      { label: 'HOTAS Main',              path: '/hotas-config',               file: 'pages/HOTASConfigMainPage.jsx' },
-  'HC-TEST': { label: 'HOTAS Input Test Lab',    path: '/theme/hotas-test',           file: 'pages/theme/HOTASTestPage.jsx' },
+  'HC-TEST': { label: 'HOTAS Input Test Lab',    path: '/settings/hotas',             file: 'pages/settings/HOTASTestPage.jsx' },
   TL01:      { label: 'Theme Lab Landing',       path: '/theme',                      file: 'pages/ThemePage.jsx' },
 };
 

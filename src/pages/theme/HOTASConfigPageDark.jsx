@@ -17,6 +17,7 @@ import { HOTASTable } from '../../components/HOTASTable';
 import { StateIndicator } from '../../components/StateIndicator';
 import { useHOTASFiltering } from '../../hooks/useHOTASFiltering';
 import { shipControlsCategories } from '../../data/starcitizen-keybindings';
+import DevTag from '../../components/DevTag';
 
 export default function HOTASConfigPageDark() {
   const [selectedProfile, setSelectedProfile] = useState('');
@@ -137,7 +138,7 @@ export default function HOTASConfigPageDark() {
                 textShadow: `0 0 10px ${colors.primaryGlow}`,
               }}
             >
-              [HC03] HOTAS Configuration
+              <DevTag tag="HC03" />HOTAS Configuration
             </Text>
             <Text
               size="sm"

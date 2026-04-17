@@ -6,6 +6,7 @@ import SciFiFrame from '../components/ui/SciFiFrame';
 import ChecklistSection from '../components/ChecklistSection';
 import { onboardingChecklist, getTotalTaskCount } from '../data/onboardingChecklist';
 import { useOnboardingStore } from '../stores/useOnboardingStore';
+import DevTag from '../components/DevTag';
 
 export default function OnboardingChecklistPage() {
   const navigate = useNavigate();
@@ -59,7 +60,7 @@ export default function OnboardingChecklistPage() {
                       letterSpacing: '0.1em',
                     }}
                   >
-                    🚀 Welcome to the Verse
+                    <DevTag tag="APP03" />🚀 Welcome to the Verse
                   </Text>
                   <Text size="sm" c="dimmed">
                     Complete this orientation checklist to get the most out of your Star Citizen journey. Each section builds on the last.

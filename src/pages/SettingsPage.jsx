@@ -1,9 +1,11 @@
 import { Container, Title, Stack, Text, Tabs, Card, NumberInput, Button, Alert, Select } from '@mantine/core';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost, appendErrorLog, clearOmniCoreStorage, useSettingsStore } from '../platform-core';
 import DevTag from '../components/DevTag';
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const costThreshold = useSettingsStore((s) => s.costThreshold);
   const setCostThreshold = useSettingsStore((s) => s.setCostThreshold);
   const defaultAI = useSettingsStore((s) => s.defaultAI);
@@ -91,6 +93,15 @@ export default function SettingsPage() {
 
         <Tabs.Panel value="general" pt="md">
           <Stack gap="md">
+            <Card withBorder>
+              <Title order={3} mb="md">HOTAS</Title>
+              <Text size="sm" c="dimmed" mb="md">
+                Open HOTAS connection, live input, and configuration tools.
+              </Text>
+              <Button onClick={() => navigate('/settings/hotas')}>
+                Open HOTAS Settings
+              </Button>
+            </Card>
             <Card withBorder>
               <Title order={3} mb="md">AI Provider</Title>
               <Text size="sm" c="dimmed" mb="md">Select the default AI provider for OMNI-CORE</Text>

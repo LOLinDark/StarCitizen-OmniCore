@@ -2,6 +2,7 @@ import { Container, Stack, Text, Badge, Card, Group, Grid, Button, SimpleGrid } 
 import { Link } from 'react-router-dom';
 import { getAllContexts } from '../data/developerContext';
 import { SciFiFrame } from '../components/ui';
+import DevTag from '../components/DevTag';
 
 export default function DeveloperContextIndexPage() {
   const contexts = getAllContexts();
@@ -63,7 +64,7 @@ export default function DeveloperContextIndexPage() {
       <Stack gap="xl">
         {/* Header */}
         <div>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>🗂️ Developer Context Index</h1>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="DEV02" />🗂️ Developer Context Index</h1>
           <Text c="dimmed">Overview of all pages, their status, docs, and tasks</Text>
           <Text size="sm" c="dimmed" mt="xs">
             💡 Tip: Developer notes appear on each page when Dev Mode is enabled. Toggle it in the header menu.

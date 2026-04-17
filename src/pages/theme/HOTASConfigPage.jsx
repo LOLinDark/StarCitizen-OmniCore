@@ -14,6 +14,7 @@ import {
 } from '@mantine/core';
 import { IconSearch, IconArrowUp, IconArrowDown } from '@tabler/icons-react';
 import { SciFiFrame } from '../../components/ui';
+import DevTag from '../../components/DevTag';
 
 // Sample generic data for demo
 const SAMPLE_DATA = [
@@ -102,12 +103,7 @@ export default function HOTASConfigPage() {
                 marginBottom: '0.5rem',
               }}
             >
-              [HC01] Data Table Demo
-              {import.meta.env.DEV && (
-                <span style={{ fontSize: '0.6em', marginLeft: '0.5em', color: '#ff9800' }}>
-                  (DEV MODE - GENERIC VIEW)
-                </span>
-              )}
+              <DevTag tag="HC01" />Data Table Demo
             </Text>
             <Text size="sm" style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
               Generic table view with search, filtering, and sorting capabilities
