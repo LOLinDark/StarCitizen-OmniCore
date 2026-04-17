@@ -1,4 +1,4 @@
-const CACHE_NAME = 'omni-core-v1';
+const CACHE_NAME = 'omni-core-v8';
 const urlsToCache = [
   '/',
   '/index.html',

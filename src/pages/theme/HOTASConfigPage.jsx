@@ -11,7 +11,7 @@ import {
   Box,
   Badge,
 } from '@mantine/core';
-import { IconSearch, IconFilter, IconDownload, IconUpload, IconFolderOpen } from '@tabler/icons-react';
+import { IconSearch, IconFilter, IconFolderOpen } from '@tabler/icons-react';
 import { SciFiFrame, SciFiBackground } from '../../components/ui';
 import { HOTASTable } from '../../components/HOTASTable';
 import { StateIndicator } from '../../components/StateIndicator';
@@ -195,7 +195,7 @@ export default function HOTASConfigPage() {
               label="Load Game Profile"
               placeholder={profilesLoading ? 'Loading profiles...' : 'Select a profile from Star Citizen'}
               value={selectedProfile}
-              onChange={(value) => setSelectedProfile(value)}
+              onChange={handleLoadProfile}
               data={profiles.map(p => ({ value: p.name, label: p.name }))}
               searchable
               clearable
@@ -208,22 +208,6 @@ export default function HOTASConfigPage() {
 
             {/* Controls Group */}
             <Group gap="xs" align="flex-end">
-              <Button
-                variant="filled"
-                color="cyan"
-                size="sm"
-                leftSection={<IconDownload size={16} />}
-              >
-                Export XML
-              </Button>
-              <Button
-                variant="outline"
-                color="cyan"
-                size="sm"
-                leftSection={<IconUpload size={16} />}
-              >
-                Import XML
-              </Button>
               <Button
                 variant="outline"
                 color="cyan"

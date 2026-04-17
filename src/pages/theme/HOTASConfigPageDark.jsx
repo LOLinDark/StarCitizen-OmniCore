@@ -11,7 +11,7 @@ import {
   Box,
   Badge,
 } from '@mantine/core';
-import { IconSearch, IconFilter, IconDownload, IconUpload, IconFolderOpen } from '@tabler/icons-react';
+import { IconSearch, IconFilter, IconFolderOpen } from '@tabler/icons-react';
 import { SciFiFrame } from '../../components/ui';
 import { HOTASTable } from '../../components/HOTASTable';
 import { StateIndicator } from '../../components/StateIndicator';
@@ -190,28 +190,6 @@ export default function HOTASConfigPageDark() {
 
             {/* Controls Group */}
             <Group gap="xs" align="flex-end">
-              <Button
-                variant="filled"
-                style={{
-                  backgroundColor: colors.primary,
-                  color: '#000000',
-                }}
-                size="sm"
-                leftSection={<IconDownload size={16} />}
-              >
-                Export XML
-              </Button>
-              <Button
-                variant="outline"
-                style={{
-                  borderColor: colors.accent,
-                  color: colors.accent,
-                }}
-                size="sm"
-                leftSection={<IconUpload size={16} />}
-              >
-                Import XML
-              </Button>
               <Button
                 variant="outline"
                 style={{

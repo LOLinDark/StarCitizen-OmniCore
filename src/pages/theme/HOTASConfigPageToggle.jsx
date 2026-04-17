@@ -12,7 +12,7 @@ import {
   SegmentedControl,
   Badge,
 } from '@mantine/core';
-import { IconSearch, IconFilter, IconDownload, IconUpload, IconMoon, IconSun } from '@tabler/icons-react';
+import { IconSearch, IconFilter, IconMoon, IconSun, IconFolderOpen } from '@tabler/icons-react';
 import { SciFiFrame } from '../../components/ui';
 import { HOTASTable } from '../../components/HOTASTable';
 import { StateIndicator } from '../../components/StateIndicator';
@@ -225,29 +225,6 @@ export default function HOTASConfigPageToggle() {
 
             {/* Controls Group */}
             <Group gap="xs" align="flex-end">
-              <Button
-                variant={theme === 'light' ? 'filled' : 'outline'}
-                style={{
-                  backgroundColor: theme === 'light' ? c.primary : 'transparent',
-                  borderColor: c.primary,
-                  color: theme === 'light' ? '#ffffff' : c.primary,
-                }}
-                size="sm"
-                leftSection={<IconDownload size={16} />}
-              >
-                Export XML
-              </Button>
-              <Button
-                variant="outline"
-                style={{
-                  borderColor: c.primary,
-                  color: c.primary,
-                }}
-                size="sm"
-                leftSection={<IconUpload size={16} />}
-              >
-                Import XML
-              </Button>
               <Button
                 variant="outline"
                 style={{
