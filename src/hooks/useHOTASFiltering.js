@@ -24,13 +24,8 @@ export const useHOTASFiltering = (selectedCategory, searchQuery, sortBy, sortOrd
   // Sort keybindings
   const sortedBindings = useMemo(() => {
     const sorted = [...filteredBindings].sort((a, b) => {
-      let aVal = a[sortBy];
-      let bVal = b[sortBy];
-
-      if (typeof aVal === 'string') {
-        aVal = aVal.toLowerCase();
-        bVal = bVal.toLowerCase();
-      }
+      const aVal = String(a?.[sortBy] ?? '').toLowerCase();
+      const bVal = String(b?.[sortBy] ?? '').toLowerCase();
 
       if (sortOrder === 'asc') {
         return aVal > bVal ? 1 : -1;

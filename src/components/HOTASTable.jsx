@@ -2,6 +2,14 @@ import { Table, Badge, Text, Tooltip } from '@mantine/core';
 import { SciFiFrame } from './ui';
 import { StateIndicator } from './StateIndicator';
 
+// Pulse animation for listening indicator
+const pulseStyle = `
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+`;
+
 /**
  * Reusable HOTAS table component with sorting and theme customization
  * @param {Object} props
@@ -23,6 +31,10 @@ export const HOTASTable = ({
   colors,
   getRowBackground,
   isBindingLive,
+  showStatusColumn = true,
+  onStartHotasCapture,
+  activeCaptureBindingId = null,
+  captureProgress = 0,
 }) => {
   const handleHeaderClick = (column) => {
     if (sortBy === column) {
@@ -34,7 +46,9 @@ export const HOTASTable = ({
   };
 
   return (
-    <SciFiFrame variant="corners" cornerLength={12} strokeWidth={1}>
+    <>
+      <style>{pulseStyle}</style>
+      <SciFiFrame variant="corners" cornerLength={12} strokeWidth={1}>
       <div
         style={{
           overflowX: 'auto',
@@ -119,23 +133,27 @@ export const HOTASTable = ({
               >
                 Category {sortBy === 'category' && (sortOrder === 'asc' ? '↑' : '↓')}
               </Table.Th>
-              <Table.Th
-                style={{
-                  color: colors.statusHeaderColor,
-                  padding: '1rem',
-                  fontWeight: 600,
-                  borderBottom: colors.statusBorder,
-                  textShadow: colors.statusHeaderShadow,
-                }}
-              >
-                Status
-              </Table.Th>
+              {showStatusColumn && (
+                <Table.Th
+                  style={{
+                    color: colors.statusHeaderColor,
+                    padding: '1rem',
+                    fontWeight: 600,
+                    borderBottom: colors.statusBorder,
+                    textShadow: colors.statusHeaderShadow,
+                  }}
+                >
+                  Status
+                </Table.Th>
+              )}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
             {sortedBindings.map((binding) => {
               const rowIsLive = isBindingLive ? isBindingLive(binding) : false;
               const baseRowBg = getRowBackground ? getRowBackground(binding) : colors.rowBg;
+              const isCapturingThis = activeCaptureBindingId === binding.id;
+              const remainingSeconds = Math.max(0, Math.ceil(captureProgress * 3));
 
               return (
                 <Table.Tr
@@ -149,19 +167,26 @@ export const HOTASTable = ({
                   }}
                 >
                 <Table.Td style={{ padding: '1rem' }}>
-                  <Tooltip label={binding.description}>
-                    <Text
-                      size="sm"
-                      fw={rowIsLive ? 700 : 500}
-                      style={{
-                        color: colors.featureText,
-                        cursor: 'help',
-                        textShadow: colors.featureTextShadow,
-                      }}
-                    >
-                      {binding.feature}
-                    </Text>
-                  </Tooltip>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Tooltip label={binding.description}>
+                      <Text
+                        size="sm"
+                        fw={rowIsLive ? 700 : 500}
+                        style={{
+                          color: colors.featureText,
+                          cursor: 'help',
+                          textShadow: colors.featureTextShadow,
+                        }}
+                      >
+                        {binding.feature}
+                      </Text>
+                    </Tooltip>
+                    {!showStatusColumn && rowIsLive && (
+                      <Badge color="green" size="xs" variant="filled">
+                        LIVE
+                      </Badge>
+                    )}
+                  </div>
                 </Table.Td>
                 <Table.Td style={{ padding: '1rem' }}>
                   {binding.primaryKey ? (
@@ -199,39 +224,92 @@ export const HOTASTable = ({
                     </Text>
                   )}
                 </Table.Td>
-                <Table.Td style={{ padding: '1rem' }}>
-                  {binding.hotasBinding ? (
-                    <Badge
+                <Table.Td
+                  style={{
+                    padding: '0.65rem 1rem',
+                    position: 'relative',
+                    cursor: onStartHotasCapture ? 'context-menu' : 'default',
+                    userSelect: 'none',
+                    background: isCapturingThis ? 'rgba(106, 27, 154, 0.15)' : onStartHotasCapture ? 'rgba(233, 30, 99, 0.03)' : 'transparent',
+                    border: isCapturingThis ? '2px solid #6a1b9a' : onStartHotasCapture ? '1px solid rgba(233, 30, 99, 0.3)' : 'none',
+                    borderRadius: '4px',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!onStartHotasCapture || isCapturingThis) return;
+                    e.currentTarget.style.background = 'rgba(233, 30, 99, 0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(233, 30, 99, 0.6)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!onStartHotasCapture || isCapturingThis) return;
+                    e.currentTarget.style.background = 'rgba(233, 30, 99, 0.03)';
+                    e.currentTarget.style.borderColor = 'rgba(233, 30, 99, 0.3)';
+                  }}
+                  onContextMenu={(e) => {
+                    if (!onStartHotasCapture) return;
+                    e.preventDefault();
+                    onStartHotasCapture(binding.id);
+                  }}
+                  title={isCapturingThis ? 'Listening for HOTAS input...' : 'Right-click to assign HOTAS input'}
+                >
+                  {isCapturingThis && (
+                    <div
                       style={{
-                        backgroundColor: '#fce4ec',
-                        color: '#c2185b',
-                        border: '1px solid #f48fb1',
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: `${captureProgress * 100}%`,
+                        background: 'rgba(106, 27, 154, 0.3)',
+                        pointerEvents: 'none',
+                        transition: 'width 0.05s linear',
+                        borderRadius: '2px',
                       }}
-                      size="sm"
-                    >
-                      {binding.hotasBinding}
-                    </Badge>
-                  ) : (
-                    <Text size="xs" style={{ color: colors.emptyKeyColor }}>
-                      —
-                    </Text>
+                    />
                   )}
+                  <div style={{ position: 'relative', zIndex: 1, minHeight: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {isCapturingThis ? (
+                      <>
+                        <span style={{ fontSize: '1.2rem', animation: 'pulse 1.5s ease-in-out infinite' }}>●</span>
+                        <Text size="xs" fw={700} style={{ color: '#6a1b9a' }}>
+                          Listening... {remainingSeconds}s
+                        </Text>
+                      </>
+                    ) : binding.hotasBinding ? (
+                      <Badge
+                        style={{
+                          backgroundColor: '#fce4ec',
+                          color: '#c2185b',
+                          border: '1px solid #f48fb1',
+                        }}
+                        size="sm"
+                      >
+                        {binding.hotasBinding}
+                      </Badge>
+                    ) : (
+                      <Text size="xs" style={{ color: colors.emptyKeyColor }}>
+                        —
+                      </Text>
+                    )}
+                  </div>
                 </Table.Td>
                 <Table.Td style={{ padding: '1rem' }}>
                   <Text size="xs" style={{ color: colors.categoryText, textShadow: colors.categoryTextShadow }}>
                     {binding.category}
                   </Text>
                 </Table.Td>
-                <Table.Td style={{ padding: '1rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <StateIndicator changed={binding.changed} pendingApply={binding.pendingApply} />
-                    {rowIsLive && (
-                      <Badge color="green" size="xs" variant="filled">
-                        LIVE
-                      </Badge>
-                    )}
-                  </div>
-                </Table.Td>
+                {showStatusColumn && (
+                  <Table.Td style={{ padding: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <StateIndicator changed={binding.changed} pendingApply={binding.pendingApply} />
+                      {rowIsLive && (
+                        <Badge color="green" size="xs" variant="filled">
+                          LIVE
+                        </Badge>
+                      )}
+                    </div>
+                  </Table.Td>
+                )}
               </Table.Tr>
               );
             })}
@@ -239,5 +317,6 @@ export const HOTASTable = ({
         </Table>
       </div>
     </SciFiFrame>
+    </>
   );
 };

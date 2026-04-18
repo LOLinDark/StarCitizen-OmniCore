@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Container,
   Stack,
@@ -19,11 +19,13 @@ import { useHOTASFiltering } from '../hooks/useHOTASFiltering';
 import { shipKeybindings, shipControlsCategories } from '../data/starcitizen-keybindings';
 import { logitechX52ProOptimal } from '../utils/defaultProfiles';
 import { StarCitizenProfileParser } from '../utils/starCitizenProfileParser';
-import { starCitizenActionMapping, parseInputString, formatInputForDisplay } from '../utils/starCitizenActionMap';
+import { featureToStarCitizenAction, parseInputString, formatInputForDisplay } from '../utils/starCitizenActionMap';
 import { useHotasInput, LogitechX52Device } from '../libraries/hotas';
 import DevTag from '../components/DevTag';
 
 export default function HOTASConfigMainPage() {
+  const CAPTURE_WINDOW_MS = 3000;
+
   const [selectedProfile, setSelectedProfile] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +38,15 @@ export default function HOTASConfigMainPage() {
   const [searchByLiveInput, setSearchByLiveInput] = useState(false);
   const [profileName, setProfileName] = useState('');
   const [mergedBindings, setMergedBindings] = useState(null);
+  const [hotasOverrides, setHotasOverrides] = useState({});
+  const [captureBindingId, setCaptureBindingId] = useState(null);
+  const [captureProgress, setCaptureProgress] = useState(0);
+  const [xmlSaveStatus, setXmlSaveStatus] = useState('idle');
+  const [xmlSaveMessage, setXmlSaveMessage] = useState('');
+  const captureStartedAtRef = useRef(0);
+  const captureInitialSignatureRef = useRef('');
+  const isInitializedRef = useRef(false);
+  const savedOverridesRef = useRef(null);
   const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo } = useHotasInput({
     enabled: true,
     trackKeyboard: false,
@@ -44,12 +55,249 @@ export default function HOTASConfigMainPage() {
 
   const normalizeText = (value) => String(value || '').toLowerCase();
 
+  const getInputKind = useCallback((input) => {
+    if (!input) return '';
+    if (input.type === 'Button' || input.type === 'Axis') return input.type;
+
+    if (typeof input.index === 'string' && input.index.startsWith('9-hat-')) {
+      return 'Button';
+    }
+
+    const metaType = normalizeText(input.meta?.type);
+    if (metaType === 'button' || metaType === 'hat') return 'Button';
+    if (metaType === 'axis' || metaType === 'slider') return 'Axis';
+
+    if (typeof input.value === 'number') return 'Axis';
+    if (Number.isInteger(input.displayIndex) || Number.isInteger(input.index)) return 'Button';
+
+    return '';
+  }, []);
+
+  const getInputAction = useCallback((input) => {
+    if (!input) return '';
+    if (input.action) return input.action;
+
+    const kind = getInputKind(input);
+    if (kind === 'Axis') {
+      const numeric = Number(input.value);
+      return Number.isFinite(numeric) && Math.abs(numeric) >= 0.12 ? 'Engaged' : 'Released';
+    }
+
+    return '';
+  }, [getInputKind]);
+
+  const getInputSignature = useCallback((input) => {
+    if (!input) return '';
+    return [
+      getInputKind(input),
+      getInputAction(input),
+      input.index,
+      input.displayIndex,
+      input.name,
+      input.value,
+    ]
+      .map((v) => String(v ?? ''))
+      .join('|');
+  }, [getInputAction, getInputKind]);
+
+  const formatHotasBindingFromInput = useCallback((input) => {
+    if (!input) return '';
+
+    const kind = getInputKind(input);
+
+    if (kind === 'Button') {
+      if (typeof input.index === 'string' && input.index.startsWith('9-hat-')) {
+        const dir = input.index.replace('9-hat-', '').toUpperCase();
+        return `POV HAT ${dir}`;
+      }
+      const displayNumber = Number.isInteger(input.displayIndex)
+        ? input.displayIndex
+        : (Number.isInteger(input.index) ? input.index + 1 : '?');
+      return `Button ${displayNumber}`;
+    }
+
+    if (kind === 'Axis') {
+      const axisIndex = Number.isInteger(input.index) ? input.index : '?';
+      const axisName = input.name || `Axis ${axisIndex}`;
+      return `Axis ${axisIndex} (${axisName})`;
+    }
+
+    return input.name || '';
+  }, [getInputKind]);
+
+  const formatHotasInputForXml = useCallback((input) => {
+    if (!input) return '';
+
+    const kind = getInputKind(input);
+    if (kind === 'Button') {
+      if (typeof input.index === 'string' && input.index.startsWith('9-hat-')) {
+        const dir = input.index.replace('9-hat-', '').toLowerCase();
+        return `js1_pov_${dir}`;
+      }
+
+      const buttonNumber = Number.isInteger(input.displayIndex)
+        ? input.displayIndex
+        : (Number.isInteger(input.index) ? input.index + 1 : null);
+
+      return Number.isInteger(buttonNumber) ? `js1_button${buttonNumber}` : '';
+    }
+
+    if (kind === 'Axis') {
+      const axisTokenByIndex = {
+        0: 'js1_x',
+        1: 'js1_y',
+        2: 'js1_z',
+        5: 'js1_rz',
+      };
+
+      if (Number.isInteger(input.index) && axisTokenByIndex[input.index]) {
+        return axisTokenByIndex[input.index];
+      }
+
+      const axisName = normalizeText(input.name);
+      if (axisName.includes('x axis')) return 'js1_x';
+      if (axisName.includes('y axis')) return 'js1_y';
+      if (axisName.includes('z axis')) return 'js1_z';
+      if (axisName.includes('z rotation')) return 'js1_rz';
+      if (axisName.includes('slider')) return 'js1_slider1';
+    }
+
+    return '';
+  }, [getInputKind]);
+
+  const isInputCapturable = useCallback((input) => {
+    if (!input) return false;
+
+    const kind = getInputKind(input);
+
+    if (kind === 'Button') {
+      // Button events from GamepadPoller omit `action`; use active input state
+      // so we only capture currently pressed buttons and ignore releases.
+      const inputKey = `button-${input.index}`;
+      return activeInputs.has(inputKey);
+    }
+
+    if (kind === 'Axis') {
+      const numeric = Number(input.value);
+      return Number.isFinite(numeric) && Math.abs(numeric) >= 0.12;
+    }
+
+    return false;
+  }, [activeInputs, getInputKind]);
+
+  const persistCapturedBindingToXml = useCallback(async (bindingId, input) => {
+    if (!selectedProfile || selectedProfile.startsWith('__ai_')) return;
+
+    const actionNames = featureToStarCitizenAction[bindingId] || [];
+    if (actionNames.length === 0) {
+      setXmlSaveStatus('error');
+      setXmlSaveMessage('No Star Citizen action mapping for this feature');
+      return;
+    }
+
+    const joystickInput = formatHotasInputForXml(input);
+    if (!joystickInput) {
+      setXmlSaveStatus('error');
+      setXmlSaveMessage('Captured input cannot be converted to XML token');
+      return;
+    }
+
+    try {
+      setXmlSaveStatus('saving');
+      setXmlSaveMessage('Writing profile XML...');
+
+      const response = await fetch(`/api/hotas/profile/${encodeURIComponent(selectedProfile)}/bindings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          actionNames,
+          joystickInput,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || `Failed to save XML (${response.status})`);
+      }
+
+      setXmlSaveStatus('saved');
+      setXmlSaveMessage(`Saved to XML: ${joystickInput}`);
+    } catch (error) {
+      setXmlSaveStatus('error');
+      setXmlSaveMessage(error.message || 'Failed to save profile XML');
+    }
+  }, [formatHotasInputForXml, selectedProfile]);
+
+  const startHotasCapture = useCallback((bindingId) => {
+    captureStartedAtRef.current = Date.now();
+    captureInitialSignatureRef.current = getInputSignature(lastHotasInput);
+    setCaptureBindingId(bindingId);
+    setCaptureProgress(1);
+  }, [getInputSignature, lastHotasInput]);
+
+  useEffect(() => {
+    if (!captureBindingId) return;
+
+    let rafId;
+    const animate = () => {
+      const elapsed = Date.now() - captureStartedAtRef.current;
+      const remaining = Math.max(0, 1 - (elapsed / CAPTURE_WINDOW_MS));
+      setCaptureProgress(remaining);
+
+      if (remaining <= 0) {
+        setCaptureBindingId(null);
+        return;
+      }
+
+      rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
+  }, [captureBindingId]);
+
+  useEffect(() => {
+    if (!captureBindingId || !lastHotasInput) return;
+
+    const elapsed = Date.now() - captureStartedAtRef.current;
+    if (elapsed > CAPTURE_WINDOW_MS || elapsed < 120) return;
+
+    const signature = getInputSignature(lastHotasInput);
+    if (!signature || signature === captureInitialSignatureRef.current) return;
+    if (!isInputCapturable(lastHotasInput)) return;
+
+    const formatted = formatHotasBindingFromInput(lastHotasInput);
+    if (!formatted) return;
+
+    const bindingId = captureBindingId;
+
+    setHotasOverrides((prev) => ({
+      ...prev,
+      [bindingId]: formatted,
+    }));
+
+    void persistCapturedBindingToXml(bindingId, lastHotasInput);
+
+    setCaptureBindingId(null);
+    setCaptureProgress(0);
+  }, [
+    captureBindingId,
+    lastHotasInput,
+    getInputSignature,
+    isInputCapturable,
+    formatHotasBindingFromInput,
+    persistCapturedBindingToXml,
+  ]);
+
   const isBindingLive = useCallback((binding) => {
     if (!binding?.hotasBinding || !lastHotasInput) return false;
 
     const hotasText = normalizeText(binding.hotasBinding);
+    const inputKind = getInputKind(lastHotasInput);
 
-    if (lastHotasInput.type === 'Button') {
+    if (inputKind === 'Button') {
       // POV HAT directions come through as string indices like "9-hat-ne".
       if (typeof lastHotasInput.index === 'string' && lastHotasInput.index.startsWith('9-hat-')) {
         const direction = lastHotasInput.index.replace('9-hat-', '');
@@ -66,7 +314,7 @@ export default function HOTASConfigMainPage() {
       return candidates.some((num) => new RegExp(`\\b(button|btn)\\s*${num}\\b`, 'i').test(hotasText));
     }
 
-    if (lastHotasInput.type === 'Axis') {
+    if (inputKind === 'Axis') {
       if (Number.isInteger(lastHotasInput.index) && /axis/i.test(hotasText)) {
         if (new RegExp(`\\baxis\\s*${lastHotasInput.index}\\b`, 'i').test(hotasText)) return true;
       }
@@ -76,25 +324,30 @@ export default function HOTASConfigMainPage() {
     }
 
     return false;
-  }, [lastHotasInput]);
+  }, [getInputKind, lastHotasInput]);
 
   const liveInputLabel = useMemo(() => {
     if (!lastHotasInput) return 'No live HOTAS input yet';
-    if (lastHotasInput.type === 'Button') {
+
+    const inputKind = getInputKind(lastHotasInput);
+
+    if (inputKind === 'Button') {
       if (typeof lastHotasInput.index === 'string') return lastHotasInput.name || lastHotasInput.index;
       const displayNumber = Number.isInteger(lastHotasInput.displayIndex)
         ? lastHotasInput.displayIndex
         : (Number.isInteger(lastHotasInput.index) ? lastHotasInput.index + 1 : '?');
       return `Button ${displayNumber}`;
     }
-    if (lastHotasInput.type === 'Axis') {
+
+    if (inputKind === 'Axis') {
       const numericValue = Number(lastHotasInput.value);
       return Number.isFinite(numericValue)
         ? `${lastHotasInput.name || 'Axis'} (${numericValue.toFixed(2)})`
         : (lastHotasInput.name || 'Axis movement');
     }
+
     return lastHotasInput.name || 'Input detected';
-  }, [lastHotasInput]);
+  }, [getInputKind, lastHotasInput]);
 
   // Load profiles from backend
   useEffect(() => {
@@ -124,6 +377,61 @@ export default function HOTASConfigMainPage() {
     loadProfiles();
   }, []);
 
+  // Restore persisted state from localStorage on mount
+  useEffect(() => {
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
+
+    try {
+      const savedState = localStorage.getItem('omnicore.hc05.state');
+      if (!savedState) return;
+
+      const { selectedProfile: savedProfile, selectedCategory: savedCategory, hotasOverrides: savedOverrides } = JSON.parse(savedState);
+      
+      if (savedCategory) {
+        setSelectedCategory(savedCategory);
+      }
+
+      // Store overrides in ref to be restored after profile loads
+      if (savedOverrides && typeof savedOverrides === 'object') {
+        savedOverridesRef.current = savedOverrides;
+      }
+
+      // Load profile - this will temporarily clear hotasOverrides
+      if (savedProfile) {
+        console.log('[HC05] Restoring profile from localStorage:', savedProfile);
+        handleLoadProfile(savedProfile);
+      }
+    } catch (error) {
+      console.error('[HC05] Error restoring state from localStorage:', error);
+    }
+  }, []);
+
+  // Restore hotasOverrides after profile has been loaded (mergedBindings changes)
+  useEffect(() => {
+    if (!isInitializedRef.current || !mergedBindings || !savedOverridesRef.current) return;
+
+    setHotasOverrides(savedOverridesRef.current);
+    savedOverridesRef.current = null;
+  }, [mergedBindings]);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (!isInitializedRef.current) return;
+    
+    try {
+      const stateToSave = {
+        selectedProfile,
+        selectedCategory,
+        hotasOverrides,
+      };
+      localStorage.setItem('omnicore.hc05.state', JSON.stringify(stateToSave));
+      console.log('[HC05] State saved to localStorage');
+    } catch (error) {
+      console.error('[HC05] Error saving state to localStorage:', error);
+    }
+  }, [selectedProfile, selectedCategory, hotasOverrides]);
+
   // Use shared filtering hook for defaults
   const hookResult = useHOTASFiltering(
     selectedCategory,
@@ -150,12 +458,15 @@ export default function HOTASConfigMainPage() {
       
       // Sort
       const sorted = [...results].sort((a, b) => {
-        let aVal = a[sortBy];
-        let bVal = b[sortBy];
-        if (typeof aVal === 'string') {
-          aVal = aVal.toLowerCase();
-          bVal = bVal.toLowerCase();
-        }
+        const aRaw = a?.[sortBy];
+        const bRaw = b?.[sortBy];
+
+        // Normalize null/undefined to empty string and compare as lowercase text.
+        // This avoids runtime errors when sorting columns like hotasBinding where
+        // many rows are intentionally unbound.
+        const aVal = String(aRaw ?? '').toLowerCase();
+        const bVal = String(bRaw ?? '').toLowerCase();
+
         if (sortOrder === 'asc') {
           return aVal > bVal ? 1 : -1;
         }
@@ -176,9 +487,21 @@ export default function HOTASConfigMainPage() {
     };
   }, [mergedBindings, selectedCategory, searchQuery, sortBy, sortOrder, hookResult]);
 
+  const effectiveBindings = useMemo(() => {
+    if (!unfilteredBindings?.length) return [];
+    return unfilteredBindings.map((binding) => {
+      const override = hotasOverrides[binding.id];
+      if (!override) return binding;
+      return {
+        ...binding,
+        hotasBinding: override,
+      };
+    });
+  }, [unfilteredBindings, hotasOverrides]);
+
   // Filter by bound/unbound status
   const sortedBindings = useMemo(() => {
-    let results = unfilteredBindings;
+    let results = effectiveBindings;
 
     if (searchByLiveInput) {
       results = lastHotasInput ? results.filter((binding) => isBindingLive(binding)) : [];
@@ -189,12 +512,12 @@ export default function HOTASConfigMainPage() {
     }
 
     return results;
-  }, [unfilteredBindings, showUnboundOnly, searchByLiveInput, lastHotasInput, isBindingLive]);
+  }, [effectiveBindings, showUnboundOnly, searchByLiveInput, lastHotasInput, isBindingLive]);
 
   const liveMatchedBindings = useMemo(() => {
     if (!lastHotasInput) return [];
-    return unfilteredBindings.filter((binding) => isBindingLive(binding));
-  }, [lastHotasInput, unfilteredBindings, isBindingLive]);
+    return effectiveBindings.filter((binding) => isBindingLive(binding));
+  }, [lastHotasInput, effectiveBindings, isBindingLive]);
 
   const inputAssignmentLabel = useMemo(() => {
     if (!lastHotasInput) return 'Unassigned';
@@ -258,6 +581,9 @@ export default function HOTASConfigMainPage() {
       setSelectedProfile('');
       setProfileName('');
       setMergedBindings(null);
+      setHotasOverrides({});
+      setXmlSaveStatus('idle');
+      setXmlSaveMessage('');
       return;
     }
 
@@ -304,6 +630,9 @@ export default function HOTASConfigMainPage() {
       console.log('[HC05] Loading AI-generated X52 Optimal profile');
       setSelectedProfile(profileName);
       setProfileName(logitechX52ProOptimal.profileName);
+      setHotasOverrides({});
+      setXmlSaveStatus('idle');
+      setXmlSaveMessage('');
       
       // Merge AI profile bindings with defaults
       const merged = shipKeybindings.map(binding => {
@@ -328,6 +657,8 @@ export default function HOTASConfigMainPage() {
     try {
       console.log(`[HC05] Loading profile: ${profileName}`);
       setSelectedProfile(profileName);
+      setXmlSaveStatus('idle');
+      setXmlSaveMessage('');
       const response = await fetch(`/api/hotas/profile/${profileName}`);
       if (!response.ok) throw new Error('Failed to load profile');
       const data = await response.json();
@@ -340,6 +671,7 @@ export default function HOTASConfigMainPage() {
       } else if (profileName) {
         setProfileName(profileName);
       }
+      setHotasOverrides({});
       
       // Parse XML and merge keybindings
       if (data.xmlContent) {
@@ -351,46 +683,59 @@ export default function HOTASConfigMainPage() {
           const allBindings = parser.getAllBindings();
           console.log('[HC05] Found bindings in profile:', allBindings.length);
           
-          // Create a map of Star Citizen action → { device, input }
+          // Create a map of actionName -> { keyboard, hotas }.
+          // We intentionally key by action name (not action map) because feature
+          // mappings are action-centric and profile exports can vary by map names.
           const profileBindingsMap = {};
           allBindings.forEach(binding => {
-            const key = `${binding.actionMapName}:${binding.actionName}`;
-            profileBindingsMap[key] = {
-              device: binding.device,
-              input: binding.input,
-              formatted: formatInputForDisplay(parseInputString(binding.input)),
-            };
+            const actionName = String(binding.actionName || '').toLowerCase();
+            if (!actionName) return;
+
+            const formatted = formatInputForDisplay(parseInputString(binding.input));
+            const existing = profileBindingsMap[actionName] || {};
+
+            if (binding.device === 'keyboard' || binding.device === 'mouse') {
+              existing.keyboard = formatted;
+            } else if (binding.device === 'joystick') {
+              existing.hotas = formatted;
+            }
+
+            profileBindingsMap[actionName] = existing;
           });
           
           console.log('[HC05] Profile bindings map created:', Object.keys(profileBindingsMap).length, 'actions');
           
           // Merge profile bindings into our keybindings
           const merged = shipKeybindings.map(binding => {
-            // Find if this feature has a mapping in Star Citizen
-            const scAction = starCitizenActionMapping[binding.id];
-            if (!scAction) {
-              console.log('[HC05] No SC action found for feature:', binding.id);
-              return binding; // Return unchanged if no mapping
-            }
-            
-            // Check if profile has a binding for this action
-            const profileKey = `${scAction.mapName}:${scAction.actionName}`;
-            const profileBinding = profileBindingsMap[profileKey];
-            
-            if (profileBinding) {
-              console.log(`[HC05] Merging binding for ${binding.id}:`, profileBinding.formatted, `(${profileBinding.device})`);
-              
-              // Separate keyboard and HOTAS bindings
-              const mergedBinding = { ...binding };
-              if (profileBinding.device === 'keyboard') {
-                mergedBinding.keyboardBinding = profileBinding.formatted;
-              } else if (profileBinding.device === 'joystick') {
-                mergedBinding.hotasBinding = profileBinding.formatted;
+            const candidateActions = featureToStarCitizenAction[binding.id] || [];
+            if (candidateActions.length === 0) return binding;
+
+            let mergedBinding = { ...binding };
+            let matched = false;
+
+            candidateActions.forEach((actionName) => {
+              const profileBinding = profileBindingsMap[String(actionName).toLowerCase()];
+              if (!profileBinding) return;
+
+              if (profileBinding.keyboard) {
+                mergedBinding.keyboardBinding = profileBinding.keyboard;
+                matched = true;
               }
-              
+
+              if (profileBinding.hotas) {
+                mergedBinding.hotasBinding = profileBinding.hotas;
+                matched = true;
+              }
+            });
+
+            if (matched) {
+              console.log(`[HC05] Merged profile binding for ${binding.id}:`, {
+                keyboardBinding: mergedBinding.keyboardBinding,
+                hotasBinding: mergedBinding.hotasBinding,
+              });
               return mergedBinding;
             }
-            
+
             return binding;
           });
           
@@ -549,6 +894,18 @@ export default function HOTASConfigMainPage() {
             <Badge color={gamepadConnected ? 'green' : 'gray'} variant="light" size="sm">
               {gamepadConnected ? `Live: ${liveInputLabel}` : 'HOTAS disconnected'}
             </Badge>
+            {selectedProfile && !selectedProfile.startsWith('__ai_') && xmlSaveStatus !== 'idle' && (
+              <Badge
+                color={xmlSaveStatus === 'saving' ? 'blue' : (xmlSaveStatus === 'saved' ? 'green' : 'red')}
+                variant="light"
+                size="sm"
+                title={xmlSaveMessage}
+              >
+                {xmlSaveStatus === 'saving'
+                  ? 'XML saving...'
+                  : (xmlSaveStatus === 'saved' ? 'XML saved' : 'XML save failed')}
+              </Badge>
+            )}
           </Group>
           <Text size="sm" fw={600}>
             {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
@@ -565,41 +922,11 @@ export default function HOTASConfigMainPage() {
           colors={colors}
           getRowBackground={getRowBackground}
           isBindingLive={isBindingLive}
+          showStatusColumn={false}
+          onStartHotasCapture={startHotasCapture}
+          activeCaptureBindingId={captureBindingId}
+          captureProgress={captureProgress}
         />
-
-        {/* Legend */}
-        <Box
-          style={{
-            background: 'rgba(0, 0, 0, 0.05)',
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            borderRadius: '8px',
-            padding: '1rem',
-          }}
-        >
-          <Text size="xs" fw={600} style={{ marginBottom: '0.5rem' }}>
-            Status Legend
-          </Text>
-          <SimpleGrid cols={3} spacing="sm">
-            <Group gap="xs">
-              <Badge color="green" variant="filled" size="sm">
-                ✓ Applied
-              </Badge>
-              <Text size="xs">Matches default</Text>
-            </Group>
-            <Group gap="xs">
-              <Badge color="orange" variant="filled" size="sm">
-                ◆ Changed
-              </Badge>
-              <Text size="xs">Modified by user</Text>
-            </Group>
-            <Group gap="xs">
-              <Badge color="yellow" variant="filled" size="sm">
-                ⧗ Pending
-              </Badge>
-              <Text size="xs">Will apply on exit</Text>
-            </Group>
-          </SimpleGrid>
-        </Box>
 
         {/* Notes Section */}
         <Box

@@ -20,7 +20,7 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { BedrockRuntimeClient, InvokeModelCommand, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { appendFileSync, readdirSync, readFileSync, statSync } from 'fs';
+import { appendFileSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 
@@ -591,6 +591,51 @@ function validateProfileName(name) {
   return name.substring(0, 100);
 }
 
+function escapeRegExp(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function validateJoystickInput(input) {
+  if (!input || typeof input !== 'string') return null;
+  // Accept Star Citizen joystick token format: js1_button14, js1_z, js1_pov_n, etc.
+  if (!/^js\d+_[a-z0-9_ ]+$/i.test(input)) return null;
+  return input.slice(0, 64);
+}
+
+function normalizeActionNames(actionNames) {
+  if (!Array.isArray(actionNames) || actionNames.length === 0) return [];
+  return actionNames
+    .filter((name) => typeof name === 'string')
+    .map((name) => name.trim())
+    .filter((name) => /^[a-z0-9_]+$/i.test(name));
+}
+
+function upsertJoystickRebind(xml, actionName, joystickInput) {
+  const actionPattern = new RegExp(
+    `(<action\\s+name="${escapeRegExp(actionName)}"\\s*>)([\\s\\S]*?)(</action>)`,
+    'i'
+  );
+
+  if (!actionPattern.test(xml)) {
+    return { xml, updated: false, found: false };
+  }
+
+  const updatedXml = xml.replace(actionPattern, (full, openTag, actionBody, closeTag) => {
+    const joystickRebindPattern = /<rebind\s+input="js\d+_[^"]*"\s*\/>/i;
+    if (joystickRebindPattern.test(actionBody)) {
+      const replacedBody = actionBody.replace(joystickRebindPattern, `<rebind input="${joystickInput}"/>`);
+      return `${openTag}${replacedBody}${closeTag}`;
+    }
+
+    // Preserve existing action content and append joystick rebind.
+    const separator = actionBody.endsWith('\n') ? '' : '\n';
+    const appendedBody = `${actionBody}${separator}   <rebind input="${joystickInput}"/>\n`;
+    return `${openTag}${appendedBody}${closeTag}`;
+  });
+
+  return { xml: updatedXml, updated: true, found: true };
+}
+
 app.get('/api/hotas/profiles', (req, res) => {
   try {
     if (!statSync(STAR_CITIZEN_MAPPINGS_PATH)) {
@@ -634,6 +679,67 @@ app.get('/api/hotas/profile/:profileName', (req, res) => {
   } catch (error) {
     log('HOTAS profile load error:', error.message);
     res.status(500).json({ error: 'Failed to load profile' });
+  }
+});
+
+app.post('/api/hotas/profile/:profileName/bindings', (req, res) => {
+  try {
+    const profileName = validateProfileName(req.params.profileName);
+    if (!profileName) {
+      return res.status(400).json({ error: 'Invalid profile name' });
+    }
+
+    const actionNames = normalizeActionNames(req.body?.actionNames);
+    const joystickInput = validateJoystickInput(req.body?.joystickInput);
+
+    if (actionNames.length === 0) {
+      return res.status(400).json({ error: 'No valid action names provided' });
+    }
+
+    if (!joystickInput) {
+      return res.status(400).json({ error: 'Invalid joystick input token' });
+    }
+
+    const filePath = join(STAR_CITIZEN_MAPPINGS_PATH, `${profileName}.xml`);
+
+    // SECURITY: Validate file path is within allowed directory.
+    if (!filePath.startsWith(STAR_CITIZEN_MAPPINGS_PATH)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const originalXml = readFileSync(filePath, 'utf-8');
+    let updatedXml = originalXml;
+    let updatedCount = 0;
+    let foundCount = 0;
+
+    actionNames.forEach((actionName) => {
+      const result = upsertJoystickRebind(updatedXml, actionName, joystickInput);
+      updatedXml = result.xml;
+      if (result.found) foundCount += 1;
+      if (result.updated) updatedCount += 1;
+    });
+
+    if (updatedCount === 0) {
+      return res.status(404).json({
+        error: 'No matching actions found in profile XML',
+        actionNames,
+      });
+    }
+
+    writeFileSync(filePath, updatedXml, 'utf-8');
+    log(`HOTAS: Updated ${updatedCount} joystick rebind(s) in profile "${profileName}" -> ${joystickInput}`);
+
+    res.json({
+      success: true,
+      profile: profileName,
+      joystickInput,
+      actionNames,
+      matchedActions: foundCount,
+      updatedActions: updatedCount,
+    });
+  } catch (error) {
+    log('HOTAS profile save error:', error.message);
+    res.status(500).json({ error: 'Failed to save profile bindings' });
   }
 });
 

@@ -167,6 +167,7 @@ export function useHotasInput({
       const gamepads = navigator.getGamepads?.() ?? [];
       const gp = gamepads[0];
       if (gp) {
+        setGamepadConnected(true);
         setGamepadInfo(gp);
         // Update continuous axis display
         setAxisValues((prev) => {
@@ -179,6 +180,9 @@ export function useHotasInput({
           });
           return next;
         });
+      } else {
+        setGamepadConnected(false);
+        setGamepadInfo(null);
       }
       rafId = requestAnimationFrame(syncInfo);
     };

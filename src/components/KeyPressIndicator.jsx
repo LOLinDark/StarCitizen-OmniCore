@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Group, Badge, Text, Box, ActionIcon, Tooltip, Code, Divider } from '@mantine/core';
+import { Group, Badge, Text, Box, ActionIcon, Tooltip, Code } from '@mantine/core';
 import { IconPin, IconPinnedOff, IconExternalLink } from '@tabler/icons-react';
 import useAppStore from '../stores/useAppStore';
 import {
@@ -259,10 +259,11 @@ export function KeyPressIndicator({
   const cardContent = ({ pinned, onToggleDock, inWindow = false }) => (
     <Box
       style={{
+        position: 'relative',
         backgroundColor: 'rgba(0, 0, 0, 0.88)',
         border: '2px solid #00d9ff',
         borderRadius: '12px',
-        padding: '1rem',
+        padding: inWindow ? '0.6rem' : '0.75rem',
         minWidth: '420px',
         maxWidth: inWindow ? '100%' : '70vw',
         backdropFilter: 'blur(10px)',
@@ -270,7 +271,7 @@ export function KeyPressIndicator({
       }}
     >
       {/* Header row */}
-      <Group justify="space-between" align="center" mb="xs">
+      <Box style={{ paddingRight: inWindow ? '11.5rem' : '12.5rem', marginBottom: 4 }}>
         <Text
           size="xs"
           fw={700}
@@ -278,7 +279,18 @@ export function KeyPressIndicator({
         >
           {title}
         </Text>
-        <Group gap="xs" align="center">
+      </Box>
+
+      <Group
+        gap="xs"
+        align="center"
+        style={{ position: 'absolute', top: inWindow ? 8 : 10, right: inWindow ? 8 : 10 }}
+      >
+          {devMode && (
+            <Badge color="orange" variant="light" size="xs">
+              DEV MODE ACTIVE
+            </Badge>
+          )}
           {connected !== null && (
             <Badge color={connected ? 'green' : 'gray'} variant="filled" size="xs">
               {connected ? 'Connected' : 'Disconnected'}
@@ -312,16 +324,19 @@ export function KeyPressIndicator({
               <IconExternalLink size={14} />
             </ActionIcon>
           </Tooltip>
-        </Group>
       </Group>
 
       {/* Current input */}
       {inputLabel ? (
-        <Text size="md" fw={700} style={{ color: '#e3f2fd', marginBottom: '0.35rem' }}>
+        <Text
+          size={inWindow ? 'xs' : 'sm'}
+          fw={700}
+          style={{ color: '#e3f2fd', marginBottom: '0.2rem', lineHeight: 1.2 }}
+        >
           {inputLabel}
         </Text>
       ) : (
-        <Text size="sm" style={{ color: 'rgba(255,255,255,0.35)', marginBottom: '0.35rem' }}>
+        <Text size="xs" style={{ color: 'rgba(255,255,255,0.35)', marginBottom: '0.2rem', lineHeight: 1.2 }}>
           No input detected
         </Text>
       )}
@@ -333,7 +348,8 @@ export function KeyPressIndicator({
           fw={600}
           style={{
             color: assignmentLabel.toLowerCase().includes('unassigned') ? '#ffb74d' : '#81c784',
-            marginBottom: sortedKeys.length > 0 ? '0.5rem' : 0,
+            marginBottom: sortedKeys.length > 0 ? '0.35rem' : 0,
+            lineHeight: 1.2,
           }}
         >
           {assignmentLabel}
@@ -360,7 +376,7 @@ export function KeyPressIndicator({
       {/* ── Dev Mode extras ───────────────────────────────────────────────── */}
       {devMode && (
         <>
-          <Divider my="xs" color="rgba(0,217,255,0.2)" label={<Text size="xs" style={{ color: '#00d9ff' }}>DEV</Text>} />
+          <Box style={{ borderTop: '1px solid rgba(0, 217, 255, 0.2)', margin: '0.4rem 0', paddingTop: '0.4rem' }} />
 
           {/* Device ID */}
           {gamepadInfo && (
