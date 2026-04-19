@@ -1,9 +1,16 @@
-import { Card, Image, Group, Stack, Text, Badge, ActionIcon } from '@mantine/core';
+import { Card, Image, Group, Text, Badge } from '@mantine/core';
 import { useState } from 'react';
-import YouTubePlayer from './YouTubePlayer';
+import MediaPlayer from './MediaPlayer';
+import { formatRelativeTime } from '../utils/time';
 
 export default function AerobookPost({ post, onSelect }) {
   const [isHovering, setIsHovering] = useState(false);
+  const relativeTime = formatRelativeTime(post.publishedAt || post.timestamp);
+  const thumbnail = post.thumbnailUrl || (post.youtubeId ? `https://img.youtube.com/vi/${post.youtubeId}/maxresdefault.jpg` : '');
+  const sourceEmoji = post.source === 'twitch' ? '🎬' : '▶';
+  const viewCount = Number(post.viewCount || 0);
+  const likeCount = Number(post.likeCount || 0);
+  const creatorLabel = post.creatorHandle || post.creatorName || '@StarCitizen';
 
   return (
     <Card
@@ -34,17 +41,11 @@ export default function AerobookPost({ post, onSelect }) {
       >
         {isHovering ? (
           <div style={{ width: '100%', height: '100%' }}>
-            <YouTubePlayer
-              youtubeId={post.youtubeId}
-              startSec={post.startSec}
-              endSec={post.endSec}
-              title={post.title}
-              autoplay={true}
-            />
+            <MediaPlayer post={post} autoplay />
           </div>
         ) : (
           <Image
-            src={`https://img.youtube.com/vi/${post.youtubeId}/maxresdefault.jpg`}
+            src={thumbnail}
             alt={post.title}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             fallback={
@@ -60,7 +61,7 @@ export default function AerobookPost({ post, onSelect }) {
                   fontSize: '2rem',
                 }}
               >
-                ▶
+                {sourceEmoji}
               </div>
             }
           />
@@ -113,12 +114,13 @@ export default function AerobookPost({ post, onSelect }) {
                     padding: '2px 6px',
                   }}
                 >
-                  {post.category === 'star-citizen' && '🚀'}
-                  {post.category === 'squadron-42' && '⚔️'}
-                  {post.category === 'community-highlights' && '👥'}
+                  {post.source === 'twitch' ? 'TWITCH' : 'YOUTUBE'}
                 </Badge>
                 <Text size="xs" c="dimmed">
-                  {post.viewCount.toLocaleString()} views
+                  {viewCount.toLocaleString()} views
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {relativeTime}
                 </Text>
               </Group>
             </>
@@ -159,7 +161,7 @@ export default function AerobookPost({ post, onSelect }) {
                   fontWeight: 'bold',
                 }}
               >
-                {post.creatorHandle[1]}
+                {(post.creatorHandle || '@S')[1]}
               </div>
             }
           />
@@ -171,7 +173,7 @@ export default function AerobookPost({ post, onSelect }) {
               textShadow: '0 2px 4px rgba(0,0,0,0.5)',
             }}
           >
-            {post.creatorHandle}
+            {creatorLabel}
           </Text>
         </Group>
 
@@ -191,7 +193,7 @@ export default function AerobookPost({ post, onSelect }) {
               textShadow: '0 2px 4px rgba(0,0,0,0.8)',
             }}
           >
-            ❤️ {post.likeCount.toLocaleString()}
+            ❤️ {likeCount.toLocaleString()}
           </div>
         )}
       </div>

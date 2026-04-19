@@ -9,7 +9,7 @@ export default function EconomyTrackerPage() {
     <Container size="md" py="xl">
       <Stack gap="lg">
         <div>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="GT03" />💰 Economy Tracker</h1>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="GT03" />Economy Tracker</h1>
           <Text c="dimmed">Monitor commodity prices and identify profitable trading routes</Text>
         </div>
         

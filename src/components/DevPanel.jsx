@@ -2,15 +2,20 @@ import { Stack, Button, Text, Paper } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
-import { routeConfig, getCategories } from '../config/routes';
+import { routeConfig } from '../config/routes';
 
 export default function DevPanel() {
   const navigate = useNavigate();
   const [isMinimized, setIsMinimized] = useState(true);
 
+  const getSectionColor = (color) => {
+    if (color === 'orange') return '#ff6b00';
+    if (color === 'grape') return '#b300ff';
+    if (color === 'teal') return '#00d9ff';
+    return '#00ff88';
+  };
+
   const handleMouseDown = (e) => {
-    if (e.target.closest('button') || e.target.closest('a')) return;
-    
     const paper = e.currentTarget;
     const rect = paper.getBoundingClientRect();
     const startX = e.clientX - rect.left;
@@ -48,15 +53,25 @@ export default function DevPanel() {
           background: 'rgba(11, 20, 40, 0.95)',
           border: '2px solid #00d9ff',
           boxShadow: '0 0 20px rgba(0, 217, 255, 0.3), inset 0 0 20px rgba(0, 217, 255, 0.1)',
-          cursor: 'move',
+          cursor: 'default',
           overflow: isMinimized ? 'visible' : 'auto',
           userSelect: 'none',
         }}
-        onMouseDown={handleMouseDown}
       >
         <Stack gap="xs">
           {/* Header */}
-          <div style={{ borderBottom: '1px solid rgba(0, 217, 255, 0.3)', paddingBottom: '0.5rem', marginBottom: isMinimized ? '0' : '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              borderBottom: '1px solid rgba(0, 217, 255, 0.3)',
+              paddingBottom: '0.5rem',
+              marginBottom: isMinimized ? '0' : '0.5rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              cursor: 'move',
+            }}
+            onMouseDown={handleMouseDown}
+          >
             <div>
               <Text size="xs" fw={700} style={{ color: '#00d9ff', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
                 🔬 Developer Panel
@@ -92,7 +107,7 @@ export default function DevPanel() {
                     size="xs"
                     fw={600}
                     style={{
-                      color: routes[0]?.color === 'orange' ? '#ff6b00' : routes[0]?.color === 'grape' ? '#b300ff' : '#00ff88',
+                      color: getSectionColor(routes[0]?.color),
                       marginBottom: '0.5rem',
                       textTransform: 'uppercase',
                     }}

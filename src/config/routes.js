@@ -123,6 +123,39 @@ export const routeConfig = {
       color: 'grape',
     },
   ],
+
+  testPages: [
+    {
+      label: '[DEV03] /developer/api-test',
+      path: '/developer/api-test',
+      category: 'Test Pages',
+      color: 'teal',
+    },
+    {
+      label: '[DEV06] /developer/nav-charts-lab',
+      path: '/developer/nav-charts-lab',
+      category: 'Test Pages',
+      color: 'teal',
+    },
+    {
+      label: '[HC06] /developer/hotas-modes-lab',
+      path: '/developer/hotas-modes-lab',
+      category: 'Test Pages',
+      color: 'teal',
+    },
+    {
+      label: '[HC07] /developer/hotas-profile-matrix-lab',
+      path: '/developer/hotas-profile-matrix-lab',
+      category: 'Test Pages',
+      color: 'teal',
+    },
+    {
+      label: '[HC-TEST] /settings/hotas',
+      path: '/settings/hotas',
+      category: 'Test Pages',
+      color: 'teal',
+    },
+  ],
 };
 
 /**
@@ -138,7 +171,7 @@ export const getAllRoutesByCategory = () => {
  * @returns {Array} All routes in a single array
  */
 export const getAllRoutes = () => {
-  return [...routeConfig.main, ...routeConfig.themeLab, ...routeConfig.admin];
+  return [...routeConfig.main, ...routeConfig.themeLab, ...routeConfig.admin, ...routeConfig.testPages];
 };
 
 /**

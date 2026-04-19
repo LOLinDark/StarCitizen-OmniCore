@@ -9,8 +9,8 @@ export default function NewPlayerGuidePage() {
     <Container size="md" py="xl">
       <Stack gap="lg">
         <div>
-          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="GT01" />📚 New Player Guide</h1>
-          <Text c="dimmed">Path to Prosperity - Your journey from recruit to veteran</Text>
+          <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="GT01" />Training Academy</h1>
+          <Text c="dimmed">Structured courses and field briefings for recruits entering the verse</Text>
         </div>
         
         <Text>Coming soon...</Text>

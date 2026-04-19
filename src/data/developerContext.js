@@ -67,6 +67,25 @@ export const developerContext = {
     reminder: 'Star Citizen API endpoint: /{apikey}/v1/live/user/{handle} on api.starcitizen-api.com. Get key from Discord.',
   },
 
+  // Developer Nav Charts Lab
+  '/developer/nav-charts-lab': {
+    title: 'Nav Charts Lab (Dual-Reality Mockup)',
+    status: '⏳ In Development',
+    docs: [
+      { title: 'Active Sprint', path: 'g:\\My Drive\\Project Management\\Live\\OmniCore-Documentation\\Active-Sprint.md' },
+      { title: 'API Integration Guide', path: 'docs/API-INTEGRATION.md' },
+    ],
+    tasks: [
+      '✅ Dual-reality blend slider mockup',
+      '✅ Command briefing mode UI mockup',
+      '✅ Confidence fog visualization toggle',
+      '⏳ Replace synthetic graph with cached RSI starmap data',
+      '⏳ Add route search based on real jump links',
+      '⏳ Wire mission/contract feed when API coverage is confirmed',
+    ],
+    reminder: 'Prototype uses synthetic topology for interaction testing only. Do not present operational risk values as live game truth until backed by a real source.',
+  },
+
   // Developer Page
   '/developer': {
     title: 'Developer Hub',

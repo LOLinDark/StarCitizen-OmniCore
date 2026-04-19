@@ -1,0 +1,14 @@
+{
+  "modeState": {
+    "enabled": false,
+    "activeMode": "green",
+    "updatedAt": "2026-04-19T19:18:39.914Z"
+  },
+  "bindings": {
+    "button4": {
+      "green": "z",
+      "orange": "x",
+      "red": "c"
+    }
+  }
+}

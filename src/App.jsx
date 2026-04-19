@@ -13,6 +13,8 @@ import LoadoutBuilderPage from './pages/LoadoutBuilderPage';
 import EconomyTrackerPage from './pages/EconomyTrackerPage';
 import LocationGuidePage from './pages/LocationGuidePage';
 import HOTASConfigMainPage from './pages/HOTASConfigMainPage';
+import HOTASConfigModesLabPage from './pages/HOTASConfigModesLabPage';
+import NetworkStatusBadge from './components/NetworkStatusBadge';
 import ShipDatabasePage from './pages/ShipDatabasePage';
 import { trackAppView, installGlobalErrorHandlers, startPerformanceMonitoring, useAppStore } from './platform-core';
 import { Loader, Center } from '@mantine/core';
@@ -31,6 +33,8 @@ const ErrorLogPage = lazy(() => import('./pages/ErrorLogPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const APITestPage = lazy(() => import('./pages/APITestPage'));
 const DeveloperContextIndexPage = lazy(() => import('./pages/DeveloperContextIndexPage'));
+const DeveloperNavChartsLabPage = lazy(() => import('./pages/DeveloperNavChartsLabPage'));
+const DeveloperHotasProfileMatrixLabPage = lazy(() => import('./pages/DeveloperHotasProfileMatrixLabPage'));
 
 // Theme Lab Pages
 const WelcomeOnline = lazy(() => import('./pages/theme/WelcomeOnline'));
@@ -71,6 +75,7 @@ function App() {
 
   return (
     <>
+      <NetworkStatusBadge />
       <DevPanel />
       <RuntimeObservers />
       <Routes>
@@ -90,18 +95,19 @@ function App() {
         {/* Main User-Facing Dashboard & Feature Pages (with MainLayout) */}
         <Route element={<MainLayout />}>
           <Route index element={<MainDashboardPage />} />
+          <Route path="aerobook" element={<AerobookPage />} />
           <Route path="new-player-guide" element={<NewPlayerGuidePage />} />
           <Route path="loadout-builder" element={<LoadoutBuilderPage />} />
           <Route path="economy-tracker" element={<EconomyTrackerPage />} />
           <Route path="location-guide" element={<LocationGuidePage />} />
           <Route path="hotas-config" element={<HOTASConfigMainPage />} />
+          <Route path="hotas-config-modes-lab" element={<HOTASConfigModesLabPage />} />
           <Route path="ship-database" element={<ShipDatabasePage />} />
         </Route>
 
         {/* Admin/Backend/Settings Area (with AdminLayout - Legacy WIP view) */}
         <Route element={<AdminLayout />}>
           <Route path="dashboard-old" element={<DashboardPage />} />
-          <Route path="aerobook" element={<AerobookPage />} />
           <Route path="onboarding" element={<OnboardingChecklistPage />} />
           <Route path="admin/chat/claude" element={<Lazy Component={AmazonQPage} />} />
           <Route path="admin/chat/gemini" element={<Lazy Component={GeminiPage} />} />
@@ -117,6 +123,9 @@ function App() {
           <Route path="developer/errors" element={<Lazy Component={ErrorLogPage} />} />
           <Route path="developer/changes" element={<Lazy Component={ChangesPage} />} />
           <Route path="developer/api-test" element={<Lazy Component={APITestPage} />} />
+          <Route path="developer/nav-charts-lab" element={<Lazy Component={DeveloperNavChartsLabPage} />} />
+          <Route path="developer/hotas-modes-lab" element={<HOTASConfigModesLabPage />} />
+          <Route path="developer/hotas-profile-matrix-lab" element={<Lazy Component={DeveloperHotasProfileMatrixLabPage} />} />
           <Route path="about" element={<Lazy Component={AboutPage} />} />
         </Route>
 

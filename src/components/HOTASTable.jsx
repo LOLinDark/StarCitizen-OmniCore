@@ -35,6 +35,9 @@ export const HOTASTable = ({
   onStartHotasCapture,
   activeCaptureBindingId = null,
   captureProgress = 0,
+  onStartKeyboardCapture,
+  activeKeyboardCaptureBindingId = null,
+  keyboardCaptureProgress = 0,
 }) => {
   const handleHeaderClick = (column) => {
     if (sortBy === column) {
@@ -153,7 +156,9 @@ export const HOTASTable = ({
               const rowIsLive = isBindingLive ? isBindingLive(binding) : false;
               const baseRowBg = getRowBackground ? getRowBackground(binding) : colors.rowBg;
               const isCapturingThis = activeCaptureBindingId === binding.id;
+              const isCapturingKeyboard = activeKeyboardCaptureBindingId === binding.id;
               const remainingSeconds = Math.max(0, Math.ceil(captureProgress * 3));
+              const remainingKeyboardSeconds = Math.max(0, Math.ceil(keyboardCaptureProgress * 3));
 
               return (
                 <Table.Tr
@@ -206,23 +211,74 @@ export const HOTASTable = ({
                     </Text>
                   )}
                 </Table.Td>
-                <Table.Td style={{ padding: '1rem' }}>
-                  {binding.keyboardBinding ? (
-                    <Badge
+                <Table.Td
+                  style={{
+                    padding: '0.65rem 1rem',
+                    position: 'relative',
+                    cursor: onStartKeyboardCapture ? 'context-menu' : 'default',
+                    userSelect: 'none',
+                    background: isCapturingKeyboard ? 'rgba(230, 81, 0, 0.15)' : onStartKeyboardCapture ? 'rgba(255, 152, 0, 0.03)' : 'transparent',
+                    border: isCapturingKeyboard ? '2px solid #e65100' : onStartKeyboardCapture ? '1px solid rgba(255, 152, 0, 0.35)' : 'none',
+                    borderRadius: '4px',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!onStartKeyboardCapture || isCapturingKeyboard) return;
+                    e.currentTarget.style.background = 'rgba(255, 152, 0, 0.08)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 152, 0, 0.65)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!onStartKeyboardCapture || isCapturingKeyboard) return;
+                    e.currentTarget.style.background = 'rgba(255, 152, 0, 0.03)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 152, 0, 0.35)';
+                  }}
+                  onContextMenu={(e) => {
+                    if (!onStartKeyboardCapture) return;
+                    e.preventDefault();
+                    onStartKeyboardCapture(binding.id);
+                  }}
+                  title={isCapturingKeyboard ? 'Listening for keyboard/mouse input...' : 'Right-click to assign keyboard or mouse input'}
+                >
+                  {isCapturingKeyboard && (
+                    <div
                       style={{
-                        backgroundColor: '#fff3e0',
-                        color: '#e65100',
-                        border: '1px solid #ffb74d',
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: `${keyboardCaptureProgress * 100}%`,
+                        background: 'rgba(230, 81, 0, 0.28)',
+                        pointerEvents: 'none',
+                        transition: 'width 0.05s linear',
+                        borderRadius: '2px',
                       }}
-                      size="sm"
-                    >
-                      {binding.keyboardBinding}
-                    </Badge>
-                  ) : (
-                    <Text size="xs" style={{ color: colors.emptyKeyColor }}>
-                      —
-                    </Text>
+                    />
                   )}
+                  <div style={{ position: 'relative', zIndex: 1, minHeight: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {isCapturingKeyboard ? (
+                      <>
+                        <span style={{ fontSize: '1.2rem', animation: 'pulse 1.5s ease-in-out infinite' }}>●</span>
+                        <Text size="xs" fw={700} style={{ color: '#e65100' }}>
+                          Listening... {remainingKeyboardSeconds}s
+                        </Text>
+                      </>
+                    ) : binding.keyboardBinding ? (
+                      <Badge
+                        style={{
+                          backgroundColor: '#fff3e0',
+                          color: '#e65100',
+                          border: '1px solid #ffb74d',
+                        }}
+                        size="sm"
+                      >
+                        {binding.keyboardBinding}
+                      </Badge>
+                    ) : (
+                      <Text size="xs" style={{ color: colors.emptyKeyColor }}>
+                        —
+                      </Text>
+                    )}
+                  </div>
                 </Table.Td>
                 <Table.Td
                   style={{

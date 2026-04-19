@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "default": [
+      {
+        "id": "twitch:lolindark",
+        "platform": "twitch",
+        "username": "lolindark",
+        "createdAt": "2026-04-19T17:11:30.986Z"
+      }
+    ]
+  }
+}

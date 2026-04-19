@@ -1,8 +1,8 @@
 # HOTAS Configuration System Guide
 
 **Created**: April 16, 2026  
-**Status**: Phase 1 - UI/UX Foundation  
-**Last Updated**: April 16, 2026
+**Status**: Active Development (HC05 Baseline Live)  
+**Last Updated**: April 19, 2026
 
 ---
 
@@ -20,6 +20,23 @@ The HOTAS Configuration System is OmniCore's comprehensive keybinding manager fo
 
 ---
 
+## Current Source of Truth (April 2026)
+
+The active implementation is now centered on **HC05** (`/hotas-config`) and not only the older theme-lab variants.
+
+- **Primary page**: `src/pages/HOTASConfigMainPage.jsx`
+- **Primary data model**: `src/data/starcitizen-keybindings.js`
+- **XML parser**: `src/utils/starCitizenProfileParser.js`
+- **Action mapping bridge**: `src/utils/starCitizenActionMap.js`
+- **Live input hook**: `src/libraries/hotas/core/useHotasInput.js`
+- **UI table**: `src/components/HOTASTable.jsx`
+- **Live panel**: `src/components/KeyPressIndicator.jsx`
+- **Backend endpoints**: `server/index.js` (`/api/hotas/profiles`, `/api/hotas/profile/:profileName`, `/api/hotas/profile/:profileName/bindings`, `/api/hotas/open-folder`)
+
+Legacy theme pages remain useful for design/testing, but HC05 is the baseline for usability work.
+
+---
+
 ## Architecture
 
 ### File Structure
@@ -28,8 +45,20 @@ The HOTAS Configuration System is OmniCore's comprehensive keybinding manager fo
 src/
 ├── data/
 │   └── starcitizen-keybindings.js     # Central keybinding registry
-├── pages/theme/
-│   └── HOTASConfigPage.jsx            # UI component (theme lab)
+├── pages/
+│   └── HOTASConfigMainPage.jsx        # HC05 main configuration page
+├── pages/settings/
+│   └── HOTASTestPage.jsx              # Input testing lab (HC-TEST)
+├── libraries/hotas/core/
+│   └── useHotasInput.js               # Gamepad/HOTAS input polling hook
+├── utils/
+│   ├── starCitizenProfileParser.js    # Profile XML parser
+│   └── starCitizenActionMap.js        # Action name normalization/mapping
+└── components/
+  ├── HOTASTable.jsx                 # Binding table + capture affordance
+  └── KeyPressIndicator.jsx          # Dockable live input monitor
+server/
+└── index.js                           # HOTAS profile APIs
 ├── config/
 │   └── routes.js                      # Routes configuration (already includes /theme/hotas-config)
 └── docs/
@@ -130,7 +159,7 @@ export const shipControlsCategories = {
 
 ### Navigate Categories
 
-1. Visit `http://localhost:4242/theme/hotas-config` (theme lab)
+1. Visit `http://localhost:4242/hotas-config` (HC05)
 2. See tabs for each category: Flight, Weapons, Shields, Power, Targeting, Mining, Salvage, Scanning
 3. Click a tab to filter the table to that category's keybindings
 

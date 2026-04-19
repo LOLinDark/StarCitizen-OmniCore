@@ -5,25 +5,14 @@ import { SciFiFrame } from '../components/ui';
 const TOOLS = [
   {
     id: 'new-player-guide',
-    icon: '📚',
-    title: 'New Player Guide',
-    desc: 'Path to Prosperity - Your journey from recruit to veteran',
+    title: 'Training Academy',
+    desc: 'Structured courses and field briefings for recruits entering the verse',
     image: '/assets/tools/new-player-guide.jpg',
-    alt: 'New Player Guide - Star Citizen onboarding and tutorials',
+    alt: 'Training Academy - Citizen recruit training and course modules',
     color: '#00d9ff',
   },
   {
-    id: 'loadout-builder',
-    icon: '⚔️',
-    title: 'Loadout Builder',
-    desc: 'Design combat configurations with weapons, armor, and components',
-    image: '/assets/tools/loadout-builder.jpg',
-    alt: 'Loadout Builder - Weapon and equipment configuration',
-    color: '#ff0055',
-  },
-  {
     id: 'economy-tracker',
-    icon: '💰',
     title: 'Economy Tracker',
     desc: 'Monitor commodity prices and identify profitable trading routes',
     image: '/assets/tools/economy-tracker.jpg',
@@ -32,25 +21,22 @@ const TOOLS = [
   },
   {
     id: 'location-guide',
-    icon: '📍',
-    title: 'Location Guide',
-    desc: 'Discover stations, outposts, and points of interest across the galaxy',
+    title: 'Nav Charts',
+    desc: 'Charted systems, stations, and points of interest across known space',
     image: '/assets/tools/location-guide.jpg',
-    alt: 'Location Guide - Star Citizen universe map and locations',
+    alt: 'Nav Charts - Verse navigation, systems and locations',
     color: '#00ff88',
   },
   {
     id: 'hotas-config',
-    icon: '🎮',
-    title: 'HOTAS Config',
-    desc: 'Configure and optimize your flight stick for precision piloting',
+    title: 'Technology Config',
+    desc: 'Configure your flight stick, mouse, and keyboard for precision control',
     image: '/assets/tools/hotas-config.jpg',
-    alt: 'HOTAS Configuration - Flight stick and control setup',
+    alt: 'Technology Config - Flight controls, HOTAS, mouse and keyboard setup',
     color: '#ff6b00',
   },
   {
     id: 'ship-database',
-    icon: '🚀',
     title: 'Ship Database',
     desc: 'Explore specifications, pricing, and loadouts for every ship in the verse',
     image: '/assets/tools/ship-database.jpg',
@@ -75,7 +61,17 @@ const PlaceholderImage = ({ tool }) => (
       opacity: 0.8,
     }}
   >
-    {tool.icon}
+    <Text
+      fw={700}
+      size="sm"
+      style={{
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        color: tool.color,
+      }}
+    >
+      Preview
+    </Text>
   </div>
 );
 
@@ -106,7 +102,6 @@ const ToolCard = ({ tool }) => {
         {/* Content section */}
         <div style={{ padding: '1rem' }}>
           <Group gap={6} mb={6}>
-            <Text size="xl">{tool.icon}</Text>
             <Text fw={700} style={{ color: tool.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               {tool.title}
             </Text>

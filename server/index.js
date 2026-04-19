@@ -23,6 +23,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { appendFileSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import { registerMediaRoutes } from './api/media/index.js';
+import { registerShipRoutes } from './api/ships/index.js';
+import { registerVersemailRoutes } from './api/versemail/index.js';
+import { registerHotasModeRoutes } from './peripherals/hotas/index.js';
 
 dotenv.config();
 
@@ -239,6 +243,118 @@ const limiter = rateLimit({
   message: 'Too many requests, please try again later.'
 });
 app.use('/api/', limiter);
+
+// --- RSI Starmap proxy (public endpoint with server-side cache) ---
+const RSI_STARMAP_BASE = 'https://robertsspaceindustries.com/api/starmap';
+const STARMAP_TTL_MS = 1000 * 60 * 60 * 6; // 6 hours
+const starmapCache = {
+  bootup: null,
+  systems: new Map(),
+};
+
+function isFresh(entry, ttl = STARMAP_TTL_MS) {
+  return Boolean(entry?.fetchedAt) && (Date.now() - entry.fetchedAt) < ttl;
+}
+
+async function fetchRsiStarmap(path) {
+  const response = await fetch(`${RSI_STARMAP_BASE}/${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'OmniCore/0.1.0',
+      Accept: 'application/json',
+    },
+    body: '{}',
+  });
+
+  if (!response.ok) {
+    throw new Error(`RSI starmap responded with ${response.status}`);
+  }
+
+  return response.json();
+}
+
+app.get('/api/starmap/bootup', async (req, res) => {
+  const force = String(req.query.force || 'false') === 'true';
+
+  try {
+    if (!force && isFresh(starmapCache.bootup)) {
+      return res.json({
+        ...starmapCache.bootup.payload,
+        _meta: {
+          cacheSource: 'server-cache',
+          fetchedAt: starmapCache.bootup.fetchedAt,
+          source: 'rsi-starmap',
+          endpoint: 'bootup',
+        },
+      });
+    }
+
+    const payload = await fetchRsiStarmap('bootup');
+    starmapCache.bootup = {
+      payload,
+      fetchedAt: Date.now(),
+    };
+
+    res.set('Cache-Control', 'public, max-age=900');
+    return res.json({
+      ...payload,
+      _meta: {
+        cacheSource: 'network',
+        fetchedAt: starmapCache.bootup.fetchedAt,
+        source: 'rsi-starmap',
+        endpoint: 'bootup',
+      },
+    });
+  } catch (error) {
+    log('ERROR', `RSI starmap bootup failed: ${error.message}`);
+    return res.status(502).json({ error: 'Failed to fetch RSI starmap bootup data' });
+  }
+});
+
+app.get('/api/starmap/system/:code', async (req, res) => {
+  const force = String(req.query.force || 'false') === 'true';
+  const code = String(req.params.code || '').trim().toUpperCase();
+
+  if (!code || !/^[A-Z0-9_-]{1,64}$/.test(code)) {
+    return res.status(400).json({ error: 'Invalid star system code' });
+  }
+
+  try {
+    const cached = starmapCache.systems.get(code);
+    if (!force && isFresh(cached)) {
+      return res.json({
+        ...cached.payload,
+        _meta: {
+          cacheSource: 'server-cache',
+          fetchedAt: cached.fetchedAt,
+          source: 'rsi-starmap',
+          endpoint: `star-systems/${code}`,
+        },
+      });
+    }
+
+    const payload = await fetchRsiStarmap(`star-systems/${encodeURIComponent(code)}`);
+    starmapCache.systems.set(code, {
+      payload,
+      fetchedAt: Date.now(),
+    });
+
+    res.set('Cache-Control', 'public, max-age=900');
+    return res.json({
+      ...payload,
+      _meta: {
+        cacheSource: 'network',
+        fetchedAt: Date.now(),
+        source: 'rsi-starmap',
+        endpoint: `star-systems/${code}`,
+      },
+    });
+  } catch (error) {
+    log('ERROR', `RSI starmap system failed (${code}): ${error.message}`);
+    return res.status(502).json({ error: 'Failed to fetch RSI starmap system data' });
+  }
+});
 
 // --- AI provider setup ---
 const AWS_ENABLED = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && !process.env.AWS_ACCESS_KEY_ID.startsWith('#');
@@ -595,11 +711,19 @@ function escapeRegExp(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function validateJoystickInput(input) {
+function validateInputToken(input) {
   if (!input || typeof input !== 'string') return null;
+
+  const trimmed = input.trim();
+
   // Accept Star Citizen joystick token format: js1_button14, js1_z, js1_pov_n, etc.
-  if (!/^js\d+_[a-z0-9_ ]+$/i.test(input)) return null;
-  return input.slice(0, 64);
+  if (/^js\d+_[a-z0-9_ +\-]+$/i.test(trimmed)) return trimmed.slice(0, 64);
+  // Accept Star Citizen keyboard token format: kb1_w, kb1_lctrl+m, etc.
+  if (/^kb\d+_[a-z0-9_ +\-]+$/i.test(trimmed)) return trimmed.slice(0, 64);
+  // Accept Star Citizen mouse token format: mouse1, mouse2, mouse4, etc.
+  if (/^mouse\d+(?:_[a-z0-9_ +\-]+)?$/i.test(trimmed)) return trimmed.slice(0, 64);
+
+  return null;
 }
 
 function normalizeActionNames(actionNames) {
@@ -610,7 +734,7 @@ function normalizeActionNames(actionNames) {
     .filter((name) => /^[a-z0-9_]+$/i.test(name));
 }
 
-function upsertJoystickRebind(xml, actionName, joystickInput) {
+function upsertDeviceRebind(xml, actionName, inputToken) {
   const actionPattern = new RegExp(
     `(<action\\s+name="${escapeRegExp(actionName)}"\\s*>)([\\s\\S]*?)(</action>)`,
     'i'
@@ -620,16 +744,26 @@ function upsertJoystickRebind(xml, actionName, joystickInput) {
     return { xml, updated: false, found: false };
   }
 
+  let deviceRebindPattern;
+  if (/^js\d+_/i.test(inputToken)) {
+    deviceRebindPattern = /<rebind\s+input="js\d+_[^"]*"\s*\/>/i;
+  } else if (/^kb\d+_/i.test(inputToken)) {
+    deviceRebindPattern = /<rebind\s+input="kb\d+_[^"]*"\s*\/>/i;
+  } else if (/^mouse\d+/i.test(inputToken)) {
+    deviceRebindPattern = /<rebind\s+input="mouse\d+[^"]*"\s*\/>/i;
+  } else {
+    return { xml, updated: false, found: false };
+  }
+
   const updatedXml = xml.replace(actionPattern, (full, openTag, actionBody, closeTag) => {
-    const joystickRebindPattern = /<rebind\s+input="js\d+_[^"]*"\s*\/>/i;
-    if (joystickRebindPattern.test(actionBody)) {
-      const replacedBody = actionBody.replace(joystickRebindPattern, `<rebind input="${joystickInput}"/>`);
+    if (deviceRebindPattern.test(actionBody)) {
+      const replacedBody = actionBody.replace(deviceRebindPattern, `<rebind input="${inputToken}"/>`);
       return `${openTag}${replacedBody}${closeTag}`;
     }
 
-    // Preserve existing action content and append joystick rebind.
+    // Preserve existing action content and append device-specific rebind.
     const separator = actionBody.endsWith('\n') ? '' : '\n';
-    const appendedBody = `${actionBody}${separator}   <rebind input="${joystickInput}"/>\n`;
+    const appendedBody = `${actionBody}${separator}   <rebind input="${inputToken}"/>\n`;
     return `${openTag}${appendedBody}${closeTag}`;
   });
 
@@ -690,14 +824,14 @@ app.post('/api/hotas/profile/:profileName/bindings', (req, res) => {
     }
 
     const actionNames = normalizeActionNames(req.body?.actionNames);
-    const joystickInput = validateJoystickInput(req.body?.joystickInput);
+    const inputToken = validateInputToken(req.body?.inputToken ?? req.body?.joystickInput);
 
     if (actionNames.length === 0) {
       return res.status(400).json({ error: 'No valid action names provided' });
     }
 
-    if (!joystickInput) {
-      return res.status(400).json({ error: 'Invalid joystick input token' });
+    if (!inputToken) {
+      return res.status(400).json({ error: 'Invalid input token' });
     }
 
     const filePath = join(STAR_CITIZEN_MAPPINGS_PATH, `${profileName}.xml`);
@@ -713,7 +847,7 @@ app.post('/api/hotas/profile/:profileName/bindings', (req, res) => {
     let foundCount = 0;
 
     actionNames.forEach((actionName) => {
-      const result = upsertJoystickRebind(updatedXml, actionName, joystickInput);
+      const result = upsertDeviceRebind(updatedXml, actionName, inputToken);
       updatedXml = result.xml;
       if (result.found) foundCount += 1;
       if (result.updated) updatedCount += 1;
@@ -727,12 +861,12 @@ app.post('/api/hotas/profile/:profileName/bindings', (req, res) => {
     }
 
     writeFileSync(filePath, updatedXml, 'utf-8');
-    log(`HOTAS: Updated ${updatedCount} joystick rebind(s) in profile "${profileName}" -> ${joystickInput}`);
+    log(`HOTAS: Updated ${updatedCount} rebind(s) in profile "${profileName}" -> ${inputToken}`);
 
     res.json({
       success: true,
       profile: profileName,
-      joystickInput,
+      inputToken,
       actionNames,
       matchedActions: foundCount,
       updatedActions: updatedCount,
@@ -759,6 +893,11 @@ app.post('/api/hotas/open-folder', (req, res) => {
     res.status(500).json({ error: 'Failed to open folder' });
   }
 });
+
+registerMediaRoutes(app);
+registerShipRoutes(app);
+registerVersemailRoutes(app);
+registerHotasModeRoutes(app);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

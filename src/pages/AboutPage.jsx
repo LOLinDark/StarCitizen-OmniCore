@@ -64,6 +64,17 @@ export default function AboutPage() {
         </Card>
 
         <Card withBorder p="lg">
+          <Title order={3} mb="sm">Map Data Confidence & Fog</Title>
+          <Text size="sm" c="dimmed" mb="xs">
+            Some map overlays are based on incomplete or stale data. OmniCore uses confidence scoring to show how trustworthy each point is.
+          </Text>
+          <Text size="sm">
+            <strong>Confidence Fog</strong> is a visual uncertainty layer: low-confidence points appear hazier, while high-confidence points remain clear.
+            This helps you distinguish known topology from inferred operational signals.
+          </Text>
+        </Card>
+
+        <Card withBorder p="lg">
           <Title order={3} mb="sm">Disclaimer</Title>
           <Text size="sm" c="dimmed">
             OMNI-CORE is a fan-made project and is not affiliated with or endorsed by Cloud Imperium Games. Star Citizen® is a registered trademark of Cloud Imperium Rights LLC.

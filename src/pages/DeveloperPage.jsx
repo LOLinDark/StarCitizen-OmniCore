@@ -7,6 +7,7 @@ export default function DeveloperPage() {
 
   const adminTools = [
     { label: 'API Test', desc: 'Test Citizen, Gemini, and Rate Limit APIs', path: '/developer/api-test' },
+    { label: 'Nav Charts Lab', desc: 'Dual-reality blend slider and command briefing mockup', path: '/developer/nav-charts-lab' },
     { label: 'Developer Context', desc: 'View all page contexts and tasks', path: '/developer/context' },
     { label: 'Error Log', desc: 'View application errors', path: '/developer/errors' },
     { label: 'Changes', desc: 'View recent changes and updates', path: '/developer/changes' },

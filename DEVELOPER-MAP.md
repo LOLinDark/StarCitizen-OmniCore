@@ -16,6 +16,7 @@ They allow instant cross-referencing between code, docs, and conversation.
 | DEV03 | API Test Suite | /developer/api-test | pages/APITestPage.jsx |
 | DEV04 | Error Log | /developer/errors | pages/ErrorLogPage.jsx |
 | DEV05 | Changes | /developer/changes | pages/ChangesPage.jsx |
+| DEV06 | Nav Charts Lab | /developer/nav-charts-lab | pages/DeveloperNavChartsLabPage.jsx |
 | ADM01 | Settings | /settings | pages/SettingsPage.jsx |
 | ADM02 | Gemini Chat | /admin/chat/gemini | pages/GeminiPage.jsx |
 | ADM03 | AI Rules | /admin/ai-rules | pages/AIRulesPage.jsx |

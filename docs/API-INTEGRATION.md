@@ -229,7 +229,61 @@ const response = await fetch('/api/gemini', {
 
 ---
 
-### 3. AWS Bedrock (Claude AI)
+### 3. Media Providers (YouTube, Twitch, LIVE Follows)
+
+**Purpose**: Unified media ingestion for Aerobook and LIVE followed streamers.
+
+**Status**: ✅ Implemented (Twitch live status + persistent follows), with YouTube/Kick/Steam expansion planned.
+
+#### Backend Media Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/media/youtube/channel?handle=@name&limit=24` | GET | Fetch latest YouTube channel videos |
+| `/api/media/youtube/playlist?playlistId=<id>&limit=24` | GET | Fetch playlist videos |
+| `/api/media/twitch/videos?channel=<login>&limit=24` | GET | Fetch Twitch VOD archives |
+| `/api/media/twitch/live?channel=<login>` | GET | Fetch Twitch live status for one channel |
+| `/api/media/aerobook?limit=24&force=false` | GET | Aggregated Aerobook feed |
+| `/api/media/latest` | GET | Latest media metadata for badge/notifications |
+| `/api/media/live/follows?profileId=default` | GET | Return persisted followed channels + normalized live status envelope |
+| `/api/media/live/official` | GET | Return official channels + normalized status envelope (for LIVE monitor/alerts) |
+| `/api/media/live/follows` | POST | Add followed channel `{ profileId, platform, username }` |
+| `/api/media/live/follows/:followId?profileId=default` | DELETE | Remove followed channel |
+
+#### Frontend Provider Functions
+
+- `src/core/api/providers/youtube/index.js`
+  - `fetchYouTubeChannelVideos(...)`
+  - `fetchYouTubePlaylistVideos(...)`
+- `src/core/api/providers/twitch/index.js`
+  - `fetchTwitchChannelVideos(...)`
+- `src/core/api/providers/media/index.js`
+  - `fetchAerobookFeed(...)`
+  - `fetchLatestMediaMeta(...)`
+- `src/core/api/providers/live/index.js`
+  - `fetchLiveFollows(...)`
+  - `fetchOfficialLive(...)`
+  - `addLiveFollow(...)`
+  - `removeLiveFollow(...)`
+
+#### Storage Model
+
+- Followed channels are persisted server-side in `server/data/live-follows.json`.
+- This is long-term storage for now (single shared profile key by default).
+- Future enhancement: user-scoped profile IDs/auth-bound follows.
+
+#### Provider Readiness Contract
+
+- LIVE status now uses a provider-ready envelope for all platforms:
+  - `status.provider`, `status.state`, `status.checkedAt`
+  - `status.capabilities` (liveStatus/upcomingSignal/officialAlerts)
+  - `status.upcoming` (nullable signal payload)
+- Twitch returns live data today; YouTube/Kick/Steam are stored with the same shape for parity and future adapter rollout.
+- Official monitor endpoint uses the same envelope and powers in-app offline → live transition alerts.
+
+---
+
+### 4. AWS Bedrock (Claude AI)
 
 **Purpose**: Alternative AI for content generation
 
@@ -242,7 +296,7 @@ const response = await fetch('/api/gemini', {
 
 ---
 
-### 4. YouTube Data API (TODO)
+### 5. YouTube Data API (TODO)
 
 **Purpose**: Fetch Star Citizen tutorial videos for Aerobook integration
 
@@ -257,7 +311,7 @@ const response = await fetch('/api/gemini', {
 
 ---
 
-### 5. UEX Commodity API (TODO)
+### 6. UEX Commodity API (TODO)
 
 **Purpose**: Real-time trading commodity prices
 

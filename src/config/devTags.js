@@ -23,6 +23,7 @@ const devTags = {
   DEV03:     { label: 'API Test Suite',          path: '/developer/api-test',    file: 'pages/APITestPage.jsx' },
   DEV04:     { label: 'Error Log',               path: '/developer/errors',      file: 'pages/ErrorLogPage.jsx' },
   DEV05:     { label: 'Changes',                 path: '/developer/changes',     file: 'pages/ChangesPage.jsx' },
+  DEV06:     { label: 'Nav Charts Lab',          path: '/developer/nav-charts-lab', file: 'pages/DeveloperNavChartsLabPage.jsx' },
 
   // ── Admin & Tools ─────────────────────────────
   ADM01:     { label: 'Settings',                path: '/settings',              file: 'pages/SettingsPage.jsx' },
@@ -38,10 +39,10 @@ const devTags = {
   APP04:     { label: 'RSI Login',               path: '/login',                 file: 'pages/RSILoginPage.jsx' },
 
   // ── Game Tools ────────────────────────────────
-  GT01:      { label: 'New Player Guide',        path: '/new-player-guide',      file: 'pages/NewPlayerGuidePage.jsx' },
+  GT01:      { label: 'Training Academy',        path: '/new-player-guide',      file: 'pages/NewPlayerGuidePage.jsx' },
   GT02:      { label: 'Loadout Builder',         path: '/loadout-builder',       file: 'pages/LoadoutBuilderPage.jsx' },
   GT03:      { label: 'Economy Tracker',         path: '/economy-tracker',       file: 'pages/EconomyTrackerPage.jsx' },
-  GT04:      { label: 'Location Guide',          path: '/location-guide',        file: 'pages/LocationGuidePage.jsx' },
+  GT04:      { label: 'Nav Charts',          path: '/location-guide',        file: 'pages/LocationGuidePage.jsx' },
   GT05:      { label: 'Ship Database',           path: '/ship-database',         file: 'pages/ShipDatabasePage.jsx' },
 
   // ── Admin Chat ─────────────────────────────────

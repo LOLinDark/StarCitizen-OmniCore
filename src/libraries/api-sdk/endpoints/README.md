@@ -116,6 +116,57 @@ console.log(response.response)
 
 ### Future Endpoints
 
+### Media Provider Endpoint Family (Current App Integration)
+
+**Status**: ✅ Implemented in app routes and provider wrappers (formal SDK endpoint extraction pending).
+
+#### Live & Media Contracts
+
+```javascript
+// YouTube channel and playlist videos
+GET /api/media/youtube/channel?handle=@name&limit=24
+GET /api/media/youtube/playlist?playlistId=<id>&limit=24
+
+// Twitch VOD + live status
+GET /api/media/twitch/videos?channel=<login>&limit=24
+GET /api/media/twitch/live?channel=<login>
+
+// Aggregated media feed
+GET /api/media/aerobook?limit=24&force=false
+GET /api/media/latest
+
+// Persistent LIVE follows + official monitor
+GET    /api/media/live/follows?profileId=default
+GET    /api/media/live/official
+POST   /api/media/live/follows
+DELETE /api/media/live/follows/:followId?profileId=default
+```
+
+#### Frontend Wrapper Mapping
+
+```javascript
+src/core/api/providers/youtube/index.js
+src/core/api/providers/twitch/index.js
+src/core/api/providers/media/index.js
+src/core/api/providers/live/index.js
+```
+
+#### Platform Coverage Plan
+
+1. Twitch: live status + VOD feeds (active)
+2. YouTube: feed ingestion active, live-state parity envelope active
+3. Kick: parity envelope active, adapter planned
+4. Steam: parity envelope active, adapter planned
+
+#### LIVE Status Envelope (Cross-Provider Ready)
+
+All LIVE endpoints now return status records with shared shape:
+
+- `provider`, `state`, `checkedAt`, `isLive`
+- `capabilities`: `liveStatus`, `upcomingSignal`, `officialAlerts`
+- `upcoming`: nullable signal payload for “Going Live Soon” UX
+- `stream`: provider stream metadata when live
+
 #### UEX Commodity API
 
 **File**: `uex.js` (to be implemented)  

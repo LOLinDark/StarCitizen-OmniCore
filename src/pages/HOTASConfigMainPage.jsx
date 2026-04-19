@@ -39,14 +39,20 @@ export default function HOTASConfigMainPage() {
   const [profileName, setProfileName] = useState('');
   const [mergedBindings, setMergedBindings] = useState(null);
   const [hotasOverrides, setHotasOverrides] = useState({});
+  const [keyboardOverrides, setKeyboardOverrides] = useState({});
   const [captureBindingId, setCaptureBindingId] = useState(null);
   const [captureProgress, setCaptureProgress] = useState(0);
+  const [captureKeyboardBindingId, setCaptureKeyboardBindingId] = useState(null);
+  const [captureKeyboardProgress, setCaptureKeyboardProgress] = useState(0);
   const [xmlSaveStatus, setXmlSaveStatus] = useState('idle');
   const [xmlSaveMessage, setXmlSaveMessage] = useState('');
+  const [captureWarning, setCaptureWarning] = useState('');
   const captureStartedAtRef = useRef(0);
+  const keyboardCaptureStartedAtRef = useRef(0);
   const captureInitialSignatureRef = useRef('');
   const isInitializedRef = useRef(false);
-  const savedOverridesRef = useRef(null);
+  const savedHotasOverridesRef = useRef(null);
+  const savedKeyboardOverridesRef = useRef(null);
   const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo } = useHotasInput({
     enabled: true,
     trackKeyboard: false,
@@ -165,6 +171,84 @@ export default function HOTASConfigMainPage() {
     return '';
   }, [getInputKind]);
 
+  const formatKeyboardInputForXml = useCallback((event) => {
+    if (!event) return '';
+
+    const modifierOnlyCodes = new Set([
+      'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight',
+    ]);
+    if (modifierOnlyCodes.has(event.code)) return '';
+
+    const simpleCodeMap = {
+      Space: 'space',
+      Tab: 'tab',
+      Enter: 'enter',
+      Backspace: 'backspace',
+      Escape: 'escape',
+      ArrowUp: 'up',
+      ArrowDown: 'down',
+      ArrowLeft: 'left',
+      ArrowRight: 'right',
+      Comma: 'comma',
+      Period: 'period',
+      Slash: 'slash',
+      Semicolon: 'semicolon',
+      Quote: 'apostrophe',
+      BracketLeft: 'lbracket',
+      BracketRight: 'rbracket',
+      Backslash: 'backslash',
+      Minus: 'minus',
+      Equal: 'equals',
+      Backquote: 'tilde',
+      Home: 'home',
+      End: 'end',
+      Insert: 'insert',
+      Delete: 'delete',
+      PageUp: 'pgup',
+      PageDown: 'pgdn',
+      CapsLock: 'capslock',
+      NumpadAdd: 'np_plus',
+      NumpadSubtract: 'np_minus',
+      NumpadMultiply: 'np_mul',
+      NumpadDivide: 'np_div',
+      NumpadDecimal: 'np_decimal',
+      NumpadEnter: 'np_enter',
+    };
+
+    let baseToken = '';
+    if (event.code?.startsWith('Key')) {
+      baseToken = event.code.slice(3).toLowerCase();
+    } else if (event.code?.startsWith('Digit')) {
+      baseToken = event.code.slice(5);
+    } else if (event.code?.startsWith('Numpad') && /^Numpad\d$/.test(event.code)) {
+      baseToken = `np_${event.code.slice(6)}`;
+    } else if (/^F\d{1,2}$/.test(event.code || '')) {
+      baseToken = event.code.toLowerCase();
+    } else {
+      baseToken = simpleCodeMap[event.code] || '';
+    }
+
+    if (!baseToken) return '';
+
+    const modifiers = [];
+    if (event.ctrlKey) modifiers.push('lctrl');
+    if (event.altKey) modifiers.push('lalt');
+    if (event.shiftKey) modifiers.push('lshift');
+
+    return `kb1_${[...modifiers, baseToken].join('+')}`;
+  }, []);
+
+  const formatMouseInputForXml = useCallback((button) => {
+    const map = {
+      0: 'mouse1',
+      1: 'mouse3',
+      2: 'mouse2',
+      3: 'mouse4',
+      4: 'mouse5',
+    };
+    return map[button] || '';
+  }, []);
+
   const isInputCapturable = useCallback((input) => {
     if (!input) return false;
 
@@ -185,7 +269,7 @@ export default function HOTASConfigMainPage() {
     return false;
   }, [activeInputs, getInputKind]);
 
-  const persistCapturedBindingToXml = useCallback(async (bindingId, input) => {
+  const persistCapturedBindingToXml = useCallback(async (bindingId, inputToken) => {
     if (!selectedProfile || selectedProfile.startsWith('__ai_')) return;
 
     const actionNames = featureToStarCitizenAction[bindingId] || [];
@@ -195,8 +279,7 @@ export default function HOTASConfigMainPage() {
       return;
     }
 
-    const joystickInput = formatHotasInputForXml(input);
-    if (!joystickInput) {
+    if (!inputToken) {
       setXmlSaveStatus('error');
       setXmlSaveMessage('Captured input cannot be converted to XML token');
       return;
@@ -213,7 +296,7 @@ export default function HOTASConfigMainPage() {
         },
         body: JSON.stringify({
           actionNames,
-          joystickInput,
+          inputToken,
         }),
       });
 
@@ -223,12 +306,12 @@ export default function HOTASConfigMainPage() {
       }
 
       setXmlSaveStatus('saved');
-      setXmlSaveMessage(`Saved to XML: ${joystickInput}`);
+      setXmlSaveMessage(`Saved to XML: ${inputToken}`);
     } catch (error) {
       setXmlSaveStatus('error');
       setXmlSaveMessage(error.message || 'Failed to save profile XML');
     }
-  }, [formatHotasInputForXml, selectedProfile]);
+  }, [selectedProfile]);
 
   const startHotasCapture = useCallback((bindingId) => {
     captureStartedAtRef.current = Date.now();
@@ -236,6 +319,37 @@ export default function HOTASConfigMainPage() {
     setCaptureBindingId(bindingId);
     setCaptureProgress(1);
   }, [getInputSignature, lastHotasInput]);
+
+  const startKeyboardCapture = useCallback((bindingId) => {
+    keyboardCaptureStartedAtRef.current = Date.now();
+    setCaptureKeyboardBindingId(bindingId);
+    setCaptureKeyboardProgress(1);
+  }, []);
+
+  const getBindingConflictSummary = useCallback((bindingId, displayToken, bindingType) => {
+    const normToken = String(displayToken || '').toLowerCase();
+    if (!normToken) return '';
+
+    const baseBindings = (Array.isArray(mergedBindings) && mergedBindings.length > 0)
+      ? mergedBindings
+      : shipKeybindings;
+
+    const conflictFeatures = baseBindings
+      .filter((b) => b.id !== bindingId)
+      .map((b) => ({
+        ...b,
+        hotasBinding: hotasOverrides[b.id] || b.hotasBinding,
+        keyboardBinding: keyboardOverrides[b.id] || b.keyboardBinding,
+      }))
+      .filter((b) => String(bindingType === 'hotas' ? b.hotasBinding : b.keyboardBinding || '').toLowerCase() === normToken)
+      .map((b) => b.feature);
+
+    if (conflictFeatures.length === 0) return '';
+
+    const preview = conflictFeatures.slice(0, 3).join(', ');
+    const suffix = conflictFeatures.length > 3 ? ` +${conflictFeatures.length - 3} more` : '';
+    return `Potential conflict: ${displayToken} is already used by ${preview}${suffix}`;
+  }, [mergedBindings, hotasOverrides, keyboardOverrides]);
 
   useEffect(() => {
     if (!captureBindingId) return;
@@ -259,6 +373,27 @@ export default function HOTASConfigMainPage() {
   }, [captureBindingId]);
 
   useEffect(() => {
+    if (!captureKeyboardBindingId) return;
+
+    let rafId;
+    const animate = () => {
+      const elapsed = Date.now() - keyboardCaptureStartedAtRef.current;
+      const remaining = Math.max(0, 1 - (elapsed / CAPTURE_WINDOW_MS));
+      setCaptureKeyboardProgress(remaining);
+
+      if (remaining <= 0) {
+        setCaptureKeyboardBindingId(null);
+        return;
+      }
+
+      rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
+  }, [captureKeyboardBindingId]);
+
+  useEffect(() => {
     if (!captureBindingId || !lastHotasInput) return;
 
     const elapsed = Date.now() - captureStartedAtRef.current;
@@ -278,7 +413,12 @@ export default function HOTASConfigMainPage() {
       [bindingId]: formatted,
     }));
 
-    void persistCapturedBindingToXml(bindingId, lastHotasInput);
+    const hotasToken = formatHotasInputForXml(lastHotasInput);
+    if (hotasToken) {
+      const conflictMessage = getBindingConflictSummary(bindingId, formatted, 'hotas');
+      setCaptureWarning(conflictMessage);
+      void persistCapturedBindingToXml(bindingId, hotasToken);
+    }
 
     setCaptureBindingId(null);
     setCaptureProgress(0);
@@ -288,6 +428,70 @@ export default function HOTASConfigMainPage() {
     getInputSignature,
     isInputCapturable,
     formatHotasBindingFromInput,
+    formatHotasInputForXml,
+    getBindingConflictSummary,
+    persistCapturedBindingToXml,
+  ]);
+
+  useEffect(() => {
+    if (!captureKeyboardBindingId) return undefined;
+
+    const applyCapturedInput = (xmlToken) => {
+      if (!xmlToken) return;
+      const bindingId = captureKeyboardBindingId;
+      const formatted = formatInputForDisplay(parseInputString(xmlToken));
+      const bindingType = xmlToken.startsWith('js') ? 'hotas' : 'keyboard';
+
+      setKeyboardOverrides((prev) => ({
+        ...prev,
+        [bindingId]: formatted,
+      }));
+
+      const conflictMessage = getBindingConflictSummary(bindingId, formatted, bindingType);
+      setCaptureWarning(conflictMessage);
+
+      void persistCapturedBindingToXml(bindingId, xmlToken);
+
+      setCaptureKeyboardBindingId(null);
+      setCaptureKeyboardProgress(0);
+    };
+
+    const handleKeyDown = (event) => {
+      const elapsed = Date.now() - keyboardCaptureStartedAtRef.current;
+      if (elapsed > CAPTURE_WINDOW_MS || elapsed < 120 || event.repeat) return;
+
+      const token = formatKeyboardInputForXml(event);
+      if (!token) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      applyCapturedInput(token);
+    };
+
+    const handleMouseDown = (event) => {
+      const elapsed = Date.now() - keyboardCaptureStartedAtRef.current;
+      if (elapsed > CAPTURE_WINDOW_MS || elapsed < 120) return;
+
+      const token = formatMouseInputForXml(event.button);
+      if (!token) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      applyCapturedInput(token);
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('mousedown', handleMouseDown, true);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('mousedown', handleMouseDown, true);
+    };
+  }, [
+    captureKeyboardBindingId,
+    formatKeyboardInputForXml,
+    formatMouseInputForXml,
+    getBindingConflictSummary,
     persistCapturedBindingToXml,
   ]);
 
@@ -386,15 +590,24 @@ export default function HOTASConfigMainPage() {
       const savedState = localStorage.getItem('omnicore.hc05.state');
       if (!savedState) return;
 
-      const { selectedProfile: savedProfile, selectedCategory: savedCategory, hotasOverrides: savedOverrides } = JSON.parse(savedState);
+      const {
+        selectedProfile: savedProfile,
+        selectedCategory: savedCategory,
+        hotasOverrides: savedHotasOverrides,
+        keyboardOverrides: savedKeyboardOverrides,
+      } = JSON.parse(savedState);
       
       if (savedCategory) {
         setSelectedCategory(savedCategory);
       }
 
       // Store overrides in ref to be restored after profile loads
-      if (savedOverrides && typeof savedOverrides === 'object') {
-        savedOverridesRef.current = savedOverrides;
+      if (savedHotasOverrides && typeof savedHotasOverrides === 'object') {
+        savedHotasOverridesRef.current = savedHotasOverrides;
+      }
+
+      if (savedKeyboardOverrides && typeof savedKeyboardOverrides === 'object') {
+        savedKeyboardOverridesRef.current = savedKeyboardOverrides;
       }
 
       // Load profile - this will temporarily clear hotasOverrides
@@ -407,12 +620,19 @@ export default function HOTASConfigMainPage() {
     }
   }, []);
 
-  // Restore hotasOverrides after profile has been loaded (mergedBindings changes)
+  // Restore local overrides after profile has been loaded (mergedBindings changes)
   useEffect(() => {
-    if (!isInitializedRef.current || !mergedBindings || !savedOverridesRef.current) return;
+    if (!isInitializedRef.current || !mergedBindings) return;
 
-    setHotasOverrides(savedOverridesRef.current);
-    savedOverridesRef.current = null;
+    if (savedHotasOverridesRef.current) {
+      setHotasOverrides(savedHotasOverridesRef.current);
+      savedHotasOverridesRef.current = null;
+    }
+
+    if (savedKeyboardOverridesRef.current) {
+      setKeyboardOverrides(savedKeyboardOverridesRef.current);
+      savedKeyboardOverridesRef.current = null;
+    }
   }, [mergedBindings]);
 
   // Save state to localStorage whenever it changes
@@ -424,13 +644,14 @@ export default function HOTASConfigMainPage() {
         selectedProfile,
         selectedCategory,
         hotasOverrides,
+        keyboardOverrides,
       };
       localStorage.setItem('omnicore.hc05.state', JSON.stringify(stateToSave));
       console.log('[HC05] State saved to localStorage');
     } catch (error) {
       console.error('[HC05] Error saving state to localStorage:', error);
     }
-  }, [selectedProfile, selectedCategory, hotasOverrides]);
+  }, [selectedProfile, selectedCategory, hotasOverrides, keyboardOverrides]);
 
   // Use shared filtering hook for defaults
   const hookResult = useHOTASFiltering(
@@ -490,14 +711,17 @@ export default function HOTASConfigMainPage() {
   const effectiveBindings = useMemo(() => {
     if (!unfilteredBindings?.length) return [];
     return unfilteredBindings.map((binding) => {
-      const override = hotasOverrides[binding.id];
-      if (!override) return binding;
+      const hotasOverride = hotasOverrides[binding.id];
+      const keyboardOverride = keyboardOverrides[binding.id];
+      if (!hotasOverride && !keyboardOverride) return binding;
+
       return {
         ...binding,
-        hotasBinding: override,
+        hotasBinding: hotasOverride || binding.hotasBinding,
+        keyboardBinding: keyboardOverride || binding.keyboardBinding,
       };
     });
-  }, [unfilteredBindings, hotasOverrides]);
+  }, [unfilteredBindings, hotasOverrides, keyboardOverrides]);
 
   // Filter by bound/unbound status
   const sortedBindings = useMemo(() => {
@@ -582,8 +806,10 @@ export default function HOTASConfigMainPage() {
       setProfileName('');
       setMergedBindings(null);
       setHotasOverrides({});
+      setKeyboardOverrides({});
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
+      setCaptureWarning('');
       return;
     }
 
@@ -631,8 +857,10 @@ export default function HOTASConfigMainPage() {
       setSelectedProfile(profileName);
       setProfileName(logitechX52ProOptimal.profileName);
       setHotasOverrides({});
+      setKeyboardOverrides({});
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
+      setCaptureWarning('');
       
       // Merge AI profile bindings with defaults
       const merged = shipKeybindings.map(binding => {
@@ -659,6 +887,7 @@ export default function HOTASConfigMainPage() {
       setSelectedProfile(profileName);
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
+      setCaptureWarning('');
       const response = await fetch(`/api/hotas/profile/${profileName}`);
       if (!response.ok) throw new Error('Failed to load profile');
       const data = await response.json();
@@ -672,6 +901,7 @@ export default function HOTASConfigMainPage() {
         setProfileName(profileName);
       }
       setHotasOverrides({});
+      setKeyboardOverrides({});
       
       // Parse XML and merge keybindings
       if (data.xmlContent) {
@@ -764,13 +994,13 @@ export default function HOTASConfigMainPage() {
         <Stack gap="xl">
           {/* Header */}
           <div>
-            <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="HC05" />HOTAS Config</h1>
+            <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="HC05" />Technology Config</h1>
             {profileName && (
               <Text size="lg" fw={600} style={{ marginBottom: '0.5rem', color: '#1e90ff' }}>
-                📋 {profileName}
+                {profileName}
               </Text>
             )}
-            <Text c="dimmed">Configure and optimize your flight stick for precision piloting</Text>
+            <Text c="dimmed">Configure your flight stick, mouse, and keyboard for precision control</Text>
           </div>
 
         {/* Error Display */}
@@ -906,6 +1136,11 @@ export default function HOTASConfigMainPage() {
                   : (xmlSaveStatus === 'saved' ? 'XML saved' : 'XML save failed')}
               </Badge>
             )}
+            {captureWarning && (
+              <Badge color="orange" variant="light" size="sm" title={captureWarning}>
+                Binding conflict warning
+              </Badge>
+            )}
           </Group>
           <Text size="sm" fw={600}>
             {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
@@ -926,6 +1161,9 @@ export default function HOTASConfigMainPage() {
           onStartHotasCapture={startHotasCapture}
           activeCaptureBindingId={captureBindingId}
           captureProgress={captureProgress}
+          onStartKeyboardCapture={startKeyboardCapture}
+          activeKeyboardCaptureBindingId={captureKeyboardBindingId}
+          keyboardCaptureProgress={captureKeyboardProgress}
         />
 
         {/* Notes Section */}
@@ -951,7 +1189,7 @@ export default function HOTASConfigMainPage() {
               • <strong>Modifiers</strong>: SHIFT, CTRL, ALT can be combined with any key.
             </Text>
             <Text size="xs">
-              • <strong>Binding Editor</strong> (Coming Soon): Click any row to edit. HOTAS device detection coming Phase 2.
+              • <strong>Binding capture</strong>: Right-click the Keyboard/Mouse or HOTAS column for any row, then press the desired input.
             </Text>
           </Stack>
         </Box>
