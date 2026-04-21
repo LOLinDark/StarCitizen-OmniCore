@@ -122,13 +122,31 @@ Create a `.env` file in the project root.
 
 ### Project Structure
 
-```text
-src/                 React app (pages, components, hooks, data, stores, theme)
-server/              Express server and API route modules
-public/              PWA manifest, service worker, and static media
-docs/                Internal implementation and configuration guides
-scripts/             Build tooling (bundle budget checker)
 ```
+OmniCore/
+├── /app                      ← React PWA (Vite)
+│   ├── /src                  ← React components, pages, stores, utils, styles
+│   ├── /public               ← Static assets (manifest.json, service worker)
+│   ├── index.html            ← App entry point
+│   └── index.jsx             ← React root mount
+├── /server                   ← Express.js backend API
+│   ├── /routes               ← API endpoint handlers
+│   ├── /middleware           ← Express middleware
+│   └── index.js              ← Server entry point
+├── /documentation            ← All project documentation
+│   ├── /guides               ← User guides and getting started
+│   ├── /developers           ← Technical reference and architecture
+│   ├── /architecture         ← System design decisions
+│   ├── /api                  ← API endpoint documentation
+│   └── README.md             ← Documentation hub (START HERE for docs)
+├── /scripts                  ← Build tooling and utilities
+├── package.json              ← Project dependencies and npm scripts
+├── vite.config.js            ← Vite configuration
+├── eslint.config.js          ← Linting rules
+└── README.md                 ← This file
+```
+
+**→ For documentation, see [documentation/README.md](documentation/README.md)**
 
 ### Implementation Notes
 

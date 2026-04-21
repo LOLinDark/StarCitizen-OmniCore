@@ -1,10 +1,33 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+app/dist/
+
+# Environment
 .env
 .env.local
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System
 .DS_Store
+Thumbs.db
+
+# AWS/AI Tools
 amazonq-credentials.json
-_site
-.jekyll-cache
+
+# Jekyll (if using static site generation)
+_site/
+.jekyll-cache/
 .jekyll-metadata
+
+# IDE
+.vscode/local-history/
+*.swp
+*.swo
