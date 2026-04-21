@@ -1,7 +1,7 @@
 title: "OMNI-CORE"
 description: "Citizen Operations & Intelligence Network — Star Citizen companion hub"
-baseurl: ""
-url: ""
+baseurl: "/StarCitizen-OmniCore"
+url: "https://lolindark.github.io"
 
 markdown: kramdown
 kramdown:
