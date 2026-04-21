@@ -2,6 +2,15 @@ import { env } from '../config/env';
 
 const baseUrl = env.VITE_API_BASE_URL.replace(/\/$/, '');
 
+function shouldRetrySameOrigin(path, error) {
+  return (
+    typeof path === 'string' &&
+    path.startsWith('/api') &&
+    baseUrl.includes('localhost:3001') &&
+    error instanceof TypeError
+  );
+}
+
 function normalizeBody(body, headers) {
   if (body === undefined || body === null) {
     return { body: undefined, headers };
@@ -46,11 +55,24 @@ export async function apiFetch(path, init = {}) {
   const { headers = {}, body, ...rest } = init;
   const normalized = normalizeBody(body, headers);
 
-  return fetch(apiUrl(path), {
-    ...rest,
-    headers: normalized.headers,
-    body: normalized.body
-  });
+  try {
+    return await fetch(apiUrl(path), {
+      ...rest,
+      headers: normalized.headers,
+      body: normalized.body
+    });
+  } catch (error) {
+    // Fallback for setups where /api is reverse-proxied on the same origin.
+    if (shouldRetrySameOrigin(path, error)) {
+      return fetch(path, {
+        ...rest,
+        headers: normalized.headers,
+        body: normalized.body
+      });
+    }
+
+    throw error;
+  }
 }
 
 export async function apiRequest(path, init = {}) {

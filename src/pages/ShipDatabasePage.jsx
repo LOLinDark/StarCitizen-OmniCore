@@ -32,6 +32,7 @@ import DevTag from '../components/DevTag';
 import { fetchShips, getCachedShips, warmShipsImageCache } from '../core/api/providers/ships';
 import { ROLES, getRoles } from '../data/shipRoles';
 import { getShipPricing, fmtPledgeUSD, fmtAUEC } from '../data/shipPricing';
+import { getShipArtwork } from '../data/shipArtwork';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -434,6 +435,7 @@ export default function ShipDatabasePage() {
 
   const [expandedId, setExpandedId] = useState(null);
   const [bgShip, setBgShip] = useState(null);
+  const [bgArtwork, setBgArtwork] = useState(null);
   const [dossierShip, setDossierShip] = useState(null);
   const [page, setPage] = useState(1);
 
@@ -557,10 +559,15 @@ export default function ShipDatabasePage() {
   // ── Row interaction ─────────────────────────────────────────────────────────
   function handleRowClick(ship) {
     setBgShip(ship);
+    setBgArtwork(getShipArtwork(ship.name));
     setExpandedId((prev) => (prev === ship.id ? null : ship.id));
   }
 
-  const bgImage = bgShip?.media?.[0] || null;
+  // Only show background for ships with custom artwork (disable for regular ships)
+  const bgImage = bgArtwork?.url || null;
+  const bgOpacity = bgArtwork?.opacity ?? 1;
+  const bgBlur = bgArtwork?.blur ?? 4;
+  const bgBrightness = bgArtwork?.brightness ?? 0.18;
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -579,38 +586,28 @@ export default function ShipDatabasePage() {
         .ship-row.selected { background: rgba(34, 209, 123, 0.09) !important; }
       `}</style>
 
-      {/* Fixed background — ship image, blurred + dimmed */}
+      {/* Background — ship image, blurred + dimmed, scrolls with content */}
       {bgImage && (
         <div
           key={bgShip.id}
           aria-hidden="true"
           style={{
-            position: 'fixed',
-            inset: 0,
+            position: 'absolute',
+            top: '0',
+            left: 0,
+            right: 0,
+            bottom: 0,
             zIndex: 0,
             backgroundImage: `url(${bgImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center 30%',
-            filter: 'blur(4px) brightness(0.18)',
+            filter: `blur(${bgBlur}px) brightness(${bgBrightness})`,
+            opacity: bgOpacity,
             animation: 'shipBgFadeIn 0.7s ease',
             pointerEvents: 'none',
           }}
         />
       )}
-      {/* Gradient overlay */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 0,
-          background: bgImage
-            ? 'linear-gradient(160deg, rgba(0,4,15,0.60) 0%, rgba(0,4,15,0.80) 100%)'
-            : 'transparent',
-          pointerEvents: 'none',
-          transition: 'background 0.5s ease',
-        }}
-      />
 
       {/* Page content */}
       <div style={{ position: 'relative', zIndex: 1 }}>
