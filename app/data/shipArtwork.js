@@ -4,9 +4,25 @@
  * These images are displayed with reduced transparency and optional different styling
  */
 
+// Helper to construct image paths compatible with GitHub Pages deployment
+const getImagePath = (relativePath) => {
+  let baseUrl = import.meta.env.BASE_URL;
+  if (!baseUrl || baseUrl === '' || baseUrl === 'undefined') {
+    baseUrl = '/';
+  }
+  const cleanPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+  try {
+    return new URL(cleanPath, baseUrl).pathname;
+  } catch (e) {
+    // Fallback: just prepend baseUrl if URL constructor fails
+    console.warn('[shipArtwork] URL construction failed:', e.message);
+    return baseUrl + cleanPath;
+  }
+};
+
 export const SHIP_ARTWORK = {
   'vulture': {
-    url: '/assets/ships-artwork/drake-vulture.png',
+    url: getImagePath('/assets/ships-artwork/drake-vulture.png'),
     opacity: 0.90,
     blur: 0,
     brightness: 1.0,

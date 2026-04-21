@@ -1,13 +1,15 @@
-import { Container, Text, SimpleGrid, Stack, Image, Group } from '@mantine/core';
-import React from 'react';
+import { Container, Text, SimpleGrid, Stack, Image, Group, useMantineTheme } from '@mantine/core';
+import React, { useMemo } from 'react';
 import { SciFiFrame } from '../components/ui';
+import { getAssetUrl } from '../utils/pathUtils';
 
-const TOOLS = [
+// Function to generate TOOLS array at runtime (not module scope)
+const getToolsArray = () => [
   {
     id: 'new-player-guide',
     title: 'Training Academy',
     desc: 'Structured courses and field briefings for recruits entering the verse',
-    image: '/assets/tools/new-player-guide.jpg',
+    image: getAssetUrl('tools/new-player-guide.jpg'),
     alt: 'Training Academy - Citizen recruit training and course modules',
     color: '#00d9ff',
   },
@@ -15,7 +17,7 @@ const TOOLS = [
     id: 'economy-tracker',
     title: 'Economy Tracker',
     desc: 'Monitor commodity prices and identify profitable trading routes',
-    image: '/assets/tools/economy-tracker.jpg',
+    image: getAssetUrl('tools/economy-tracker.jpg'),
     alt: 'Economy Tracker - Trading and commodity price data',
     color: '#b300ff',
   },
@@ -23,7 +25,7 @@ const TOOLS = [
     id: 'location-guide',
     title: 'Nav Charts',
     desc: 'Charted systems, stations, and points of interest across known space',
-    image: '/assets/tools/location-guide.jpg',
+    image: getAssetUrl('tools/location-guide.jpg'),
     alt: 'Nav Charts - Verse navigation, systems and locations',
     color: '#00ff88',
   },
@@ -31,7 +33,7 @@ const TOOLS = [
     id: 'hotas-config',
     title: 'Technology Config',
     desc: 'Configure your flight stick, mouse, and keyboard for precision control',
-    image: '/assets/tools/hotas-config.png',
+    image: getAssetUrl('tools/hotas-config.png'),
     alt: 'Technology Config - Flight controls, HOTAS, mouse and keyboard setup',
     color: '#ff6b00',
   },
@@ -39,14 +41,18 @@ const TOOLS = [
     id: 'ship-database',
     title: 'Ship Database',
     desc: 'Explore specifications, pricing, and loadouts for every ship in the verse',
-    image: '/assets/tools/ship-database.jpg',
+    image: getAssetUrl('tools/ship-database.jpg'),
     alt: 'Ship Database - Star Citizen spacecraft database',
     color: '#00d9ff',
   },
 ];
 
-// Fallback image placeholder for missing assets
-const PlaceholderImage = ({ tool }) => (
+function DashboardPageContent() {
+  // Evaluate TOOLS array at component render time (not module scope)
+  const TOOLS = useMemo(() => getToolsArray(), []);
+  
+  // Fallback image placeholder for missing assets
+  const PlaceholderImage = ({ tool }) => (
   <div
     style={{
       width: '100%',
@@ -115,7 +121,6 @@ const ToolCard = ({ tool }) => {
   );
 };
 
-export default function DashboardPage() {
   return (
     <Container size="xl" py="xl">
       {/* Header */}
@@ -146,3 +151,5 @@ export default function DashboardPage() {
     </Container>
   );
 }
+
+export default DashboardPageContent;

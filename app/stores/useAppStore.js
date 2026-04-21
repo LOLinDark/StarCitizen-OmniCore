@@ -12,7 +12,8 @@ const useAppStore = create(
     (set) => ({
       colorScheme: 'dark',
       devMode: false,
-      welcomeCompleted: false,
+      // In development, default to true so we don't have to log in every time
+      welcomeCompleted: import.meta.env.DEV ? true : false,
 
       setColorScheme: (scheme) => set({ colorScheme: scheme }),
       toggleColorScheme: () => set((s) => ({ colorScheme: s.colorScheme === 'dark' ? 'light' : 'dark' })),

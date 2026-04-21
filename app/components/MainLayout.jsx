@@ -10,6 +10,8 @@ import { trackAppView } from '../platform-core';
 export default function MainLayout() {
   const location = useLocation();
 
+  console.log('[OmniCore] MainLayout rendered for path:', location.pathname);
+
   useEffect(() => {
     const path = `${location.pathname}${location.search || ''}`;
     trackAppView(path);

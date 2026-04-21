@@ -2,8 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   root: 'app',
+  // Use subdirectory base only for production builds (GitHub Pages)
+  // Local dev server uses root path for easier testing
+  base: command === 'build' ? '/StarCitizen-OmniCore/' : '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -11,6 +14,7 @@ export default defineConfig({
     },
   },
   build: {
+    outDir: '../dist',
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -41,6 +45,7 @@ export default defineConfig({
   server: {
     host: 'localhost',
     port: 4242,
+    strictPort: true,
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
@@ -48,4 +53,4 @@ export default defineConfig({
       }
     }
   }
-})
+}))

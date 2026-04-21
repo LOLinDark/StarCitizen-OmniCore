@@ -75,6 +75,8 @@ function App() {
   const welcomeCompleted = useAppStore((s) => s.welcomeCompleted);
   const completeWelcome = useAppStore((s) => s.completeWelcome);
 
+  console.log('[OmniCore] App.jsx rendering, welcomeCompleted:', welcomeCompleted);
+
   return (
     <>
       <NetworkStatusBadge />
@@ -92,9 +94,8 @@ function App() {
         <Route path="/theme/hotas-config-toggle" element={<Lazy Component={HOTASConfigPageToggle} />} />
         <Route path="/theme/hotas-test" element={<Navigate to="/settings/hotas" replace />} />
 
-        {/* Login and Dashboard Routes */}
+        {/* Login Route */}
         <Route path="/login" element={<RSILoginPage onComplete={() => { completeWelcome(); window.location.href = '/'; }} />} />
-        {!welcomeCompleted && <Route path="*" element={<Navigate to="/login" replace />} />}
         
         {/* Main User-Facing Dashboard & Feature Pages (with MainLayout) */}
         <Route element={<MainLayout />}>
@@ -135,8 +136,8 @@ function App() {
           <Route path="developer/hotas-profile-lab" element={<DeveloperHotasProfileMatrixLabPage />} />
         </Route>
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Fallback: Always allow access, guard at component level if needed */}
+        <Route path="*" element={<Navigate to={welcomeCompleted ? "/" : "/login"} replace />} />
       </Routes>
     </>
   );

@@ -1,8 +1,9 @@
 import { Container, Text, SimpleGrid, Stack, Image, Group } from '@mantine/core';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SciFiFrame } from '../components/ui';
 import DevTag from '../components/DevTag';
+import { getAssetUrl } from '../utils/pathUtils';
 
 // ═══════════════════════════════════════════════════════════════
 // WIREFRAME COMPONENTS
@@ -193,7 +194,8 @@ const HybridPlaceholder = ({ tool }) => (
   </div>
 );
 
-const TOOLS = [
+// Function to generate TOOLS array at runtime (not module scope)
+const getToolsArray = () => [
   {
     id: 'hotas-config',
     title: 'Technology Config',
@@ -208,7 +210,7 @@ const TOOLS = [
     id: 'ship-database',
     title: 'Ship Database',
     desc: 'Explore specifications, pricing, and loadouts for every ship in the verse',
-    image: '/assets/tools/ship-database.jpg',
+    image: getAssetUrl('tools/ship-database.jpg'),
     alt: 'Ship Database - Star Citizen spacecraft database',
     color: '#00d9ff',
     path: '/ship-database',
@@ -218,7 +220,7 @@ const TOOLS = [
     id: 'new-player-guide',
     title: 'Training Academy',
     desc: 'Structured courses and field briefings for recruits entering the verse',
-    image: '/assets/tools/new-player-guide.jpg',
+    image: getAssetUrl('tools/new-player-guide.jpg'),
     alt: 'Training Academy - Citizen recruit training and course modules',
     color: '#00d9ff',
     path: '/new-player-guide',
@@ -393,6 +395,10 @@ const ToolCard = ({ tool }) => {
 };
 
 export default function MainDashboardPage() {
+  console.log('[OmniCore] MainDashboardPage rendered');
+  // Evaluate TOOLS array at component render time (not module scope)
+  const TOOLS = useMemo(() => getToolsArray(), []);
+  
   return (
     <Container size="xl" py="xl">
       {/* Header */}

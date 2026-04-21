@@ -1,0 +1,2 @@
+# This file tells GitHub Pages to not process this site with Jekyll
+# The site uses GitHub Actions to build and deploy, so Jekyll processing is disabled
