@@ -1,4 +1,5 @@
-import { Container, Title, Text, Stack, Card, Anchor, Table } from '@mantine/core';
+import { Container, Stack, Text, Anchor, Table } from '@mantine/core';
+import { SciFiFrame } from '../components/ui';
 import DevTag from '../components/DevTag';
 
 const DEPENDENCIES = [
@@ -13,73 +14,108 @@ const DEPENDENCIES = [
 
 export default function AboutPage() {
   return (
-    <Container size="md">
-      <Title mb="md"><DevTag tag="ADM05" />About OMNI-CORE</Title>
-      <Stack gap="md">
-        <Card withBorder p="lg">
-          <Title order={3} mb="sm">Project</Title>
-          <Text>OMNI-CORE — Citizen Operations & Intelligence Network</Text>
-          <Text size="sm" c="dimmed" mt="xs">"Take the helm. Own your success."</Text>
-          <Text size="sm" mt="md">
-            A comprehensive Star Citizen companion dashboard providing tools, guides, and resources for citizens of the verse.
-          </Text>
-          <Text size="sm" mt="sm">
-            Source: <Anchor href="https://github.com/RyanBayne/OMNI-CORE" target="_blank">github.com/RyanBayne/OMNI-CORE</Anchor>
-          </Text>
-        </Card>
+    <Container size="xl" py="xl">
+      {/* Header */}
+      <div style={{ marginBottom: '3rem' }}>
+        <h1 className="scifi-heading" style={{ marginBottom: '0.5rem', fontSize: '2.5rem' }}>
+          <DevTag tag="ADM05" />About OMNI-CORE
+        </h1>
+        <Text c="dimmed" size="sm" style={{ letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          Citizen Operations & Intelligence Network
+        </Text>
+      </div>
 
-        <Card withBorder p="lg">
-          <Title order={3} mb="sm">Contact</Title>
-          <Text size="sm">For feedback, suggestions, or bug reports:</Text>
-          <Text size="sm" mt="xs">
-            GitHub: <Anchor href="https://github.com/RyanBayne/OMNI-CORE/issues" target="_blank">Open an issue</Anchor>
-          </Text>
-        </Card>
+      <Stack gap="lg">
+        <SciFiFrame variant="corners" cornerLength={12} strokeWidth={1.5} padding={0}>
+          <div style={{ padding: '1.5rem' }}>
+            <h2 style={{ color: '#00d9ff', marginTop: 0, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Project
+            </h2>
+            <Text size="sm" mb="xs">
+              OMNI-CORE — Citizen Operations & Intelligence Network
+            </Text>
+            <Text size="sm" c="dimmed" mb="md" style={{ fontStyle: 'italic' }}>
+              "Take the helm. Own your success."
+            </Text>
+            <Text size="sm" mb="md">
+              A comprehensive Star Citizen companion dashboard providing tools, guides, and resources for citizens of the verse.
+            </Text>
+            <Text size="sm">
+              Source: <Anchor href="https://github.com/RyanBayne/OMNI-CORE" target="_blank" rel="noreferrer">github.com/RyanBayne/OMNI-CORE</Anchor>
+            </Text>
+          </div>
+        </SciFiFrame>
 
-        <Card withBorder p="lg">
-          <Title order={3} mb="sm">Open Source Credits</Title>
-          <Text size="sm" c="dimmed" mb="md">
-            OMNI-CORE is built on the shoulders of these open-source projects.
-          </Text>
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Project</Table.Th>
-                <Table.Th>Author</Table.Th>
-                <Table.Th>License</Table.Th>
-                <Table.Th>Role</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {DEPENDENCIES.map((dep) => (
-                <Table.Tr key={dep.name}>
-                  <Table.Td><Anchor href={dep.url} target="_blank" size="sm">{dep.name}</Anchor></Table.Td>
-                  <Table.Td><Text size="sm">{dep.author}</Text></Table.Td>
-                  <Table.Td><Text size="sm">{dep.license}</Text></Table.Td>
-                  <Table.Td><Text size="sm" c="dimmed">{dep.desc}</Text></Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Card>
+        <SciFiFrame variant="corners" cornerLength={12} strokeWidth={1.5} padding={0}>
+          <div style={{ padding: '1.5rem' }}>
+            <h2 style={{ color: '#00ff88', marginTop: 0, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Contact
+            </h2>
+            <Text size="sm" mb="md">For feedback, suggestions, or bug reports:</Text>
+            <Text size="sm">
+              GitHub: <Anchor href="https://github.com/RyanBayne/OMNI-CORE/issues" target="_blank" rel="noreferrer">Open an issue</Anchor>
+            </Text>
+          </div>
+        </SciFiFrame>
 
-        <Card withBorder p="lg">
-          <Title order={3} mb="sm">Map Data Confidence & Fog</Title>
-          <Text size="sm" c="dimmed" mb="xs">
-            Some map overlays are based on incomplete or stale data. OmniCore uses confidence scoring to show how trustworthy each point is.
-          </Text>
-          <Text size="sm">
-            <strong>Confidence Fog</strong> is a visual uncertainty layer: low-confidence points appear hazier, while high-confidence points remain clear.
-            This helps you distinguish known topology from inferred operational signals.
-          </Text>
-        </Card>
+        <SciFiFrame variant="corners" cornerLength={12} strokeWidth={1.5} padding={0}>
+          <div style={{ padding: '1.5rem' }}>
+            <h2 style={{ color: '#ffd166', marginTop: 0, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Open Source Credits
+            </h2>
+            <Text size="sm" c="dimmed" mb="md">
+              OMNI-CORE is built on the shoulders of these open-source projects.
+            </Text>
+            <div style={{ overflowX: 'auto' }}>
+              <Table striped highlightOnHover style={{ fontSize: '0.85rem' }}>
+                <Table.Thead>
+                  <Table.Tr style={{ borderBottomColor: 'rgba(0, 217, 255, 0.2)' }}>
+                    <Table.Th style={{ color: '#00d9ff' }}>Project</Table.Th>
+                    <Table.Th style={{ color: '#00d9ff' }}>Author</Table.Th>
+                    <Table.Th style={{ color: '#00d9ff' }}>License</Table.Th>
+                    <Table.Th style={{ color: '#00d9ff' }}>Role</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {DEPENDENCIES.map((dep) => (
+                    <Table.Tr key={dep.name} style={{ borderBottomColor: 'rgba(0, 217, 255, 0.1)' }}>
+                      <Table.Td><Anchor href={dep.url} target="_blank" rel="noreferrer" size="sm">{dep.name}</Anchor></Table.Td>
+                      <Table.Td><Text size="sm">{dep.author}</Text></Table.Td>
+                      <Table.Td><Text size="sm">{dep.license}</Text></Table.Td>
+                      <Table.Td><Text size="sm" c="dimmed">{dep.desc}</Text></Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </div>
+          </div>
+        </SciFiFrame>
 
-        <Card withBorder p="lg">
-          <Title order={3} mb="sm">Disclaimer</Title>
-          <Text size="sm" c="dimmed">
-            OMNI-CORE is a fan-made project and is not affiliated with or endorsed by Cloud Imperium Games. Star Citizen® is a registered trademark of Cloud Imperium Rights LLC.
-          </Text>
-        </Card>
+        <SciFiFrame variant="corners" cornerLength={12} strokeWidth={1.5} padding={0}>
+          <div style={{ padding: '1.5rem' }}>
+            <h2 style={{ color: '#b300ff', marginTop: 0, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Map Data Confidence & Fog
+            </h2>
+            <Text size="sm" c="dimmed" mb="md">
+              Some map overlays are based on incomplete or stale data. OmniCore uses confidence scoring to show how trustworthy each point is.
+            </Text>
+            <Text size="sm">
+              <strong style={{ color: '#00d9ff' }}>Confidence Fog</strong> is a visual uncertainty layer: low-confidence points appear hazier, while high-confidence points remain clear.
+              This helps you distinguish known topology from inferred operational signals.
+            </Text>
+          </div>
+        </SciFiFrame>
+
+        <SciFiFrame variant="corners" cornerLength={12} strokeWidth={1.5} padding={0}>
+          <div style={{ padding: '1.5rem' }}>
+            <h2 style={{ color: '#ff0055', marginTop: 0, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Disclaimer
+            </h2>
+            <Text size="sm" c="dimmed">
+              OMNI-CORE is a fan-made project and is not affiliated with or endorsed by Cloud Imperium Games. Star Citizen® is a registered trademark of Cloud Imperium Rights LLC.
+            </Text>
+          </div>
+        </SciFiFrame>
       </Stack>
     </Container>
   );

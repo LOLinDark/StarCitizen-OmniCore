@@ -6,8 +6,9 @@ import { apiGet, useAppStore, useSettingsStore } from '../platform-core';
 import DevFooter from './DevFooter';
 import DeveloperNotes from './DeveloperNotes';
 import AerobookBar from './AerobookBar';
+import BrandWordmark from './BrandWordmark';
 
-const FRONTEND_VERSION = 'v0.1.0';
+const FRONTEND_VERSION = 'Alpha V0.1.0';
 
 export default function Layout() {
   const location = useLocation();
@@ -40,7 +41,7 @@ export default function Layout() {
       try {
         logActivity('API', 'GET /api/version');
         const data = await apiGet('/api/version');
-        logActivity('DATA', `Server v${data.version} - ${data.projectHours}h`);
+        logActivity('DATA', `Server ${data.version} - ${data.projectHours}h`);
         setServerVersion(data.version);
         setProjectHours(data.projectHours || 0);
         setServerOnline(true);
@@ -96,7 +97,7 @@ export default function Layout() {
       <AppShell.Header p="md">
         <Group justify="space-between">
           <Group>
-            <Title order={3} style={{ letterSpacing: '0.1em', color: '#4cc9f0', cursor: 'pointer' }} onClick={() => navigate('/')}>OMNI-CORE</Title>
+            <BrandWordmark onClick={() => navigate('/')} size="1.25rem" color="#4cc9f0" />
             <Badge size="sm" variant="light">{FRONTEND_VERSION}</Badge>
             <Badge size="sm" variant="light" color="blue">📊 {projectHours}h</Badge>
             <Indicator color={aiLoading ? 'yellow' : 'green'} processing={aiLoading} size={8}>

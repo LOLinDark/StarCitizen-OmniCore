@@ -42,6 +42,31 @@ export async function saveModeBindings({ buttonId, green, orange, red }) {
   return response.json();
 }
 
+export async function fetchModeBindings() {
+  const response = await fetch('/api/hotas/modes/bindings');
+  if (!response.ok) {
+    throw new Error(`Failed to fetch mode bindings (${response.status})`);
+  }
+  return response.json();
+}
+
+export async function importModeBindings({ bindings }) {
+  const response = await fetch('/api/hotas/modes/bindings/import', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ bindings }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    throw new Error(errorBody.error || `Failed to import mode bindings (${response.status})`);
+  }
+
+  return response.json();
+}
+
 export async function testFireModeBinding({ buttonId = 'button4', mode, dryRun = false } = {}) {
   const response = await fetch('/api/hotas/modes/test-fire', {
     method: 'POST',
@@ -58,6 +83,27 @@ export async function testFireModeBinding({ buttonId = 'button4', mode, dryRun =
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
     throw new Error(errorBody.error || `Failed to execute test fire (${response.status})`);
+  }
+
+  return response.json();
+}
+
+export async function sendModeButtonEvent({ buttonId, mode, dryRun = false } = {}) {
+  const response = await fetch('/api/hotas/modes/button-event', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      buttonId,
+      mode,
+      dryRun,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    throw new Error(errorBody.error || `Failed to send mode button event (${response.status})`);
   }
 
   return response.json();

@@ -1001,6 +1001,26 @@ export default function HOTASConfigMainPage() {
               </Text>
             )}
             <Text c="dimmed">Configure your flight stick, mouse, and keyboard for precision control</Text>
+            <Box
+              mt="md"
+              style={{
+                borderRadius: '10px',
+                overflow: 'hidden',
+                border: '1px solid rgba(255, 107, 0, 0.45)',
+                boxShadow: '0 10px 24px rgba(0, 0, 0, 0.22)',
+              }}
+            >
+              <img
+                src="/assets/tools/hotas-config.png"
+                alt="Technology Config themed HOTAS setup"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  maxHeight: '260px',
+                  objectFit: 'cover',
+                }}
+              />
+            </Box>
           </div>
 
         {/* Error Display */}

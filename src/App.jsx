@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AdminLayout from './components/LayoutNew';
 import MainLayout from './components/MainLayout';
 import DevPanel from './components/DevPanel';
+import InDevelopmentBanner from './components/InDevelopmentBanner';
 import RSILoginPage from './pages/RSILoginPage';
 import DashboardPage from './pages/DashboardPage';
 import MainDashboardPage from './pages/MainDashboardPage';
@@ -14,6 +15,7 @@ import EconomyTrackerPage from './pages/EconomyTrackerPage';
 import LocationGuidePage from './pages/LocationGuidePage';
 import HOTASConfigMainPage from './pages/HOTASConfigMainPage';
 import HOTASConfigModesLabPage from './pages/HOTASConfigModesLabPage';
+import DeveloperHotasProfileMatrixLabPage from './pages/DeveloperHotasProfileMatrixLabPage';
 import NetworkStatusBadge from './components/NetworkStatusBadge';
 import ShipDatabasePage from './pages/ShipDatabasePage';
 import { trackAppView, installGlobalErrorHandlers, startPerformanceMonitoring, useAppStore } from './platform-core';
@@ -34,12 +36,12 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const APITestPage = lazy(() => import('./pages/APITestPage'));
 const DeveloperContextIndexPage = lazy(() => import('./pages/DeveloperContextIndexPage'));
 const DeveloperNavChartsLabPage = lazy(() => import('./pages/DeveloperNavChartsLabPage'));
-const DeveloperHotasProfileMatrixLabPage = lazy(() => import('./pages/DeveloperHotasProfileMatrixLabPage'));
 
 // Theme Lab Pages
 const WelcomeOnline = lazy(() => import('./pages/theme/WelcomeOnline'));
 const StarCitizenDetail = lazy(() => import('./pages/theme/StarCitizenDetail'));
 const Squadron42Detail = lazy(() => import('./pages/theme/Squadron42Detail'));
+const PlaceholderSamplesPage = lazy(() => import('./pages/theme/PlaceholderSamplesPage'));
 const HOTASConfigPage = lazy(() => import('./pages/theme/HOTASConfigPage'));
 const HOTASConfigPageDark = lazy(() => import('./pages/theme/HOTASConfigPageDark'));
 const HOTASConfigPageToggle = lazy(() => import('./pages/theme/HOTASConfigPageToggle'));
@@ -77,12 +79,14 @@ function App() {
     <>
       <NetworkStatusBadge />
       <DevPanel />
+      <InDevelopmentBanner />
       <RuntimeObservers />
       <Routes>
         {/* Theme Lab Routes - Public, no auth required */}
         <Route path="/theme" element={<Lazy Component={WelcomeOnline} />} />
         <Route path="/theme/star-citizen" element={<Lazy Component={StarCitizenDetail} />} />
         <Route path="/theme/squadron-42" element={<Lazy Component={Squadron42Detail} />} />
+        <Route path="/theme/placeholder-samples" element={<Lazy Component={PlaceholderSamplesPage} />} />
         <Route path="/theme/hotas-config" element={<Lazy Component={HOTASConfigPage} />} />
         <Route path="/theme/hotas-config-dark" element={<Lazy Component={HOTASConfigPageDark} />} />
         <Route path="/theme/hotas-config-toggle" element={<Lazy Component={HOTASConfigPageToggle} />} />
@@ -103,9 +107,13 @@ function App() {
           <Route path="hotas-config" element={<HOTASConfigMainPage />} />
           <Route path="hotas-config-modes-lab" element={<HOTASConfigModesLabPage />} />
           <Route path="ship-database" element={<ShipDatabasePage />} />
+          <Route path="settings" element={<Lazy Component={SettingsPage} />} />
+          <Route path="settings/hotas" element={<Lazy Component={HOTASTestPage} />} />
+          <Route path="settings/theme" element={<Lazy Component={ThemePage} />} />
+          <Route path="about" element={<Lazy Component={AboutPage} />} />
         </Route>
 
-        {/* Admin/Backend/Settings Area (with AdminLayout - Legacy WIP view) */}
+        {/* Admin/Backend/Developer Area (with AdminLayout - Sidebar layout) */}
         <Route element={<AdminLayout />}>
           <Route path="dashboard-old" element={<DashboardPage />} />
           <Route path="onboarding" element={<OnboardingChecklistPage />} />
@@ -115,9 +123,6 @@ function App() {
           <Route path="admin/analytics" element={<Lazy Component={AnalyticsPage} />} />
           <Route path="admin/rate-limits" element={<Lazy Component={RateLimitPage} />} />
           <Route path="admin/history" element={<Lazy Component={HistoryPage} />} />
-          <Route path="settings" element={<Lazy Component={SettingsPage} />} />
-          <Route path="settings/hotas" element={<Lazy Component={HOTASTestPage} />} />
-          <Route path="settings/theme" element={<Lazy Component={ThemePage} />} />
           <Route path="developer" element={<Lazy Component={DeveloperPage} />} />
           <Route path="developer/context" element={<Lazy Component={DeveloperContextIndexPage} />} />
           <Route path="developer/errors" element={<Lazy Component={ErrorLogPage} />} />
@@ -125,8 +130,9 @@ function App() {
           <Route path="developer/api-test" element={<Lazy Component={APITestPage} />} />
           <Route path="developer/nav-charts-lab" element={<Lazy Component={DeveloperNavChartsLabPage} />} />
           <Route path="developer/hotas-modes-lab" element={<HOTASConfigModesLabPage />} />
-          <Route path="developer/hotas-profile-matrix-lab" element={<Lazy Component={DeveloperHotasProfileMatrixLabPage} />} />
-          <Route path="about" element={<Lazy Component={AboutPage} />} />
+          <Route path="developer/hotas-profile-matrix-lab" element={<DeveloperHotasProfileMatrixLabPage />} />
+          <Route path="developer/hotas-profile-matrix" element={<DeveloperHotasProfileMatrixLabPage />} />
+          <Route path="developer/hotas-profile-lab" element={<DeveloperHotasProfileMatrixLabPage />} />
         </Route>
 
         {/* Fallback */}

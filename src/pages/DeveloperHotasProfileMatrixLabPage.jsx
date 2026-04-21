@@ -40,6 +40,10 @@ export default function DeveloperHotasProfileMatrixLabPage() {
         <Text c="dimmed" mt={4}>
           Developer test surface for role + ship + mode profile generation and instant XML apply workflows.
         </Text>
+        <Group gap="xs" mt="xs">
+          <Badge color="yellow" variant="light">Current device target: X52</Badge>
+          <Text size="sm" c="dimmed">Logitech/Saitek X52 three-mode workflow is the active implementation baseline.</Text>
+        </Group>
       </div>
 
       <SimpleGrid cols={{ base: 1, md: 3 }}>
@@ -78,6 +82,7 @@ export default function DeveloperHotasProfileMatrixLabPage() {
         }}
       >
         <Text size="sm" fw={600}>Planned Next Steps</Text>
+        <Text size="sm">Current scope: keep HC07 aligned with X52 mode semantics before expanding to other HOTAS models.</Text>
         <Text size="sm">1. Add profile template model (base + mode overrides + role/ship modifiers).</Text>
         <Text size="sm">2. Add backend endpoint to materialize and write variant XML files.</Text>
         <Text size="sm">3. Add one-click active profile switch into Star Citizen mappings folder.</Text>

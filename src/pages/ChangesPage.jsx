@@ -6,7 +6,7 @@ export default function ChangesPage() {
     <Container size="lg" py="xl">
       <Title order={1} mb="xl"><DevTag tag="DEV05" />Changelog</Title>
       <Timeline active={0} bulletSize={24} lineWidth={2}>
-        <Timeline.Item title="v0.1.0" bullet={<Badge size="sm">Latest</Badge>}>
+        <Timeline.Item title="Alpha V0.1.0" bullet={<Badge size="sm">Latest</Badge>}>
           <Text c="dimmed" size="sm">Initial OMNI-CORE Setup</Text>
           <Paper p="md" mt="sm" withBorder>
             <Stack gap="xs">

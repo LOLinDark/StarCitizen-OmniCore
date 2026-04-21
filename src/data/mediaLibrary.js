@@ -78,7 +78,7 @@ export const mediaLibrary = {
     },
     hotasConfig: {
       id: 'tool-hotas',
-      image: '/assets/tools/hotas-config.jpg',
+      image: '/assets/tools/hotas-config.png',
       alt: 'HOTAS Configuration - Set up your flight controls',
     },
     shipDatabase: {

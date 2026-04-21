@@ -7,6 +7,7 @@ import {
   Button,
   TextInput,
   Text,
+  Textarea,
   SimpleGrid,
   Box,
   Badge,
@@ -23,10 +24,14 @@ import { featureToStarCitizenAction, parseInputString, formatInputForDisplay } f
 import {
   useHotasInput,
   LogitechX52Device,
+  X52_BUTTONS,
   fetchModeState,
+  fetchModeBindings,
   saveModeState,
   saveModeBindings,
+  importModeBindings,
   testFireModeBinding,
+  sendModeButtonEvent,
 } from '../libraries/peripherals/hotas';
 import DevTag from '../components/DevTag';
 
@@ -71,6 +76,15 @@ export default function HOTASConfigModesLabPage() {
   const [modeSyncMessage, setModeSyncMessage] = useState('Not synced yet');
   const [modeButtonId, setModeButtonId] = useState('button4');
   const [modeOutputTokens, setModeOutputTokens] = useState({ green: 'z', orange: 'x', red: 'c' });
+  const [modeBindingsMap, setModeBindingsMap] = useState({});
+  const [batchBindings, setBatchBindings] = useState({});
+  const [modeBindingsJson, setModeBindingsJson] = useState('');
+  const [importExportStatus, setImportExportStatus] = useState('idle');
+  const [importExportMessage, setImportExportMessage] = useState('');
+  const [liveBridgeEnabled, setLiveBridgeEnabled] = useState(false);
+  const [liveBridgeDryRun, setLiveBridgeDryRun] = useState(true);
+  const [liveBridgeStatus, setLiveBridgeStatus] = useState('idle');
+  const [liveBridgeMessage, setLiveBridgeMessage] = useState('Live bridge idle');
   const [modeBindingSaveState, setModeBindingSaveState] = useState('idle');
   const [testFireState, setTestFireState] = useState('idle');
   const [testFireMessage, setTestFireMessage] = useState('No test fired yet');
@@ -89,6 +103,7 @@ export default function HOTASConfigModesLabPage() {
   const savedKeyboardOverridesRef = useRef(null);
   const savedModeHotasOverridesRef = useRef(null);
   const savedModeKeyboardOverridesRef = useRef(null);
+  const liveBridgeSentRef = useRef({ signature: '', at: 0 });
   const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo } = useHotasInput({
     enabled: true,
     trackKeyboard: false,
@@ -96,6 +111,17 @@ export default function HOTASConfigModesLabPage() {
   });
 
   const normalizeText = (value) => String(value || '').toLowerCase();
+
+  const x52ButtonOptions = useMemo(() => {
+    return Object.entries(X52_BUTTONS)
+      .map(([idx, meta]) => ({
+        index: Number(idx),
+        value: `button${Number(idx) + 1}`,
+        label: `Button ${Number(idx) + 1} - ${meta.name}`,
+      }))
+      .filter((row) => Number.isFinite(row.index))
+      .sort((a, b) => a.index - b.index);
+  }, []);
 
   const getInputKind = useCallback((input) => {
     if (!input) return '';
@@ -165,6 +191,20 @@ export default function HOTASConfigModesLabPage() {
     }
 
     return input.name || '';
+  }, [getInputKind]);
+
+  const getButtonIdFromInput = useCallback((input) => {
+    if (!input || getInputKind(input) !== 'Button') return '';
+
+    if (typeof input.index === 'string' && input.index.startsWith('9-hat-')) {
+      return '';
+    }
+
+    const displayNumber = Number.isInteger(input.displayIndex)
+      ? input.displayIndex
+      : (Number.isInteger(input.index) ? input.index + 1 : null);
+
+    return Number.isInteger(displayNumber) ? `button${displayNumber}` : '';
   }, [getInputKind]);
 
   const formatHotasInputForXml = useCallback((input) => {
@@ -788,14 +828,10 @@ export default function HOTASConfigModesLabPage() {
         setEnableModesLab(Boolean(data?.modeState?.enabled));
         setActiveMode(String(data?.modeState?.activeMode || 'green'));
 
-        const candidate = data?.bindings?.button4;
-        if (candidate && typeof candidate === 'object') {
-          setModeOutputTokens({
-            green: String(candidate.green || 'z'),
-            orange: String(candidate.orange || 'x'),
-            red: String(candidate.red || 'c'),
-          });
-        }
+        const bindings = data?.bindings && typeof data.bindings === 'object' ? data.bindings : {};
+        setModeBindingsMap(bindings);
+        setBatchBindings(bindings);
+        setModeBindingsJson(JSON.stringify({ bindings }, null, 2));
 
         setModeSyncState('saved');
         setModeSyncMessage('Mode state loaded from backend');
@@ -811,6 +847,16 @@ export default function HOTASConfigModesLabPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    const selected = modeBindingsMap?.[modeButtonId];
+    if (!selected) return;
+    setModeOutputTokens({
+      green: String(selected.green || ''),
+      orange: String(selected.orange || ''),
+      red: String(selected.red || ''),
+    });
+  }, [modeBindingsMap, modeButtonId]);
 
   // Sync enable/active mode to backend to support Phase 3 companion flow.
   useEffect(() => {
@@ -844,16 +890,72 @@ export default function HOTASConfigModesLabPage() {
   const handleSaveModeBindings = async () => {
     try {
       setModeBindingSaveState('saving');
-      await saveModeBindings({
+      const updated = await saveModeBindings({
         buttonId: modeButtonId,
         green: modeOutputTokens.green,
         orange: modeOutputTokens.orange,
         red: modeOutputTokens.red,
       });
+      const bindings = updated?.bindings && typeof updated.bindings === 'object' ? updated.bindings : modeBindingsMap;
+      setModeBindingsMap(bindings);
+      setBatchBindings(bindings);
+      setModeBindingsJson(JSON.stringify({ bindings }, null, 2));
       setModeBindingSaveState('saved');
     } catch (error) {
       setModeBindingSaveState('error');
       setTestFireMessage(error.message || 'Failed to save mode bindings');
+    }
+  };
+
+  const handleExportModeBindings = async () => {
+    try {
+      setImportExportStatus('saving');
+      const data = await fetchModeBindings();
+      const bindings = data?.bindings || {};
+      const nextJson = JSON.stringify({ bindings }, null, 2);
+      setModeBindingsMap(bindings);
+      setBatchBindings(bindings);
+      setModeBindingsJson(nextJson);
+      setImportExportStatus('saved');
+      setImportExportMessage('Bindings exported to editor below');
+    } catch (error) {
+      setImportExportStatus('error');
+      setImportExportMessage(error.message || 'Failed to export bindings');
+    }
+  };
+
+  const handleImportModeBindings = async () => {
+    try {
+      const parsed = JSON.parse(modeBindingsJson || '{}');
+      const bindings = parsed?.bindings && typeof parsed.bindings === 'object' ? parsed.bindings : parsed;
+
+      setImportExportStatus('saving');
+      const result = await importModeBindings({ bindings });
+      const nextBindings = result?.bindings || {};
+      setModeBindingsMap(nextBindings);
+      setBatchBindings(nextBindings);
+      setModeBindingsJson(JSON.stringify({ bindings: nextBindings }, null, 2));
+      setImportExportStatus('saved');
+      setImportExportMessage(`Imported ${result?.importedCount || 0} button bindings`);
+    } catch (error) {
+      setImportExportStatus('error');
+      setImportExportMessage(error.message || 'Failed to import bindings');
+    }
+  };
+
+  const handleSaveBatchBindings = async () => {
+    try {
+      setImportExportStatus('saving');
+      const result = await importModeBindings({ bindings: batchBindings });
+      const nextBindings = result?.bindings || {};
+      setModeBindingsMap(nextBindings);
+      setBatchBindings(nextBindings);
+      setModeBindingsJson(JSON.stringify({ bindings: nextBindings }, null, 2));
+      setImportExportStatus('saved');
+      setImportExportMessage(`Batch saved (${result?.importedCount || 0} buttons)`);
+    } catch (error) {
+      setImportExportStatus('error');
+      setImportExportMessage(error.message || 'Failed to save batch bindings');
     }
   };
 
@@ -872,6 +974,56 @@ export default function HOTASConfigModesLabPage() {
       setTestFireMessage(error.message || 'Test fire failed');
     }
   };
+
+  useEffect(() => {
+    if (!enableModesLab || !liveBridgeEnabled || !lastHotasInput) return;
+
+    const buttonId = getButtonIdFromInput(lastHotasInput);
+    if (!buttonId) return;
+
+    const signature = `${buttonId}:${activeMode}:${getInputSignature(lastHotasInput)}`;
+    const now = Date.now();
+    if (
+      liveBridgeSentRef.current.signature === signature
+      && now - liveBridgeSentRef.current.at < 180
+    ) {
+      return;
+    }
+
+    liveBridgeSentRef.current = { signature, at: now };
+
+    let cancelled = false;
+    const sendEvent = async () => {
+      try {
+        setLiveBridgeStatus('saving');
+        const response = await sendModeButtonEvent({
+          buttonId,
+          mode: activeMode,
+          dryRun: liveBridgeDryRun,
+        });
+        if (cancelled) return;
+        setLiveBridgeStatus('saved');
+        setLiveBridgeMessage(`Bridged ${buttonId} -> ${response.outputToken} (${response.activeMode})`);
+      } catch (error) {
+        if (cancelled) return;
+        setLiveBridgeStatus('error');
+        setLiveBridgeMessage(error.message || 'Live bridge event failed');
+      }
+    };
+
+    void sendEvent();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    enableModesLab,
+    liveBridgeEnabled,
+    liveBridgeDryRun,
+    lastHotasInput,
+    activeMode,
+    getButtonIdFromInput,
+    getInputSignature,
+  ]);
 
   // Use shared filtering hook for defaults
   const hookResult = useHOTASFiltering(
@@ -1239,6 +1391,26 @@ export default function HOTASConfigModesLabPage() {
               </Text>
             )}
             <Text c="dimmed">Experimental branch for Green/Orange/Red mode-aware binding workflows and rapid Phase 3 validation.</Text>
+            <Box
+              mt="md"
+              style={{
+                borderRadius: '10px',
+                overflow: 'hidden',
+                border: '1px solid rgba(255, 107, 0, 0.45)',
+                boxShadow: '0 10px 24px rgba(0, 0, 0, 0.22)',
+              }}
+            >
+              <img
+                src="/assets/tools/hotas-config.png"
+                alt="Technology Config modes lab themed HOTAS setup"
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  maxHeight: '260px',
+                  objectFit: 'cover',
+                }}
+              />
+            </Box>
           </div>
 
         <Box
@@ -1272,11 +1444,13 @@ export default function HOTASConfigModesLabPage() {
             Mode captures are local in HC06 while mode state syncs to backend for Phase 3 testing.
           </Text>
           <Group mt="sm" gap="xs" align="flex-end" wrap="wrap">
-            <TextInput
+            <Select
               label="Button ID"
               value={modeButtonId}
-              onChange={(event) => setModeButtonId(event.currentTarget.value)}
-              placeholder="button4"
+              onChange={(value) => setModeButtonId(value || 'button4')}
+              data={x52ButtonOptions.map((row) => ({ value: row.value, label: row.label }))}
+              searchable
+              style={{ minWidth: 280 }}
             />
             <TextInput
               label="Green token"
@@ -1325,6 +1499,118 @@ export default function HOTASConfigModesLabPage() {
               Test Fire Dry Run
             </Button>
           </Group>
+
+          <Group mt="sm" gap="md" align="flex-end" wrap="wrap">
+            <Switch
+              label="Live Bridge"
+              checked={liveBridgeEnabled}
+              onChange={(event) => setLiveBridgeEnabled(event.currentTarget.checked)}
+              disabled={!enableModesLab}
+            />
+            <Switch
+              label="Bridge Dry Run"
+              checked={liveBridgeDryRun}
+              onChange={(event) => setLiveBridgeDryRun(event.currentTarget.checked)}
+              disabled={!liveBridgeEnabled}
+            />
+          </Group>
+
+          <Text size="xs" mt="xs" c={liveBridgeStatus === 'error' ? 'red' : 'dimmed'}>
+            Live bridge: {liveBridgeMessage}
+          </Text>
+
+          <Box
+            mt="sm"
+            p="sm"
+            style={{
+              border: '1px solid rgba(30, 144, 255, 0.2)',
+              borderRadius: '8px',
+              background: 'rgba(0, 0, 0, 0.08)',
+            }}
+          >
+            <Group justify="space-between" align="center" mb="xs">
+              <Text size="sm" fw={600}>Batch Button Tokens</Text>
+              <Button variant="outline" size="xs" onClick={() => { void handleSaveBatchBindings(); }}>
+                Save Batch
+              </Button>
+            </Group>
+            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="xs">
+              {x52ButtonOptions.slice(0, 12).map((row) => {
+                const rowBindings = batchBindings[row.value] || {};
+                return (
+                  <Group key={row.value} gap="xs" align="flex-end" wrap="nowrap">
+                    <Text size="xs" style={{ minWidth: '90px' }}>{row.value}</Text>
+                    <TextInput
+                      placeholder="G"
+                      value={String(rowBindings.green || '')}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value;
+                        setBatchBindings((prev) => ({
+                          ...prev,
+                          [row.value]: {
+                            ...(prev[row.value] || {}),
+                            green: value,
+                          },
+                        }));
+                      }}
+                    />
+                    <TextInput
+                      placeholder="O"
+                      value={String(rowBindings.orange || '')}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value;
+                        setBatchBindings((prev) => ({
+                          ...prev,
+                          [row.value]: {
+                            ...(prev[row.value] || {}),
+                            orange: value,
+                          },
+                        }));
+                      }}
+                    />
+                    <TextInput
+                      placeholder="R"
+                      value={String(rowBindings.red || '')}
+                      onChange={(event) => {
+                        const value = event.currentTarget.value;
+                        setBatchBindings((prev) => ({
+                          ...prev,
+                          [row.value]: {
+                            ...(prev[row.value] || {}),
+                            red: value,
+                          },
+                        }));
+                      }}
+                    />
+                  </Group>
+                );
+              })}
+            </SimpleGrid>
+          </Box>
+
+          <Textarea
+            mt="sm"
+            label="Bindings JSON"
+            value={modeBindingsJson}
+            onChange={(event) => setModeBindingsJson(event.currentTarget.value)}
+            autosize
+            minRows={6}
+            maxRows={14}
+            styles={{ input: { fontFamily: 'monospace' } }}
+          />
+
+          <Group mt="xs" gap="xs" wrap="wrap">
+            <Button variant="outline" size="xs" onClick={() => { void handleExportModeBindings(); }}>
+              Export JSON
+            </Button>
+            <Button variant="outline" color="orange" size="xs" onClick={() => { void handleImportModeBindings(); }}>
+              Import JSON
+            </Button>
+          </Group>
+
+          <Text size="xs" mt="xs" c={importExportStatus === 'error' ? 'red' : 'dimmed'}>
+            Import/Export: {importExportMessage || 'Idle'}
+          </Text>
           <Text size="xs" mt="sm" c="dimmed">
             Mode sync: {modeSyncMessage}
           </Text>

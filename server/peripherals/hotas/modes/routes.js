@@ -1,6 +1,7 @@
 import { HOTAS_MODES } from './constants.js';
 import {
   getHotasModeState,
+  replaceAllButtonModeBindings,
   resolveOutputTokenForButton,
   setButtonModeBindings,
   setHotasModeState,
@@ -47,6 +48,25 @@ export function registerHotasModeRoutes(app) {
     }
   });
 
+  app.get('/api/hotas/modes/bindings', (_req, res) => {
+    const state = getHotasModeState();
+    res.json({ bindings: state.bindings || {} });
+  });
+
+  app.post('/api/hotas/modes/bindings/import', (req, res) => {
+    try {
+      const payloadBindings = req.body?.bindings;
+      const updated = replaceAllButtonModeBindings(payloadBindings);
+      return res.json({
+        success: true,
+        importedCount: Object.keys(updated.bindings || {}).length,
+        bindings: updated.bindings,
+      });
+    } catch (error) {
+      return res.status(400).json({ error: error.message || 'Failed to import mode bindings' });
+    }
+  });
+
   app.post('/api/hotas/modes/test-fire', (req, res) => {
     try {
       const buttonId = normalizeButtonId(req.body?.buttonId || 'button4');
@@ -78,6 +98,42 @@ export function registerHotasModeRoutes(app) {
       });
     } catch (error) {
       return res.status(500).json({ error: error.message || 'Failed to fire mode output token' });
+    }
+  });
+
+  app.post('/api/hotas/modes/button-event', (req, res) => {
+    try {
+      const state = getHotasModeState();
+      if (!state.modeState?.enabled) {
+        return res.status(409).json({ error: 'Mode bridge is disabled in backend state' });
+      }
+
+      const buttonId = normalizeButtonId(req.body?.buttonId);
+      if (!buttonId) {
+        return res.status(400).json({ error: 'Invalid buttonId. Expected format: button4' });
+      }
+
+      const modeOverride = HOTAS_MODES.includes(String(req.body?.mode || '').toLowerCase())
+        ? String(req.body.mode).toLowerCase()
+        : null;
+
+      const resolved = resolveOutputTokenForButton(buttonId, modeOverride || state.modeState.activeMode);
+      if (!resolved.token) {
+        return res.status(404).json({ error: `No token configured for ${buttonId} in mode ${resolved.activeMode}` });
+      }
+
+      const dryRun = String(req.body?.dryRun || '').toLowerCase() === 'true' || req.body?.dryRun === true;
+      const injectorResult = injectVirtualInputToken(resolved.token, { dryRun });
+
+      return res.json({
+        success: true,
+        buttonId,
+        activeMode: resolved.activeMode,
+        outputToken: resolved.token,
+        injector: injectorResult,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message || 'Failed to handle mode button event' });
     }
   });
 }

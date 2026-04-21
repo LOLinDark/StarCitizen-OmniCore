@@ -88,6 +88,19 @@ export default function WelcomeOnline() {
           />
         </SimpleGrid>
 
+        {/* Theme Lab Utilities */}
+        <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
+          <Button
+            variant="light"
+            color="cyan"
+            size="sm"
+            onClick={() => navigate('/theme/placeholder-samples')}
+            style={{ marginBottom: '2rem' }}
+          >
+            📐 View Placeholder Design Samples
+          </Button>
+        </div>
+
         {/* Blog Gallery Section */}
         <div style={{ marginBottom: '3rem' }}>
           <h2 className="scifi-heading" style={{ marginBottom: '2rem' }}>Latest Updates</h2>

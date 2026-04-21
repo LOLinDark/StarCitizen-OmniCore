@@ -1,10 +1,19 @@
-import { Group, Button, Badge, Tooltip } from '@mantine/core';
+import { Group, Button, Badge, Tooltip, Menu } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { fetchLatestMediaMeta } from '../core/api/providers/media';
 import VerseMail from './VerseMail';
 
 const STORAGE_KEY = 'omnicore.aerobook.latest-seen';
+
+const OFFICIAL_BOOKMARKS = [
+  { label: 'Star Map', url: 'https://robertsspaceindustries.com/en/starmap', icon: '🗺️' },
+  { label: 'Referral Program', url: 'https://robertsspaceindustries.com/en/referral-program', icon: '🤝' },
+  { label: 'Progress Tracker', url: 'https://robertsspaceindustries.com/roadmap/progress-tracker/teams', icon: '📊' },
+  { label: 'Community Hub', url: 'https://robertsspaceindustries.com/community-hub', icon: '👥' },
+  { label: 'Spectrum', url: 'https://robertsspaceindustries.com/spectrum/', icon: '💬' },
+  { label: 'Organizations', url: 'https://robertsspaceindustries.com/en/community/orgs', icon: '🏢' },
+];
 
 function readSeenTimestamp() {
   try {
@@ -141,7 +150,7 @@ export default function AerobookBar() {
         <Button
           variant="subtle"
           size="sm"
-          onClick={() => navigate('/aerobook?tab=live')}
+          onClick={() => navigate({ pathname: '/aerobook', search: '?tab=live' })}
           style={{
             color: '#ff9e44',
             fontSize: '0.85rem',
@@ -187,23 +196,49 @@ export default function AerobookBar() {
         </Button>
       </Tooltip>
 
-      {/* More bookmarks (Roadmap) */}
-      <Tooltip label="Bookmark customization coming soon" position="bottom">
-        <Button
-          variant="subtle"
-          size="sm"
-          disabled
+      {/* Official Bookmarks Menu */}
+      <Menu position="bottom-start" shadow="md">
+        <Menu.Target>
+          <Tooltip label="Official Star Citizen links" position="bottom">
+            <Button
+              variant="subtle"
+              size="sm"
+              style={{
+                color: 'rgba(0, 255, 136, 0.7)',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                padding: '0.5rem 0.75rem',
+                cursor: 'pointer',
+              }}
+            >
+              + Links
+            </Button>
+          </Tooltip>
+        </Menu.Target>
+
+        <Menu.Dropdown
           style={{
-            color: 'rgba(0, 255, 136, 0.3)',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            padding: '0.5rem 0.75rem',
-            cursor: 'not-allowed',
+            backgroundColor: 'rgba(11, 20, 40, 0.95)',
+            border: '1px solid rgba(0, 217, 255, 0.3)',
+            borderRadius: '4px',
           }}
         >
-          + More
-        </Button>
-      </Tooltip>
+          {OFFICIAL_BOOKMARKS.map((bookmark) => (
+            <Menu.Item
+              key={bookmark.url}
+              onClick={() => window.open(bookmark.url, '_blank', 'noopener,noreferrer')}
+              style={{
+                color: '#00ff88',
+                fontSize: '0.85rem',
+                padding: '0.5rem 0.75rem',
+              }}
+            >
+              <span style={{ marginRight: '0.5rem' }}>{bookmark.icon}</span>
+              {bookmark.label}
+            </Menu.Item>
+          ))}
+        </Menu.Dropdown>
+      </Menu>
 
       {/* VerseMail modal */}
       <VerseMail opened={verseMailOpen} onClose={() => setVerseMailOpen(false)} />

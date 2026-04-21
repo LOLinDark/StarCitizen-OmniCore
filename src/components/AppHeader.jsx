@@ -1,7 +1,8 @@
 import { Group, Button, Badge, Menu, Avatar, Text } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
+import BrandWordmark from './BrandWordmark';
 
-const FRONTEND_VERSION = 'v0.1.0';
+const FRONTEND_VERSION = 'Alpha V0.1.0';
 
 export default function AppHeader() {
   const navigate = useNavigate();
@@ -24,19 +25,7 @@ export default function AppHeader() {
           style={{ cursor: 'pointer' }}
           onClick={() => navigate('/')}
         >
-          <Text
-            className="scifi-heading"
-            fw={700}
-            size="lg"
-            style={{
-              letterSpacing: '0.1em',
-              color: '#00d9ff',
-              margin: 0,
-              fontSize: '1.5rem',
-            }}
-          >
-            OMNI-CORE
-          </Text>
+          <BrandWordmark size="1.5rem" color="#00d9ff" />
         </div>
         <Badge size="sm" variant="light" color="cyan">{FRONTEND_VERSION}</Badge>
       </Group>
@@ -61,7 +50,6 @@ export default function AppHeader() {
           <Menu.Dropdown>
             <Menu.Item onClick={() => navigate('/')}>Home</Menu.Item>
             <Menu.Item onClick={() => navigate('/settings')}>Settings</Menu.Item>
-            <Menu.Item onClick={() => navigate('/admin/chat/gemini')}>AI Tools</Menu.Item>
             <Menu.Divider />
             <Menu.Item onClick={() => navigate('/about')}>About</Menu.Item>
             <Menu.Item

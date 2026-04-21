@@ -32,6 +32,24 @@ export const routeConfig = {
       category: 'Main App',
       color: 'cyan',
     },
+    {
+      label: '/settings',
+      path: '/settings',
+      category: 'Main App',
+      color: 'cyan',
+    },
+    {
+      label: '/settings/hotas',
+      path: '/settings/hotas',
+      category: 'Main App',
+      color: 'cyan',
+    },
+    {
+      label: '/about',
+      path: '/about',
+      category: 'Main App',
+      color: 'cyan',
+    },
   ],
 
   themeLab: [
@@ -50,6 +68,12 @@ export const routeConfig = {
     {
       label: '/theme/squadron-42',
       path: '/theme/squadron-42',
+      category: 'Theme Lab',
+      color: 'orange',
+    },
+    {
+      label: '📐 /theme/placeholder-samples',
+      path: '/theme/placeholder-samples',
       category: 'Theme Lab',
       color: 'orange',
     },
@@ -81,18 +105,6 @@ export const routeConfig = {
 
   admin: [
     {
-      label: '/settings',
-      path: '/settings',
-      category: 'Admin & Tools',
-      color: 'grape',
-    },
-    {
-      label: '/settings/hotas',
-      path: '/settings/hotas',
-      category: 'Admin & Tools',
-      color: 'grape',
-    },
-    {
       label: '/admin/chat/gemini',
       path: '/admin/chat/gemini',
       category: 'Admin & Tools',
@@ -113,12 +125,6 @@ export const routeConfig = {
     {
       label: '/developer',
       path: '/developer',
-      category: 'Admin & Tools',
-      color: 'grape',
-    },
-    {
-      label: '/about',
-      path: '/about',
       category: 'Admin & Tools',
       color: 'grape',
     },

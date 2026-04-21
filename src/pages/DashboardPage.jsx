@@ -31,7 +31,7 @@ const TOOLS = [
     id: 'hotas-config',
     title: 'Technology Config',
     desc: 'Configure your flight stick, mouse, and keyboard for precision control',
-    image: '/assets/tools/hotas-config.jpg',
+    image: '/assets/tools/hotas-config.png',
     alt: 'Technology Config - Flight controls, HOTAS, mouse and keyboard setup',
     color: '#ff6b00',
   },

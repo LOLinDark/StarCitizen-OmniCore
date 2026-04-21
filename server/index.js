@@ -30,7 +30,7 @@ import { registerHotasModeRoutes } from './peripherals/hotas/index.js';
 
 dotenv.config();
 
-const SERVER_VERSION = 'v0.1.0';
+const SERVER_VERSION = 'Alpha V0.1.0';
 
 // --- SECURITY: Input validation constants ---
 const MAX_MESSAGE_LENGTH = 10000;

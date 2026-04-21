@@ -3,10 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import { routeConfig } from '../config/routes';
+import useAppStore from '../stores/useAppStore';
 
 export default function DevPanel() {
   const navigate = useNavigate();
+  const devMode = useAppStore((s) => s.devMode);
   const [isMinimized, setIsMinimized] = useState(true);
+  const panelWidth = 294;
+
+  // Hide panel when Dev Mode is off
+  if (!devMode) return null;
 
   const getSectionColor = (color) => {
     if (color === 'orange') return '#ff6b00';
@@ -43,11 +49,11 @@ export default function DevPanel() {
         p="md"
         radius="sm"
         style={{
-          position: 'absolute',
-          top: '10px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: isMinimized ? 'auto' : '350px',
+          position: 'fixed',
+          top: '132px',
+          left: '10px',
+          transform: 'none',
+          width: `${panelWidth}px`,
           maxHeight: isMinimized ? 'auto' : '600px',
           zIndex: 999,
           background: 'rgba(11, 20, 40, 0.95)',

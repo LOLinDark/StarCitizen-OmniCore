@@ -79,6 +79,14 @@ function normalizeToken(value) {
   return token;
 }
 
+function normalizeButtonBindings(modeTokenMap = {}) {
+  return {
+    green: normalizeToken(modeTokenMap.green),
+    orange: normalizeToken(modeTokenMap.orange),
+    red: normalizeToken(modeTokenMap.red),
+  };
+}
+
 export function setButtonModeBindings(buttonId, modeTokenMap = {}) {
   const buttonKey = String(buttonId || '').trim().toLowerCase();
   if (!/^button\d+$/i.test(buttonKey)) {
@@ -116,4 +124,32 @@ export function resolveOutputTokenForButton(buttonId, activeMode) {
     token: String(modeBindings?.[mode] || '').trim(),
     bindings: modeBindings,
   };
+}
+
+export function replaceAllButtonModeBindings(nextBindings = {}) {
+  if (!nextBindings || typeof nextBindings !== 'object') {
+    throw new Error('Invalid bindings payload');
+  }
+
+  const normalized = {};
+  Object.entries(nextBindings).forEach(([buttonKey, values]) => {
+    const id = String(buttonKey || '').trim().toLowerCase();
+    if (!/^button\d+$/i.test(id)) {
+      return;
+    }
+    normalized[id] = normalizeButtonBindings(values);
+  });
+
+  const current = readStore();
+  const updated = {
+    ...current,
+    bindings: normalized,
+    modeState: {
+      ...current.modeState,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+
+  writeStore(updated);
+  return updated;
 }
