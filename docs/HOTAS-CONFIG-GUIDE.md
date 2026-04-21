@@ -119,39 +119,19 @@ export const shipControlsCategories = {
 
 ---
 
-## Feature Status
+## Phase 1 Status
 
-### ✅ Phase 1 - Currently Implemented
+The HOTAS Configuration System is currently in Phase 1 (Foundation). The following features are complete and available:
 
-- [x] **Hierarchical Tabs** — Switch between control categories
-- [x] **Search & Sort** — Find bindings by name, key, or description
-- [x] **State Indicators** — Visual badges showing applied/changed/pending status
-- [x] **Profile Selector** — Choose which profile to view (UI placeholder)
-- [x] **Export/Import Buttons** — UI ready (backend not yet implemented)
-- [x] **Responsive Table** — Sortable columns, hover effects, tooltips
-- [x] **Real Star Citizen Keybindings** — 60+ bindings from official wiki
-- [x] **Tooltips** — Hover feature names to see full descriptions
+- ✅ Hierarchical category tabs (Flight, Weapons, Shields, Power, Targeting, Mining, Salvage, Scanning)
+- ✅ Search and sort functionality
+- ✅ State indicators (Applied, Changed, Pending)
+- ✅ Responsive sortable table with tooltips
+- ✅ 65+ keybindings from Star Citizen v4.0
+- ✅ Profile selector UI (backend pending)
+- ✅ Export/Import buttons UI (backend pending)
 
-### 🚧 Phase 2 - Planned
-
-- [ ] **HOTAS Device Detection** — Gamepad API integration for X52, HOSAS, joystick detection
-- [ ] **Real-Time Input Monitoring** — Detect keypresses and display current action
-- [ ] **Binding Editor Modal** — Click a row to edit individual keybindings
-- [ ] **Profile Management** — Create, edit, delete custom profiles
-- [ ] **X52 Three-Mode Switch** — Detect mode dial position for multi-binding support
-- [ ] **Key Press Display** — Optional header showing all recent key presses (streaming feature)
-- [ ] **HOTAS Diagram Overlay** — Visual diagram of X52 with light-up effect on key press
-- [ ] **XML Parsing/Export** — Read Star Citizen keybinds.xml, export custom profiles
-- [ ] **Binding Conflict Detection** — Warn if two actions mapped to same key
-
-### 📋 Phase 3 - Future
-
-- [ ] **Profile Sharing** — Export profiles for community sharing
-- [ ] **Preset Templates** — Combat, mining, exploration, trading templates
-- [ ] **Video Tutorials** — Embedded guides for common setups
-- [ ] **Analytics** — Track most-changed bindings, popular profiles
-- [ ] **Mobile Companion** — Mobile app to view/edit bindings on phone
-- [ ] **Voice Control Integration** — VoiceAttack support
+Future phases (Phase 2: Device Integration, Phase 3: Advanced Features) are documented in the private planning document.
 
 ---
 
@@ -228,11 +208,19 @@ The keybindings database is maintained from the official community wiki and incl
 
 ---
 
-## Phase 2 Integration: HOTAS Device Detection
+## Device Integration Notes
 
-### Gamepad API Overview
+### Logitech X52 Hardware Overview
 
-The Gamepad API allows browsers to detect connected gamepad/HOTAS devices:
+The X52 HOTAS (Hands On Throttle And Stick) includes:
+- **Joystick** — Primary flight control (pitch, yaw, roll axes)
+- **Throttle** — Separate throttle axis
+- **Mode Dial** — 3-position switch for profile/mode switching
+- **30+ Buttons** — Programmable macro buttons
+
+### Gamepad API Integration (Phase 2)
+
+The browser Gamepad API allows detection of connected HOTAS devices:
 
 ```javascript
 const gamepads = navigator.getGamepads();
@@ -244,107 +232,7 @@ gamepads.forEach((gp) => {
 });
 ```
 
-### Logitech X52 Support
-
-The X52 is a HOTAS with:
-
-- **Joystick** — Primary flight control (pitch, yaw, roll)
-- **Throttle** — Separate throttle axis
-- **Mode Dial** — 3-position switch for mode switching
-- **30+ Buttons** — Programmable macro buttons
-
-**Planned mapping:**
-- Joystick X/Y axes → Pitch/Yaw
-- Throttle axis → Throttle up/down
-- Mode dial → Modifier key combination (Shift, Alt, Ctrl combinations)
-- Buttons 1-30 → Hardcoded mappings with mode awareness
-
-### Real-Time Key Press Detection
-
-Example implementation (pseudocode):
-
-```javascript
-const handleGamepadInput = (gamepad) => {
-  // Detect button presses
-  gamepad.buttons.forEach((button, index) => {
-    if (button.pressed) {
-      // Find keybinding with this button
-      const binding = findBindingByButton(index, currentMode);
-      console.log(`Pressed: ${binding.feature}`);
-      // Highlight in UI
-      highlightBinding(binding.id);
-    }
-  });
-
-  // Detect axis movements
-  gamepad.axes.forEach((value, index) => {
-    if (Math.abs(value) > 0.5) {
-      const binding = findBindingByAxis(index);
-      console.log(`Moved: ${binding.feature}`);
-    }
-  });
-};
-```
-
-### X52 Three-Mode Switch Logic
-
-The X52 mode dial provides 3 modes. Implementation strategy:
-
-```javascript
-const detectX52Mode = (gamepad) => {
-  // X52 driver sends different button patterns per mode
-  // Mode 1: Buttons 0-29
-  // Mode 2: Buttons 30-59
-  // Mode 3: Buttons 60-89
-  // We can infer mode from which button range is active
-  
-  for (let i = 0; i < 30; i++) {
-    if (gamepad.buttons[i].pressed) return 1;
-  }
-  for (let i = 30; i < 60; i++) {
-    if (gamepad.buttons[i].pressed) return 2;
-  }
-  for (let i = 60; i < 89; i++) {
-    if (gamepad.buttons[i].pressed) return 3;
-  }
-  return 1; // Default
-};
-```
-
----
-
-## Implementation Roadmap
-
-### Week 1-2: Foundation (Current ✅)
-- [x] Data structure for keybindings
-- [x] UI with category tabs
-- [x] Search and sort functionality
-- [x] Status indicators
-
-### Week 3-4: Device Integration
-- [ ] Gamepad API setup
-- [ ] X52 detection
-- [ ] Real-time input monitoring
-- [ ] Key press display in header
-
-### Week 5-6: Binding Editor
-- [ ] Modal editor for individual bindings
-- [ ] Profile creation/editing
-- [ ] Conflict detection
-
-### Week 7-8: XML Integration
-- [ ] Parse Star Citizen keybinds.xml
-- [ ] Export custom profiles to XML
-- [ ] Backup/restore functionality
-
-### Week 9-10: Visual Enhancements
-- [ ] X52 diagram overlay
-- [ ] Light-up effect on key press
-- [ ] Streaming-friendly key display
-
----
-
-## How to Add New Keybindings
+For detailed implementation notes and phase timeline, see: [HOTAS-FEATURE-PLANNING.md](../../g:/My%20Drive/Project%20Management/Live/OmniCore-Documentation/HOTAS-FEATURE-PLANNING.md)
 
 ### 1. Update Data File
 

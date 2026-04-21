@@ -7,11 +7,73 @@
 export const SHIP_ARTWORK = {
   'vulture': {
     url: '/assets/ships-artwork/drake-vulture.png',
-    opacity: 0.90, // Higher opacity (less transparent) for clean backgrounds
-    blur: 0, // No blur - artwork is already clean
-    brightness: 1.0, // Full brightness - artwork is already styled
+    opacity: 0.90,
+    blur: 0,
+    brightness: 1.0,
     description: 'Official Drake Vulture artwork',
   },
+  // Aurora Mk I variants — COMMENTED OUT pending transparent background PNG
+  // File aurora-es.png (had baked-in background) was removed
+  // See GitHub issues for community contributions with proper transparent PNGs
+  // TODO: Re-enable once transparent background image is available
+  /*
+  'aurora mk i': {
+    url: '/assets/ships-artwork/aurora-es.png',
+    opacity: 0.88,
+    blur: 0,
+    brightness: 1.0,
+    description: 'Roberts Space Industries Aurora Mk I',
+  },
+  'aurora mk i es': {
+    url: '/assets/ships-artwork/aurora-es.png',
+    opacity: 0.88,
+    blur: 0,
+    brightness: 1.0,
+    description: 'Aurora Mk I Essential Starter',
+  },
+  'aurora mk i ln': {
+    url: '/assets/ships-artwork/aurora-es.png',
+    opacity: 0.88,
+    blur: 0,
+    brightness: 1.0,
+    description: 'Aurora Mk I Legionnaire Combat',
+  },
+  'aurora mk i lx': {
+    url: '/assets/ships-artwork/aurora-es.png',
+    opacity: 0.88,
+    blur: 0,
+    brightness: 1.0,
+    description: 'Aurora Mk I Deluxe Luxury',
+  },
+  'aurora mk i mr': {
+    url: '/assets/ships-artwork/aurora-es.png',
+    opacity: 0.88,
+    blur: 0,
+    brightness: 1.0,
+    description: 'Aurora Mk I Marque Light Fighter',
+  },
+  'aurora mk i cl': {
+    url: '/assets/ships-artwork/aurora-es.png',
+    opacity: 0.88,
+    blur: 0,
+    brightness: 1.0,
+    description: 'Aurora Mk I Clipper Cargo',
+  },
+  'aurora mk i se': {
+    url: '/assets/ships-artwork/aurora-es.png',
+    opacity: 0.88,
+    blur: 0,
+    brightness: 1.0,
+    description: 'Aurora Mk I Special Edition',
+  },
+  'aurora mk ii': {
+    url: '/assets/ships-artwork/aurora-es.png',
+    opacity: 0.88,
+    blur: 0,
+    brightness: 1.0,
+    description: 'Aurora Mk II',
+  },
+  */
   // Add more ships here as artwork becomes available
   // Example:
   // '890 jump': {

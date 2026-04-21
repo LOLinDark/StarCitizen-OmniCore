@@ -85,86 +85,16 @@ src/
 
 ---
 
-## YouTube API Integration (TODO)
+## YouTube API Integration
 
-### Phase 1: Manual Setup
+The Aerobook currently uses mock data but is structured for real YouTube API integration. For planning details and implementation phases, see the private planning document.
 
-**Objective**: Pull real YouTube metadata and embed real videos
+Currently supported:
+- Time-windowed 15-second clips from YouTube videos
+- Creator attribution and engagement metrics
+- Category-based content organization (Star Citizen | Squadron 42 | Community Highlights)
 
-#### Prerequisites
-
-1. **YouTube API Key**
-   - Visit [Google Cloud Console](https://console.cloud.google.com)
-   - Create new project: "OmniCore-Aerobook"
-   - Enable YouTube Data API v3
-   - Create API Key (or OAuth 2.0 credentials for authenticated requests)
-   - Add to `.env.local`: `VITE_YOUTUBE_API_KEY=your_key_here`
-
-2. **Creator Channel IDs**
-   - Find Star Citizen creators on YouTube
-   - Get their channel IDs (e.g., `UCg3QjaMcKCDfxPqzljxPIbw`)
-   - Store in database or config file
-
-#### Implementation Steps
-
-1. **Create YouTube service** (`src/core/api/youtubeService.js`)
-   ```javascript
-   // Fetch videos from creator channels
-   // Extract thumbnail, title, channel name, view/like counts
-   // Build clip metadata
-   ```
-
-2. **Video Selection Process**
-   - Search for videos by category tags (#StarCitizen, #Squadron42, etc.)
-   - Manually review and curate 3-5 videos per category
-   - Test time windows (find best 15-second segments)
-   - Add to aeroBookContent.js with real YouTube IDs
-
-3. **Caching Strategy**
-   - Cache API responses in `localStorage` with 24-hour TTL
-   - Graceful degradation: Fall back to hardcoded defaults if API fails
-   - Update cache daily via background sync
-
-4. **Rate Limiting**
-   - YouTube API has quota limits (10,000 units/day default)
-   - Monitor usage in admin dashboard
-   - Consider quota upgrade if scaling
-
-### Phase 2: Automation (Future)
-
-- Scheduled job to fetch latest videos daily
-- AI-powered best-moment detection (auto-find good 15sec segments)
-- Trending detection (show most-liked clips first)
-- Creator submission form (for community participation)
-
----
-
-## Roadmap
-
-### v1.1 - Live Streamers
-- [ ] New page: `/live-streamers`
-- [ ] Display active streamers with live status badges
-- [ ] Integrate Twitch API for live channel data
-- [ ] Prerequisite: HOTAS/keybinding features (mentioned by user)
-- [ ] Link to creators' streams from Aerobook
-
-### v1.2 - Bookmark Customization
-- [ ] User-configured bookmarks bar
-- [ ] Add/remove bookmarks for frequently visited pages
-- [ ] Drag-to-reorder bookmarks
-- [ ] Persistent storage in user preferences store
-
-### v1.3 - Creator Profiles
-- [ ] Creator profile pages (expanded from card click)
-- [ ] Full video library by creator
-- [ ] Creator bio and social links
-- [ ] Subscriber/fan count
-
-### v1.4 - Content Submission
-- [ ] Creator-facing dashboard to submit videos
-- [ ] Admin queue for content approval
-- [ ] Featured badge system
-- [ ] Revenue sharing metrics (if applicable)
+For YouTube setup and caching strategy, refer to: [AEROBOOK-FEATURE-PLANNING.md](../../g:/My%20Drive/Project%20Management/Live/OmniCore-Documentation/AEROBOOK-FEATURE-PLANNING.md)
 
 ---
 
@@ -263,17 +193,18 @@ Content creators featured in Aerobook are credited with:
 
 ---
 
-## Next Steps
+## Data Curation
 
-1. **Find Real Content**: Search YouTube for #StarCitizen and #Squadron42 videos
-2. **Curate Time Windows**: Watch videos, identify best 15-second segments
-3. **Get Creator Handles**: Fetch channel info from YouTube API
-4. **Populate Data**: Add real video IDs and metadata
-5. **Test Rotation**: Verify different videos appear on refresh
-6. **Deploy**: Push to production when ready
+To add new content to the gallery:
+
+1. Find YouTube video ID from the URL (e.g., `dQw4w9WgXcQ` from `youtube.com/watch?v=dQw4w9WgXcQ`)
+2. Identify the best 15-second segment by watching the video and noting start/end times
+3. Add to the appropriate category array in `src/data/aeroBookContent.js`
+4. Populate all fields: creator, title, metrics, timestamps
+
+The data structure is defined in [Configuration](#configuration) above.
 
 ---
 
-*Last Updated: April 16, 2026*
-*Feature Lead: User*
-*Dev Status: MVP Complete, API Integration Pending*
+*Last Updated: April 21, 2026*
+*Keep this document as a reference for the current implementation. See private planning doc for roadmap and phases.*
