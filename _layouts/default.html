@@ -12,9 +12,17 @@
 </head>
 <body>
   <header class="site-header">
-    <div class="wrapper">
-      <span class="site-tag">⬡</span>
-      <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+    <div class="wrapper header-row">
+      <a class="site-logo" href="{{ '/' | relative_url }}">
+        <span class="hex-icon">⬡</span>
+        <span class="site-title"><span class="cap">O</span>mni<span class="cap">C</span>ore</span>
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation">☰</button>
+      <nav class="site-nav" id="site-nav">
+        {% for link in site.navigation %}
+          <a href="{{ link.url | relative_url }}"{% if page.url == link.url %} class="active"{% endif %}>{{ link.title }}</a>
+        {% endfor %}
+      </nav>
     </div>
   </header>
   <main class="wrapper">
@@ -22,17 +30,14 @@
   </main>
   <footer class="site-footer">
     <div class="wrapper">
+      <p>Built by <a href="https://github.com/LOLinDark" target="_blank" rel="noopener">LOLinDark</a></p>
       <p>OmniCore is a fan-made project. Star Citizen® is a registered trademark of Cloud Imperium Rights LLC.</p>
     </div>
   </footer>
-  <style>
-    .wrapper { max-width: 960px; margin: 0 auto; padding: 0 1.5em; }
-    .site-header { border-bottom: 1px solid var(--oc-cyan-dim); padding: 1em 0; display: flex; align-items: center; }
-    .site-header .wrapper { display: flex; align-items: center; gap: 0.6em; }
-    .site-tag { font-size: 1.4em; color: var(--oc-cyan); filter: drop-shadow(0 0 6px var(--oc-cyan-dim)); }
-    .site-title { font-size: 1.2em; color: var(--oc-cyan); letter-spacing: 0.15em; text-transform: uppercase; text-shadow: 0 0 10px var(--oc-cyan-dim); }
-    main.wrapper { padding-top: 2em; padding-bottom: 3em; }
-    .site-footer { border-top: 1px solid var(--oc-cyan-dim); padding: 1.5em 0; text-align: center; color: var(--oc-text-dim); font-size: 0.8em; }
-  </style>
+  <script>
+    document.querySelector('.nav-toggle').addEventListener('click', function() {
+      document.getElementById('site-nav').classList.toggle('open');
+    });
+  </script>
 </body>
 </html>

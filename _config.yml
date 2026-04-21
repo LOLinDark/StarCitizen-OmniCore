@@ -1,4 +1,4 @@
-title: "OMNI-CORE"
+title: "OmniCore"
 description: "Citizen Operations & Intelligence Network — Star Citizen companion hub"
 baseurl: "/StarCitizen-OmniCore"
 url: "https://lolindark.github.io"
@@ -6,6 +6,18 @@ url: "https://lolindark.github.io"
 markdown: kramdown
 kramdown:
   input: GFM
+
+navigation:
+  - title: Home
+    url: /
+  - title: User Guide
+    url: /user-guide
+  - title: Developer Guide
+    url: /developer-guide/
+  - title: About
+    url: /about
+  - title: Support
+    url: /support
 
 exclude:
   - node_modules
@@ -23,3 +35,5 @@ exclude:
   - tmp-starmap.json
   - index.html
   - DOCUMENTATION-STRUCTURE.md
+  - README.md
+  - OmniCore-ROADMAP.md

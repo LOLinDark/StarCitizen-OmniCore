@@ -91,3 +91,226 @@ ul, ol { padding-left: 1.5em; margin: 0.5em 0; }
 li { margin: 0.25em 0; }
 
 strong { color: lighten($oc-text, 10%); }
+
+/* ── Layout ── */
+
+.wrapper { max-width: 960px; margin: 0 auto; padding: 0 1.5em; }
+
+/* ── Header ── */
+
+.site-header {
+  border-bottom: 1px solid $oc-cyan-dim;
+  padding: 0.8em 0;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.site-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  text-decoration: none;
+}
+
+.hex-icon {
+  font-size: 1.6em;
+  color: $oc-cyan;
+  filter: drop-shadow(0 0 6px $oc-cyan-dim);
+}
+
+.site-title {
+  font-size: 1.3em;
+  color: $oc-cyan;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 10px $oc-cyan-dim;
+}
+
+.site-title .cap {
+  font-size: 1.35em;
+  color: #fff;
+  text-shadow: 0 0 12px $oc-cyan;
+}
+
+/* ── Navigation ── */
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 1px solid $oc-cyan-dim;
+  color: $oc-cyan;
+  font-size: 1.3em;
+  padding: 0.2em 0.5em;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1.5em;
+
+  a {
+    color: $oc-text-dim;
+    font-size: 0.85em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3em 0;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+
+    &:hover, &.active {
+      color: $oc-cyan;
+      border-bottom-color: $oc-cyan;
+      text-shadow: 0 0 8px $oc-cyan-dim;
+    }
+  }
+}
+
+@media (max-width: 680px) {
+  .nav-toggle { display: block; }
+  .site-nav {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: $oc-space-deep;
+    border-bottom: 1px solid $oc-cyan-dim;
+    padding: 1em 1.5em;
+    gap: 0.8em;
+    z-index: 50;
+
+    &.open { display: flex; }
+  }
+  .site-header { position: relative; }
+}
+
+/* ── Main ── */
+
+main.wrapper { padding-top: 2em; padding-bottom: 3em; }
+
+/* ── Footer ── */
+
+.site-footer {
+  border-top: 1px solid $oc-cyan-dim;
+  padding: 1.5em 0;
+  text-align: center;
+  font-size: 0.8em;
+
+  p { color: $oc-text-dim; margin: 0.3em 0; }
+  a { color: $oc-cyan; }
+}
+
+/* ── Landing hero ── */
+
+.hero-section {
+  text-align: center;
+  margin-bottom: 2.5em;
+
+  h1 { font-size: 2.8rem; margin-bottom: 0.2em; }
+  .tagline { color: $oc-text-dim; font-size: 1.1em; letter-spacing: 0.1em; }
+  .subtitle { color: $oc-text-dim; font-size: 0.9em; margin-top: 0.5em; }
+}
+
+/* ── Card grid ── */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5em;
+  margin: 2em 0;
+}
+
+@media (max-width: 600px) {
+  .card-grid { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: $oc-space-mid;
+  border: 1px solid $oc-cyan-dim;
+  border-radius: 3px;
+  padding: 1.5em;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    border-color: $oc-cyan;
+    box-shadow: 0 0 14px $oc-cyan-glow, inset 0 0 14px $oc-cyan-glow;
+  }
+
+  .card-icon {
+    font-size: 2em;
+    margin-bottom: 0.4em;
+  }
+
+  h3 {
+    margin: 0 0 0.4em;
+    font-size: 1.05em;
+    border: none;
+  }
+
+  p {
+    color: $oc-text-dim;
+    font-size: 0.88em;
+    flex: 1;
+  }
+
+  .card-link {
+    display: inline-block;
+    margin-top: 0.8em;
+    font-size: 0.82em;
+    color: $oc-cyan;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+}
+
+/* Hero-style cards (Star Citizen / Squadron 42) */
+.card.hero-card {
+  text-align: center;
+  padding: 2.5em 1.5em;
+  position: relative;
+  overflow: hidden;
+
+  .card-icon { font-size: 2.5em; }
+
+  h3 { font-size: 1.3em; }
+}
+
+.card.hero-card.sc { border-color: $oc-cyan-dim; }
+.card.hero-card.sq42 { border-color: rgba($oc-purple, 0.3); }
+.card.hero-card.sq42:hover {
+  border-color: $oc-purple;
+  box-shadow: 0 0 14px rgba($oc-purple, 0.15), inset 0 0 14px rgba($oc-purple, 0.15);
+}
+.card.hero-card.sq42 h3 { color: $oc-purple; text-shadow: 0 0 10px rgba($oc-purple, 0.3); }
+
+/* ── Page header ── */
+
+.page-header {
+  margin-bottom: 2em;
+  text-align: center;
+
+  h1 { margin-bottom: 0.3em; }
+  p { color: $oc-text-dim; }
+}
+
+/* ── Doc list ── */
+
+.doc-list {
+  list-style: none;
+  padding: 0;
+
+  li {
+    border-bottom: 1px solid rgba($oc-cyan-dim, 0.4);
+    padding: 0.8em 0;
+
+    a { font-size: 0.95em; }
+    .doc-desc { color: $oc-text-dim; font-size: 0.82em; margin-top: 0.2em; }
+  }
+}
