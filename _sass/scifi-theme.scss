@@ -1,0 +1,93 @@
+/* OmniCore Sci-Fi Theme — ported from src/styles/scifi-theme.css */
+
+$oc-space-deep: #0a1428;
+$oc-space-mid: #0f1b2e;
+$oc-space-light: #1a2a3e;
+$oc-cyan: #00d9ff;
+$oc-cyan-dim: hsla(190, 100%, 50%, 0.3);
+$oc-cyan-glow: hsla(190, 100%, 50%, 0.15);
+$oc-purple: #b300ff;
+$oc-green: #00ff88;
+$oc-orange: #ff6b00;
+$oc-red: #ff0055;
+$oc-text: #c1d0e0;
+$oc-text-dim: #6b7f96;
+
+:root {
+  --oc-space-deep: #{$oc-space-deep};
+  --oc-space-mid: #{$oc-space-mid};
+  --oc-space-light: #{$oc-space-light};
+  --oc-cyan: #{$oc-cyan};
+  --oc-cyan-dim: #{$oc-cyan-dim};
+  --oc-cyan-glow: #{$oc-cyan-glow};
+  --oc-purple: #{$oc-purple};
+  --oc-green: #{$oc-green};
+  --oc-orange: #{$oc-orange};
+  --oc-red: #{$oc-red};
+  --oc-text: #{$oc-text};
+  --oc-text-dim: #{$oc-text-dim};
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: $oc-space-deep;
+  color: $oc-text;
+  font-family: "Electrolize", "Segoe UI", sans-serif;
+  line-height: 1.6;
+}
+
+a { color: $oc-cyan; text-decoration: none; &:hover { text-shadow: 0 0 8px $oc-cyan-dim; } }
+
+h1, h2, h3, h4 {
+  color: $oc-cyan;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px $oc-cyan-dim;
+}
+
+h1 { font-size: 2rem; margin-bottom: 0.5em; }
+h2 { font-size: 1.4rem; margin: 1.5em 0 0.5em; border-bottom: 1px solid $oc-cyan-dim; padding-bottom: 0.3em; }
+h3 { font-size: 1.1rem; margin: 1.2em 0 0.4em; }
+
+code {
+  background: $oc-space-light;
+  color: $oc-green;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+pre {
+  background: $oc-space-mid;
+  border: 1px solid $oc-cyan-dim;
+  border-radius: 4px;
+  padding: 1em;
+  overflow-x: auto;
+  code { background: none; padding: 0; }
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  th, td { padding: 0.5em 0.75em; border: 1px solid $oc-cyan-dim; text-align: left; }
+  th { background: $oc-space-light; color: $oc-cyan; text-transform: uppercase; font-size: 0.85em; letter-spacing: 0.05em; }
+  tr:nth-child(even) td { background: rgba($oc-space-light, 0.4); }
+}
+
+blockquote {
+  border-left: 3px solid $oc-cyan;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  color: $oc-text-dim;
+  font-style: italic;
+  background: rgba($oc-cyan-glow, 0.3);
+}
+
+hr { border: none; border-top: 1px solid $oc-cyan-dim; margin: 2em 0; }
+
+ul, ol { padding-left: 1.5em; margin: 0.5em 0; }
+li { margin: 0.25em 0; }
+
+strong { color: lighten($oc-text, 10%); }

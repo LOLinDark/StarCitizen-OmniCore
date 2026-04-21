@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ page.title | default: site.title }}</title>
+  <meta name="description" content="{{ site.description }}">
+  <meta name="theme-color" content="#0a1428">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Electrolize&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrapper">
+      <span class="site-tag">⬡</span>
+      <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+    </div>
+  </header>
+  <main class="wrapper">
+    {{ content }}
+  </main>
+  <footer class="site-footer">
+    <div class="wrapper">
+      <p>OmniCore is a fan-made project. Star Citizen® is a registered trademark of Cloud Imperium Rights LLC.</p>
+    </div>
+  </footer>
+  <style>
+    .wrapper { max-width: 960px; margin: 0 auto; padding: 0 1.5em; }
+    .site-header { border-bottom: 1px solid var(--oc-cyan-dim); padding: 1em 0; display: flex; align-items: center; }
+    .site-header .wrapper { display: flex; align-items: center; gap: 0.6em; }
+    .site-tag { font-size: 1.4em; color: var(--oc-cyan); filter: drop-shadow(0 0 6px var(--oc-cyan-dim)); }
+    .site-title { font-size: 1.2em; color: var(--oc-cyan); letter-spacing: 0.15em; text-transform: uppercase; text-shadow: 0 0 10px var(--oc-cyan-dim); }
+    main.wrapper { padding-top: 2em; padding-bottom: 3em; }
+    .site-footer { border-top: 1px solid var(--oc-cyan-dim); padding: 1.5em 0; text-align: center; color: var(--oc-text-dim); font-size: 0.8em; }
+  </style>
+</body>
+</html>

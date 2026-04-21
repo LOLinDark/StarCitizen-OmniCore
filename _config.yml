@@ -1,0 +1,25 @@
+title: "OMNI-CORE"
+description: "Citizen Operations & Intelligence Network — Star Citizen companion hub"
+baseurl: ""
+url: ""
+
+markdown: kramdown
+kramdown:
+  input: GFM
+
+exclude:
+  - node_modules
+  - src
+  - server
+  - scripts
+  - public
+  - dist
+  - package.json
+  - package-lock.json
+  - vite.config.js
+  - eslint.config.js
+  - .env
+  - .env.example
+  - tmp-starmap.json
+  - index.html
+  - DOCUMENTATION-STRUCTURE.md

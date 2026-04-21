@@ -5,3 +5,6 @@ dist
 *.log
 .DS_Store
 amazonq-credentials.json
+_site
+.jekyll-cache
+.jekyll-metadata
