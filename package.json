@@ -43,6 +43,7 @@
     "express-rate-limit": "^8.3.0",
     "fast-xml-parser": "^5.7.1",
     "helmet": "8.1.0",
+    "motion": "^10.18.0",
     "nodemailer": "^8.0.5",
     "path-to-regexp": "^8.4.0",
     "picomatch": "^2.3.2",

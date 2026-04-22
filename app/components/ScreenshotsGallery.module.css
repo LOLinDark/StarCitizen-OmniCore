@@ -1,0 +1,18 @@
+.imageWrapper {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: var(--mantine-radius-md);
+  overflow: hidden;
+  background: var(--mantine-color-gray-8);
+  padding: var(--mantine-spacing-sm);
+}
+
+.imageWrapper:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.thumbnail {
+  border-radius: var(--mantine-radius-sm);
+  object-fit: cover;
+}

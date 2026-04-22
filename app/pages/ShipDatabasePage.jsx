@@ -586,17 +586,19 @@ export default function ShipDatabasePage() {
         .ship-row.selected { background: rgba(34, 209, 123, 0.09) !important; }
       `}</style>
 
-      {/* Background — ship image, blurred + dimmed, scrolls with content */}
+      {/* Background — ship image, blurred + dimmed, full viewport width */}
       {bgImage && (
         <div
           key={bgShip.id}
           aria-hidden="true"
           style={{
-            position: 'absolute',
+            position: 'fixed',
             top: '0',
             left: 0,
             right: 0,
             bottom: 0,
+            width: '100%',
+            height: '100%',
             zIndex: 0,
             backgroundImage: `url(${bgImage})`,
             backgroundSize: 'cover',

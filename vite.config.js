@@ -4,6 +4,8 @@ import path from 'path'
 
 export default defineConfig(({ command }) => ({
   root: 'app',
+  // Public directory is at project root (not under app/)
+  publicDir: '../public',
   // Use subdirectory base only for production builds (GitHub Pages)
   // Local dev server uses root path for easier testing
   base: command === 'build' ? '/StarCitizen-OmniCore/' : '/',

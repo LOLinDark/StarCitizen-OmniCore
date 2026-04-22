@@ -33,6 +33,7 @@ const DeveloperPage = lazy(() => import('./pages/DeveloperPage'));
 const ChangesPage = lazy(() => import('./pages/ChangesPage'));
 const ErrorLogPage = lazy(() => import('./pages/ErrorLogPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ScreenshotsPage = lazy(() => import('./pages/ScreenshotsPage'));
 const APITestPage = lazy(() => import('./pages/APITestPage'));
 const DeveloperContextIndexPage = lazy(() => import('./pages/DeveloperContextIndexPage'));
 const DeveloperNavChartsLabPage = lazy(() => import('./pages/DeveloperNavChartsLabPage'));
@@ -112,6 +113,7 @@ function App() {
           <Route path="settings/hotas" element={<Lazy Component={HOTASTestPage} />} />
           <Route path="settings/theme" element={<Lazy Component={ThemePage} />} />
           <Route path="about" element={<Lazy Component={AboutPage} />} />
+          <Route path="screenshots" element={<Lazy Component={ScreenshotsPage} />} />
         </Route>
 
         {/* Admin/Backend/Developer Area (with AdminLayout - Sidebar layout) */}
