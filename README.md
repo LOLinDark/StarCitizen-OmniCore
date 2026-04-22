@@ -6,6 +6,29 @@ OmniCore is a Star Citizen companion hub — a PWA combining ship intelligence, 
 
 ---
 
+## Vision & Motivation
+
+OmniCore was born from a simple observation: while Cloud Imperium Games has built an impressive scope of tools for Star Citizen, there's always room for innovation in how we play.
+
+As a backer since 2013, I've watched the game evolve and wanted to be ready when Squadron 42 launches. After taking a break and returning to master flying mechanics, I found the HOTAS configuration process tedious. Most games struggle with this. Rather than accept the limitations, I built a tool to edit the game's XML configuration files directly, backup configurations to GitHub or Google Drive, and manage profiles effortlessly.
+
+From there, the vision expanded: **What if OmniCore could become an operating system for how I play Star Citizen?**
+
+### Where We're Heading
+
+- **Fleet Management**: Track your hangar, manage loadouts per ship, visualize your collection
+- **Career Tracking**: Monitor playtime, contract history, and progression across your account
+- **Advanced HOTAS**: Full support for multi-mode controllers (like the Logitech/Saitek X52's 3-position switch)
+  - Pre-built mode profiles (e.g., "Landing & Navigation", "Combat", "Mining")
+  - Seamless XML sync with backups
+  - Profile version control
+- **Modular Design**: Extensible for future in-game data, Spectrum integration, and beyond
+- **Mobile-First**: PWA today, native Android app tomorrow
+
+We've moved beyond prototype — OmniCore is a working companion hub with real utility for players preparing for Squadron 42 and beyond.
+
+---
+
 ## For Players
 
 ### What's Inside
