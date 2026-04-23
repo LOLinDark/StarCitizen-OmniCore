@@ -1,6 +1,6 @@
 import { Stack, Button, Text, Paper } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import { routeConfig } from '../config/routes';
 import useAppStore from '../stores/useAppStore';
@@ -9,6 +9,9 @@ export default function DevPanel() {
   const navigate = useNavigate();
   const devMode = useAppStore((s) => s.devMode);
   const [isMinimized, setIsMinimized] = useState(true);
+  const [position, setPosition] = useState({ top: 132, left: 10 });
+  const paperRef = useRef(null);
+  const dragRef = useRef(null);
   const panelWidth = 294;
 
   // Hide panel when Dev Mode is off
@@ -21,37 +24,58 @@ export default function DevPanel() {
     return '#00ff88';
   };
 
+  const handleMouseMove = (e) => {
+    if (!dragRef.current) return;
+
+    const panelHeight = paperRef.current?.offsetHeight || 0;
+    const maxLeft = Math.max(0, window.innerWidth - panelWidth);
+    const maxTop = Math.max(0, window.innerHeight - panelHeight);
+
+    const nextLeft = e.clientX - dragRef.current.offsetX;
+    const nextTop = e.clientY - dragRef.current.offsetY;
+
+    setPosition({
+      left: Math.min(Math.max(0, nextLeft), maxLeft),
+      top: Math.min(Math.max(0, nextTop), maxTop),
+    });
+  };
+
+  const handleMouseUp = () => {
+    dragRef.current = null;
+    window.removeEventListener('mousemove', handleMouseMove);
+    window.removeEventListener('mouseup', handleMouseUp);
+  };
+
+  useEffect(() => {
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
   const handleMouseDown = (e) => {
-    const paper = e.currentTarget;
-    const rect = paper.getBoundingClientRect();
-    const startX = e.clientX - rect.left;
-    const startY = e.clientY - rect.top;
+    if (e.button !== 0 || !paperRef.current) return;
+    e.preventDefault();
 
-    const onMouseMove = (e) => {
-      paper.style.left = (e.clientX - startX) + 'px';
-      paper.style.top = (e.clientY - startY + window.scrollY) + 'px';
-      paper.style.bottom = 'auto';
-      paper.style.right = 'auto';
-      paper.style.transform = 'none';
+    const rect = paperRef.current.getBoundingClientRect();
+    dragRef.current = {
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
     };
 
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
   };
 
   return (
       <Paper
+        ref={paperRef}
         p="md"
         radius="sm"
         style={{
           position: 'fixed',
-          top: '132px',
-          left: '10px',
+          top: `${position.top}px`,
+          left: `${position.left}px`,
           transform: 'none',
           width: `${panelWidth}px`,
           maxHeight: isMinimized ? 'auto' : '600px',

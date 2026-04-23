@@ -1,4 +1,4 @@
-import { apiGet } from '../../client';
+import { apiGet, apiPost } from '../../client';
 
 const FEED_CACHE_KEY = 'omnicore.aerobook.feed-cache.v1';
 
@@ -74,4 +74,47 @@ export async function fetchLatestMediaMeta() {
 
     throw error;
   }
+}
+
+// ── Playlist fetch ──────────────────────────────────────────────────────
+
+/**
+ * Fetch videos from a specific YouTube playlist via the server proxy.
+ * @param {{ playlistId: string, limit?: number }} opts
+ * @returns {Promise<Array>} Array of video objects
+ */
+export async function fetchYoutubePlaylist({ playlistId, limit = 50 } = {}) {
+  const params = new URLSearchParams({ playlistId, limit: String(limit) });
+  const data = await apiGet(`/api/media/youtube/playlist?${params.toString()}`);
+  return data.videos || [];
+}
+
+// ── Download queue API ──────────────────────────────────────────────────
+
+export async function fetchDownloadStatus() {
+  return apiGet('/api/dev/download/status');
+}
+
+export async function fetchDownloadEnv() {
+  return apiGet('/api/dev/download/env');
+}
+
+export async function enqueueForDownload(videos) {
+  return apiPost('/api/dev/download/enqueue', { videos });
+}
+
+export async function startDownloadWorker() {
+  return apiPost('/api/dev/download/start', {});
+}
+
+export async function stopDownloadWorker() {
+  return apiPost('/api/dev/download/stop', {});
+}
+
+export async function retryDownload(videoId) {
+  return apiPost(`/api/dev/download/retry/${videoId}`, {});
+}
+
+export async function removeDownloadItem(videoId) {
+  return apiPost(`/api/dev/download/remove/${videoId}`, {});
 }

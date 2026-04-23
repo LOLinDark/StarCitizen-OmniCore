@@ -52,6 +52,14 @@ export default function AppHeader() {
             <Menu.Item onClick={() => navigate('/settings')}>Settings</Menu.Item>
             <Menu.Divider />
             <Menu.Item onClick={() => navigate('/about')}>About</Menu.Item>
+            {rsiHandle === 'LOLinDark' && (
+              <>
+                <Menu.Divider />
+                <Menu.Item onClick={() => navigate('/developer')} style={{ color: '#ff9e44' }}>
+                  ⚙ Admin Panel
+                </Menu.Item>
+              </>
+            )}
             <Menu.Item
               onClick={() => {
                 localStorage.removeItem('rsiHandle');

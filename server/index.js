@@ -21,14 +21,18 @@ import rateLimit from 'express-rate-limit';
 import { BedrockRuntimeClient, InvokeModelCommand, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { appendFileSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { registerMediaRoutes } from './api/media/index.js';
 import { registerShipRoutes } from './api/ships/index.js';
 import { registerVersemailRoutes } from './api/versemail/index.js';
 import { registerHotasModeRoutes } from './peripherals/hotas/index.js';
+import { registerDownloadRoutes } from './api/dev/download/index.js';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '..', '.env') });
 
 const SERVER_VERSION = 'Alpha V0.1.0';
 
@@ -168,7 +172,14 @@ const app = express();
 app.use(helmet({ contentSecurityPolicy: false })); // CSP disabled for dev; enable in production
 
 // SECURITY: Restrict CORS to known frontend origins only.
-app.use(cors({ origin: ALLOWED_ORIGINS, methods: ['GET', 'POST'] }));
+app.use(
+  cors({
+    origin: ALLOWED_ORIGINS,
+    credentials: true,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
 
 // SECURITY: Limit request body size to prevent memory exhaustion attacks.
 app.use(express.json({ limit: '1mb' }));
@@ -898,6 +909,7 @@ registerMediaRoutes(app);
 registerShipRoutes(app);
 registerVersemailRoutes(app);
 registerHotasModeRoutes(app);
+registerDownloadRoutes(app);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
