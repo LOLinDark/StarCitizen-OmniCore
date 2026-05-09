@@ -207,8 +207,14 @@ export function KeyPressIndicator({
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      const label = getKeyLabel(e.code, e.key);
-      const identifier = e.code || e.key;
+      try {
+        // Don't capture when user is typing in any form control
+        const el = document.activeElement;
+        if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+        if (el?.closest?.('[role="combobox"], [role="searchbox"], [role="textbox"]')) return;
+
+        const label = getKeyLabel(e.code, e.key);
+        const identifier = e.code || e.key;
       
       setPressedKeys(prev => {
         const newSet = new Set(prev);
@@ -225,10 +231,16 @@ export function KeyPressIndicator({
         
         return newSet;
       });
+      } catch { /* prevent crash */ }
     };
 
     const handleKeyUp = (e) => {
-      const identifier = e.code || e.key;
+      try {
+        const el = document.activeElement;
+        if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+        if (el?.closest?.('[role="combobox"], [role="searchbox"], [role="textbox"]')) return;
+
+        const identifier = e.code || e.key;
       
       setPressedKeys(prev => {
         const newSet = new Set(prev);
@@ -240,6 +252,7 @@ export function KeyPressIndicator({
         
         return newSet;
       });
+      } catch { /* prevent crash */ }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -264,8 +277,7 @@ export function KeyPressIndicator({
         border: '2px solid #00d9ff',
         borderRadius: '12px',
         padding: inWindow ? '0.6rem' : '0.75rem',
-        minWidth: '420px',
-        maxWidth: inWindow ? '100%' : '70vw',
+        width: '100%',
         backdropFilter: 'blur(10px)',
         boxShadow: '0 0 20px rgba(0, 217, 255, 0.3)',
       }}

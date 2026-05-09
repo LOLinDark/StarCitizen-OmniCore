@@ -789,17 +789,54 @@ app.get('/api/hotas/profiles', (req, res) => {
 
     const profiles = readdirSync(STAR_CITIZEN_MAPPINGS_PATH)
       .filter(file => file.endsWith('.xml'))
-      .map(file => ({
-        name: file.replace('.xml', ''),
-        path: file,
-        filename: file
-      }));
+      .map(file => {
+        const name = file.replace('.xml', '');
+        let meta = {};
+        try {
+          const metaPath = join(STAR_CITIZEN_MAPPINGS_PATH, `${name}.omnicore.json`);
+          meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+        } catch { /* no sidecar */ }
+        return { name, path: file, filename: file, meta };
+      });
 
     log(`HOTAS: Loaded ${profiles.length} profiles from Star Citizen mappings directory`);
     res.json({ profiles });
   } catch (error) {
     log('HOTAS profiles error:', error.message);
     res.status(500).json({ error: 'Failed to load profiles' });
+  }
+});
+
+app.get('/api/hotas/profile/:profileName/meta', (req, res) => {
+  try {
+    const profileName = validateProfileName(req.params.profileName);
+    if (!profileName) return res.status(400).json({ error: 'Invalid profile name' });
+    const metaPath = join(STAR_CITIZEN_MAPPINGS_PATH, `${profileName}.omnicore.json`);
+    if (!metaPath.startsWith(STAR_CITIZEN_MAPPINGS_PATH)) return res.status(403).json({ error: 'Access denied' });
+    try {
+      const meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+      res.json(meta);
+    } catch {
+      res.json({});
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to read profile metadata' });
+  }
+});
+
+app.post('/api/hotas/profile/:profileName/meta', (req, res) => {
+  try {
+    const profileName = validateProfileName(req.params.profileName);
+    if (!profileName) return res.status(400).json({ error: 'Invalid profile name' });
+    const metaPath = join(STAR_CITIZEN_MAPPINGS_PATH, `${profileName}.omnicore.json`);
+    if (!metaPath.startsWith(STAR_CITIZEN_MAPPINGS_PATH)) return res.status(403).json({ error: 'Access denied' });
+    const meta = req.body || {};
+    writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf-8');
+    log(`HOTAS: Saved metadata for profile "${profileName}"`);
+    res.json({ success: true, meta });
+  } catch (error) {
+    log('HOTAS meta save error:', error.message);
+    res.status(500).json({ error: 'Failed to save profile metadata' });
   }
 });
 

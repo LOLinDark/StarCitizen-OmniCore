@@ -103,7 +103,7 @@ export const HOTASTable = ({
                   color: '#ff9800',
                   padding: '1rem',
                   fontWeight: 600,
-                  borderBottom: '1px solid #ffb74d',
+                  borderBottom: '1px solid rgba(255, 152, 0, 0.3)',
                   textShadow: undefined,
                 }}
                 onClick={() => handleHeaderClick('keyboardBinding')}
@@ -116,7 +116,7 @@ export const HOTASTable = ({
                   color: '#e91e63',
                   padding: '1rem',
                   fontWeight: 600,
-                  borderBottom: '1px solid #f48fb1',
+                  borderBottom: '1px solid rgba(233, 30, 99, 0.3)',
                   textShadow: undefined,
                 }}
                 onClick={() => handleHeaderClick('hotasBinding')}
@@ -164,11 +164,11 @@ export const HOTASTable = ({
                 <Table.Tr
                   key={binding.id}
                   style={{
-                    background: rowIsLive ? '#ecfff4' : baseRowBg,
+                    background: rowIsLive ? 'rgba(34, 209, 123, 0.08)' : baseRowBg,
                     borderBottom: rowIsLive
-                      ? '1px solid #66bb6a'
+                      ? '1px solid rgba(34, 209, 123, 0.3)'
                       : `1px solid ${colors.rowBorderColor}`,
-                    boxShadow: rowIsLive ? 'inset 0 0 0 1px #66bb6a' : undefined,
+                    boxShadow: rowIsLive ? 'inset 0 0 0 1px rgba(34, 209, 123, 0.2)' : undefined,
                   }}
                 >
                 <Table.Td style={{ padding: '1rem' }}>
@@ -265,9 +265,9 @@ export const HOTASTable = ({
                     ) : binding.keyboardBinding ? (
                       <Badge
                         style={{
-                          backgroundColor: '#fff3e0',
-                          color: '#e65100',
-                          border: '1px solid #ffb74d',
+                          backgroundColor: 'rgba(255, 152, 0, 0.12)',
+                          color: '#ffb74d',
+                          border: '1px solid rgba(255, 152, 0, 0.3)',
                         }}
                         size="sm"
                       >
@@ -287,7 +287,7 @@ export const HOTASTable = ({
                     cursor: onStartHotasCapture ? 'context-menu' : 'default',
                     userSelect: 'none',
                     background: isCapturingThis ? 'rgba(106, 27, 154, 0.15)' : onStartHotasCapture ? 'rgba(233, 30, 99, 0.03)' : 'transparent',
-                    border: isCapturingThis ? '2px solid #6a1b9a' : onStartHotasCapture ? '1px solid rgba(233, 30, 99, 0.3)' : 'none',
+                    border: isCapturingThis ? '2px solid #6a1b9a' : onStartHotasCapture ? '1px solid rgba(233, 30, 99, 0.2)' : 'none',
                     borderRadius: '4px',
                     transition: 'all 0.15s ease',
                   }}
@@ -299,7 +299,7 @@ export const HOTASTable = ({
                   onMouseLeave={(e) => {
                     if (!onStartHotasCapture || isCapturingThis) return;
                     e.currentTarget.style.background = 'rgba(233, 30, 99, 0.03)';
-                    e.currentTarget.style.borderColor = 'rgba(233, 30, 99, 0.3)';
+                    e.currentTarget.style.borderColor = 'rgba(233, 30, 99, 0.2)';
                   }}
                   onContextMenu={(e) => {
                     if (!onStartHotasCapture) return;
@@ -334,9 +334,9 @@ export const HOTASTable = ({
                     ) : binding.hotasBinding ? (
                       <Badge
                         style={{
-                          backgroundColor: '#fce4ec',
-                          color: '#c2185b',
-                          border: '1px solid #f48fb1',
+                          backgroundColor: 'rgba(233, 30, 99, 0.12)',
+                          color: '#f48fb1',
+                          border: '1px solid rgba(233, 30, 99, 0.3)',
                         }}
                         size="sm"
                       >

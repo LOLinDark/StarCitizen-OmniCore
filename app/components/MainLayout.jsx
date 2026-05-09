@@ -1,7 +1,5 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Container } from '@mantine/core';
 import AppHeader from './AppHeader';
 import AerobookBar from './AerobookBar';
 import DeveloperNotes from './DeveloperNotes';
@@ -19,11 +17,11 @@ export default function MainLayout() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--oc-space-deep)', position: 'relative' }}>
-      {/* Header */}
-      <AppHeader />
-
-      {/* Aerobook/Bookmarks Bar */}
-      <AerobookBar />
+      {/* Sticky Header + Bookmarks Bar */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 100 }}>
+        <AppHeader />
+        <AerobookBar />
+      </div>
 
       {/* Permanent gradient overlay — positioned below header + bookmark bar, scrolls with content */}
       <div
@@ -42,10 +40,25 @@ export default function MainLayout() {
       />
 
       {/* Main Content */}
-      <Container size="xl" style={{ padding: '2rem 1rem', position: 'relative', zIndex: 1 }}>
+      <div style={{ padding: '2rem 3%', position: 'relative', zIndex: 1, maxWidth: '100%' }}>
         <DeveloperNotes />
         <Outlet />
-      </Container>
+      </div>
+
+      {/* Made By The Community badge */}
+      <img
+        src="/assets/branding/MadeByTheCommunity_White.png"
+        alt="Made by the Community"
+        style={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          width: 100,
+          opacity: 0.4,
+          pointerEvents: 'none',
+          zIndex: 50,
+        }}
+      />
     </div>
   );
 }

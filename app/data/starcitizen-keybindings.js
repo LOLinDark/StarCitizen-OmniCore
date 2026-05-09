@@ -1656,8 +1656,8 @@ export const searchKeybindings = (keybindings, query) => {
   return keybindings.filter(
     (kb) =>
       kb.feature.toLowerCase().includes(lowerQuery) ||
-      kb.description.toLowerCase().includes(lowerQuery) ||
-      kb.primaryKey.toLowerCase().includes(lowerQuery)
+      (kb.description || '').toLowerCase().includes(lowerQuery) ||
+      (kb.primaryKey || '').toLowerCase().includes(lowerQuery)
   );
 };
 

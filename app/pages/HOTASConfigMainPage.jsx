@@ -1,19 +1,20 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  Container,
   Stack,
   Group,
   Select,
   Button,
   TextInput,
   Text,
-  SimpleGrid,
   Box,
   Badge,
   Switch,
+  SegmentedControl,
 } from '@mantine/core';
 import { IconSearch, IconFolderOpen } from '@tabler/icons-react';
 import { HOTASTable } from '../components/HOTASTable';
+import HOTASInputView from '../components/HOTASInputView';
+import ProfileCardScroller from '../components/ProfileCardScroller';
 import { KeyPressIndicator } from '../components/KeyPressIndicator';
 import { useHOTASFiltering } from '../hooks/useHOTASFiltering';
 import { shipKeybindings, shipControlsCategories } from '../data/starcitizen-keybindings';
@@ -31,10 +32,12 @@ export default function HOTASConfigMainPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('feature');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [tableView, setTableView] = useState('features');
   const [profiles, setProfiles] = useState([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [profilesError, setProfilesError] = useState(null);
-  const [showUnboundOnly, setShowUnboundOnly] = useState(false);
+  const [bindingFilter, setBindingFilter] = useState('all');
+  const [deviceFilter, setDeviceFilter] = useState('all');
   const [searchByLiveInput, setSearchByLiveInput] = useState(false);
   const [profileName, setProfileName] = useState('');
   const [mergedBindings, setMergedBindings] = useState(null);
@@ -731,12 +734,24 @@ export default function HOTASConfigMainPage() {
       results = lastHotasInput ? results.filter((binding) => isBindingLive(binding)) : [];
     }
 
-    if (showUnboundOnly) {
-      results = results.filter(binding => !binding.primaryKey && !binding.secondaryKey);
+    if (bindingFilter === 'unbound') {
+      results = results.filter(binding => !binding.primaryKey && !binding.secondaryKey && !binding.hotasBinding && !binding.keyboardBinding);
+    } else if (bindingFilter === 'bound') {
+      results = results.filter(binding => binding.primaryKey || binding.secondaryKey || binding.hotasBinding || binding.keyboardBinding);
+    }
+
+    if (deviceFilter === 'hotas-bound') {
+      results = results.filter(binding => binding.hotasBinding);
+    } else if (deviceFilter === 'hotas-unbound') {
+      results = results.filter(binding => !binding.hotasBinding);
+    } else if (deviceFilter === 'kb-bound') {
+      results = results.filter(binding => binding.keyboardBinding || binding.primaryKey);
+    } else if (deviceFilter === 'kb-unbound') {
+      results = results.filter(binding => !binding.keyboardBinding && !binding.primaryKey);
     }
 
     return results;
-  }, [effectiveBindings, showUnboundOnly, searchByLiveInput, lastHotasInput, isBindingLive]);
+  }, [effectiveBindings, bindingFilter, deviceFilter, searchByLiveInput, lastHotasInput, isBindingLive]);
 
   const liveMatchedBindings = useMemo(() => {
     if (!lastHotasInput) return [];
@@ -750,37 +765,37 @@ export default function HOTASConfigMainPage() {
     return `Assigned to ${liveMatchedBindings.length} features`;
   }, [lastHotasInput, liveMatchedBindings]);
 
-  // HOTAS-specific colors
+  // HOTAS-specific colors (dark theme)
   const colors = {
-    headerBg: '#e8f4fd',
-    headerBorder: '#1e90ff',
-    headerText: '#0052cc',
+    headerBg: 'rgba(0, 217, 255, 0.08)',
+    headerBorder: 'rgba(0, 217, 255, 0.2)',
+    headerText: '#6a8898',
     headerTextShadow: undefined,
-    featureText: '#0052cc',
+    featureText: '#e0eaf4',
     featureTextShadow: undefined,
-    tableBg: '#f0f8ff',
-    tableBoxShadow: '0 0 15px rgba(30, 144, 255, 0.1)',
-    primaryKeyHeaderColor: '#1e90ff',
-    primaryKeyBorder: undefined,
+    tableBg: 'rgba(0, 0, 0, 0.4)',
+    tableBoxShadow: '0 0 15px rgba(0, 217, 255, 0.05)',
+    primaryKeyHeaderColor: '#6a8898',
+    primaryKeyBorder: '1px solid rgba(0, 217, 255, 0.2)',
     primaryKeyHeaderShadow: undefined,
-    primaryKeyBadgeBg: '#e3f2fd',
-    primaryKeyBadgeColor: 'blue',
-    primaryKeyBadgeBorder: undefined,
-    alternativeHeaderColor: '#1e90ff',
+    primaryKeyBadgeBg: 'rgba(0, 217, 255, 0.1)',
+    primaryKeyBadgeColor: '#00d9ff',
+    primaryKeyBadgeBorder: '1px solid rgba(0, 217, 255, 0.3)',
+    alternativeHeaderColor: '#6a8898',
     alternativeBorder: undefined,
     alternativeHeaderShadow: undefined,
-    alternativeBadgeBg: '#f3e5f5',
-    alternativeBadgeColor: 'grape',
-    alternativeBadgeBorder: undefined,
-    categoryText: '#333333',
+    alternativeBadgeBg: 'rgba(156, 39, 176, 0.1)',
+    alternativeBadgeColor: '#ce93d8',
+    alternativeBadgeBorder: '1px solid rgba(156, 39, 176, 0.3)',
+    categoryText: '#6a8898',
     categoryTextShadow: undefined,
-    statusHeaderColor: '#1e90ff',
+    statusHeaderColor: '#6a8898',
     statusBorder: undefined,
     statusHeaderShadow: undefined,
-    rowBg: '#ffffff',
-    rowBorderColor: '#d4e6f1',
-    alternateRowBg: '#f8fbff',
-    emptyKeyColor: '#999999',
+    rowBg: 'transparent',
+    rowBorderColor: 'rgba(255, 255, 255, 0.04)',
+    alternateRowBg: 'rgba(0, 217, 255, 0.02)',
+    emptyKeyColor: '#3a5060',
   };
 
   const getRowBackground = (binding) => {
@@ -988,11 +1003,75 @@ export default function HOTASConfigMainPage() {
     }
   };
 
+  const filterControls = (
+    <Group grow align="flex-end" gap="md" wrap="wrap">
+      <TextInput
+        label="Search"
+        placeholder={searchByLiveInput ? 'Live input active' : 'Search keybindings...'}
+        leftSection={<IconSearch size={16} />}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.currentTarget.value)}
+        disabled={searchByLiveInput}
+        style={{ flex: 2, minWidth: 180 }}
+      />
+      <Select
+        label="Category"
+        placeholder="All Categories"
+        value={selectedCategory}
+        onChange={(value) => setSelectedCategory(value || '')}
+        data={[
+          { value: '', label: 'All Categories' },
+          ...categoryList.map(([key, category]) => ({
+            value: key,
+            label: category.label,
+          })),
+        ]}
+        searchable
+        style={{ flex: 1, minWidth: 160 }}
+      />
+      <SegmentedControl
+        value={bindingFilter}
+        onChange={setBindingFilter}
+        data={[
+          { value: 'all', label: 'All' },
+          { value: 'bound', label: 'Bound' },
+          { value: 'unbound', label: 'Unbound' },
+        ]}
+        size="xs"
+      />
+      <SegmentedControl
+        value={deviceFilter}
+        onChange={setDeviceFilter}
+        data={[
+          { value: 'all', label: 'All Devices' },
+          { value: 'hotas-bound', label: 'HOTAS Bound' },
+          { value: 'hotas-unbound', label: 'HOTAS Unbound' },
+          { value: 'kb-bound', label: 'KB Bound' },
+          { value: 'kb-unbound', label: 'KB Unbound' },
+        ]}
+        size="xs"
+      />
+      <Switch
+        label="Search by Live Input"
+        checked={searchByLiveInput}
+        onChange={(e) => setSearchByLiveInput(e.currentTarget.checked)}
+        size="sm"
+      />
+      <Button
+        variant="outline"
+        size="sm"
+        leftSection={<IconFolderOpen size={16} />}
+        onClick={handleOpenFolder}
+      >
+        Open Folder
+      </Button>
+    </Group>
+  );
+
   return (
-    <>
-      <Container size="xl" py="xl">
-        <Stack gap="xl">
-          {/* Header */}
+    <Stack gap="xl">
+        {/* Header + Banner side by side */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', alignItems: 'center' }}>
           <div>
             <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="HC05" />Technology Config</h1>
             {profileName && (
@@ -1001,27 +1080,29 @@ export default function HOTASConfigMainPage() {
               </Text>
             )}
             <Text c="dimmed">Configure your flight stick, mouse, and keyboard for precision control</Text>
-            <Box
-              mt="md"
-              style={{
-                borderRadius: '10px',
-                overflow: 'hidden',
-                border: '1px solid rgba(255, 107, 0, 0.45)',
-                boxShadow: '0 10px 24px rgba(0, 0, 0, 0.22)',
-              }}
-            >
-              <img
-                src="/assets/tools/hotas-config.png"
-                alt="Technology Config themed HOTAS setup"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  maxHeight: '260px',
-                  objectFit: 'cover',
-                }}
-              />
-            </Box>
           </div>
+          <Box
+            style={{
+              borderRadius: '10px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 107, 0, 0.45)',
+              boxShadow: '0 10px 24px rgba(0, 0, 0, 0.22)',
+              width: 360,
+              maxWidth: '40vw',
+            }}
+          >
+            <img
+              src="/assets/tools/hotas-config.png"
+              alt="Technology Config themed HOTAS setup"
+              style={{
+                display: 'block',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+          </Box>
+        </div>
 
         {/* Error Display */}
         {profilesError && (
@@ -1039,85 +1120,17 @@ export default function HOTASConfigMainPage() {
           </Box>
         )}
 
-        {/* Profile & State Controls */}
-        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-          {/* Profile Selector */}
-          <Select
-            label="Load Game Profile"
-            placeholder={profilesLoading ? 'Loading profiles...' : 'Select a profile'}
-            value={selectedProfile}
-            onChange={handleLoadProfile}
-            data={[
-              {
-                group: '🤖 OmniCore AI Profiles',
-                items: [
-                  {
-                    value: '__ai_x52_optimal',
-                    label: logitechX52ProOptimal.profileName,
-                  },
-                ],
-              },
-              {
-                group: '🎮 Your Game Profiles',
-                items: profiles.map(p => ({ value: p.name, label: p.name })),
-              },
-            ]}
-            searchable
-            clearable
-            disabled={profilesLoading && profiles.length === 0}
-          />
+        {/* Profile Card Scroller — above Live Input */}
+        <ProfileCardScroller
+          profiles={profiles}
+          selectedProfile={selectedProfile}
+          onSelect={handleLoadProfile}
+          aiProfiles={[
+            { value: '__ai_x52_optimal', name: '__ai_x52_optimal', label: logitechX52ProOptimal.profileName, meta: { color: '#b300ff', gameMode: 'default', description: 'AI-generated optimal X52 layout' } },
+          ]}
+        />
 
-          {/* Controls Group */}
-          <Group gap="xs" align="flex-end">
-            <Button
-              variant="outline"
-              size="sm"
-              leftSection={<IconFolderOpen size={16} />}
-              onClick={handleOpenFolder}
-            >
-              Open Folder
-            </Button>
-          </Group>
-        </SimpleGrid>
-
-        {/* Search & Category Filter & Toggle on Same Row */}
-        <Group grow align="flex-end" gap="md">
-          <TextInput
-            placeholder={searchByLiveInput ? 'Live input search enabled - press HOTAS input' : 'Search keybindings...'}
-            leftSection={<IconSearch size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.currentTarget.value)}
-            disabled={searchByLiveInput}
-          />
-          <Select
-            label="Category"
-            placeholder="Select category"
-            value={selectedCategory}
-            onChange={(value) => setSelectedCategory(value || '')}
-            data={[
-              { value: '', label: 'All Categories' },
-              ...categoryList.map(([key, category]) => ({
-                value: key,
-                label: category.label,
-              })),
-            ]}
-            searchable
-          />
-          <Switch
-            label="Unbound Only"
-            checked={showUnboundOnly}
-            onChange={(e) => setShowUnboundOnly(e.currentTarget.checked)}
-            size="sm"
-          />
-          <Switch
-            label="Search by Live Input"
-            checked={searchByLiveInput}
-            onChange={(e) => setSearchByLiveInput(e.currentTarget.checked)}
-            size="sm"
-          />
-        </Group>
-
-        {/* Live Input Panel – dockable */}
+        {/* Live Input Panel */}
         <KeyPressIndicator
           title="HC05 Live Input"
           inputLabel={liveInputLabel}
@@ -1128,6 +1141,9 @@ export default function HOTASConfigMainPage() {
           axisValues={axisValues}
           gamepadInfo={gamepadInfo}
         />
+
+        {/* Filters — above table, below live input */}
+        {filterControls}
 
         {/* Info Bar */}
         <Group justify="space-between" style={{ color: '#666' }}>
@@ -1167,24 +1183,52 @@ export default function HOTASConfigMainPage() {
           </Text>
         </Group>
 
+        {/* View Switcher */}
+        <Group gap="md" align="center">
+          <Text size="sm" fw={600}>View:</Text>
+          <SegmentedControl
+            value={tableView}
+            onChange={setTableView}
+            data={[
+              { value: 'features', label: 'Features → Inputs' },
+              { value: 'inputs', label: 'HOTAS Inputs → Features' },
+            ]}
+            size="xs"
+          />
+        </Group>
+
         {/* Table */}
-        <HOTASTable
-          sortedBindings={sortedBindings}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          setSortBy={setSortBy}
-          setSortOrder={setSortOrder}
-          colors={colors}
-          getRowBackground={getRowBackground}
-          isBindingLive={isBindingLive}
-          showStatusColumn={false}
-          onStartHotasCapture={startHotasCapture}
-          activeCaptureBindingId={captureBindingId}
-          captureProgress={captureProgress}
-          onStartKeyboardCapture={startKeyboardCapture}
-          activeKeyboardCaptureBindingId={captureKeyboardBindingId}
-          keyboardCaptureProgress={captureKeyboardProgress}
-        />
+        {tableView === 'features' ? (
+          <HOTASTable
+            sortedBindings={sortedBindings}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            setSortBy={setSortBy}
+            setSortOrder={setSortOrder}
+            colors={colors}
+            getRowBackground={getRowBackground}
+            isBindingLive={isBindingLive}
+            showStatusColumn={false}
+            onStartHotasCapture={startHotasCapture}
+            activeCaptureBindingId={captureBindingId}
+            captureProgress={captureProgress}
+            onStartKeyboardCapture={startKeyboardCapture}
+            activeKeyboardCaptureBindingId={captureKeyboardBindingId}
+            keyboardCaptureProgress={captureKeyboardProgress}
+          />
+        ) : (
+          <HOTASInputView
+            bindings={effectiveBindings}
+            hotasOverrides={hotasOverrides}
+            bindingFilter={bindingFilter}
+            deviceFilter={deviceFilter}
+            searchQuery={searchQuery}
+            onAssign={(bindingId, xmlToken) => {
+              setHotasOverrides((prev) => ({ ...prev, [bindingId]: xmlToken }));
+              void persistCapturedBindingToXml(bindingId, xmlToken);
+            }}
+          />
+        )}
 
         {/* Notes Section */}
         <Box
@@ -1214,7 +1258,5 @@ export default function HOTASConfigMainPage() {
           </Stack>
         </Box>
       </Stack>
-    </Container>
-    </>
   );
 }

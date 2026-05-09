@@ -3,7 +3,6 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import AdminLayout from './components/LayoutNew';
 import MainLayout from './components/MainLayout';
 import DevPanel from './components/DevPanel';
-import InDevelopmentBanner from './components/InDevelopmentBanner';
 import RSILoginPage from './pages/RSILoginPage';
 import DashboardPage from './pages/DashboardPage';
 import MainDashboardPage from './pages/MainDashboardPage';
@@ -16,7 +15,6 @@ import LocationGuidePage from './pages/LocationGuidePage';
 import HOTASConfigMainPage from './pages/HOTASConfigMainPage';
 import HOTASConfigModesLabPage from './pages/HOTASConfigModesLabPage';
 import DeveloperHotasProfileMatrixLabPage from './pages/DeveloperHotasProfileMatrixLabPage';
-import NetworkStatusBadge from './components/NetworkStatusBadge';
 import ShipDatabasePage from './pages/ShipDatabasePage';
 import { trackAppView, installGlobalErrorHandlers, startPerformanceMonitoring, useAppStore } from './platform-core';
 import { Loader, Center } from '@mantine/core';
@@ -81,9 +79,7 @@ function App() {
 
   return (
     <>
-      <NetworkStatusBadge />
       <DevPanel />
-      <InDevelopmentBanner />
       <RuntimeObservers />
       <Routes>
         {/* Theme Lab Routes - Public, no auth required */}

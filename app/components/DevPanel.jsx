@@ -9,7 +9,7 @@ export default function DevPanel() {
   const navigate = useNavigate();
   const devMode = useAppStore((s) => s.devMode);
   const [isMinimized, setIsMinimized] = useState(true);
-  const [position, setPosition] = useState({ top: 132, left: 10 });
+  const [position, setPosition] = useState({ top: window.innerHeight - 60, left: 10 });
   const paperRef = useRef(null);
   const dragRef = useRef(null);
   const panelWidth = 294;

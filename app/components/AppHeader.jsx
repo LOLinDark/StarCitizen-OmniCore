@@ -1,38 +1,123 @@
 import { Group, Button, Badge, Menu, Avatar, Text } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import BrandWordmark from './BrandWordmark';
 
 const FRONTEND_VERSION = 'Alpha V0.1.0';
 
+function useNetworkStatus() {
+  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const [backendOk, setBackendOk] = useState(true);
+
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => { setOnline(false); setBackendOk(false); };
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    async function check() {
+      if (!navigator.onLine) { if (active) setBackendOk(false); return; }
+      try {
+        const r = await fetch('/api/version', { method: 'GET', cache: 'no-store' });
+        if (active) setBackendOk(r.ok);
+      } catch { if (active) setBackendOk(false); }
+    }
+    check();
+    const id = setInterval(check, 20000);
+    return () => { active = false; clearInterval(id); };
+  }, []);
+
+  return useMemo(() => {
+    if (!online) return { label: 'OFFLINE', color: '#ff5c5c' };
+    if (!backendOk) return { label: 'LIMITED', color: '#ffb648' };
+    return { label: 'ONLINE', color: '#22d17b' };
+  }, [online, backendOk]);
+}
+
 export default function AppHeader() {
   const navigate = useNavigate();
   const rsiHandle = localStorage.getItem('rsiHandle') || 'Citizen';
+  const network = useNetworkStatus();
 
   return (
-    <Group
-      justify="space-between"
-      p="md"
+    <div
       style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
+        padding: '0.75rem 1rem',
         backgroundColor: 'rgba(11, 20, 40, 0.95)',
         borderBottom: '1px solid rgba(0, 217, 255, 0.2)',
         backdropFilter: 'blur(8px)',
         minHeight: '60px',
       }}
     >
-      {/* Left: Title */}
-      <Group gap="md">
-        <div
-          style={{ cursor: 'pointer' }}
-          onClick={() => navigate('/')}
+      {/* Left: Status pills */}
+      <Group gap="xs" justify="flex-start">
+        <Badge
+          size="xs"
+          variant="outline"
+          style={{
+            borderColor: 'rgba(255, 189, 89, 0.7)',
+            color: '#ffcf7a',
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+          }}
         >
+          IN-DEV
+        </Badge>
+        <Badge
+          size="xs"
+          variant="dot"
+          style={{
+            '--badge-dot-color': network.color,
+            color: network.color,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+          }}
+        >
+          {network.label}
+        </Badge>
+        <Badge size="xs" variant="light" color="cyan">{FRONTEND_VERSION}</Badge>
+      </Group>
+
+      {/* Center: Game titles + Brand */}
+      <Group gap="sm" align="center" justify="center" wrap="nowrap">
+        <Text
+          size="xs"
+          fw={600}
+          style={{
+            color: 'rgba(255, 255, 255, 0.25)',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Star Citizen
+        </Text>
+        <div style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
           <BrandWordmark size="1.5rem" color="#00d9ff" />
         </div>
-        <Badge size="sm" variant="light" color="cyan">{FRONTEND_VERSION}</Badge>
+        <Text
+          size="xs"
+          fw={600}
+          style={{
+            color: 'rgba(255, 255, 255, 0.25)',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Squadron 42
+        </Text>
       </Group>
 
       {/* Right: Menu & User */}
-      <Group gap="lg">
-        {/* Navigation Menu */}
+      <Group gap="lg" justify="flex-end">
         <Menu position="bottom-end" shadow="md">
           <Menu.Target>
             <Button
@@ -72,7 +157,6 @@ export default function AppHeader() {
           </Menu.Dropdown>
         </Menu>
 
-        {/* User Avatar */}
         <Group gap="xs">
           <div>
             <Text size="sm" fw={500}>{rsiHandle}</Text>
@@ -87,6 +171,6 @@ export default function AppHeader() {
           </Avatar>
         </Group>
       </Group>
-    </Group>
+    </div>
   );
 }
