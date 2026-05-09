@@ -89,10 +89,18 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
 
   const filteredRows = useMemo(() => {
     let result = rows;
-    if (bindingFilter === 'bound') result = result.filter((r) => r.assignedBinding);
-    else if (bindingFilter === 'unbound') result = result.filter((r) => !r.assignedBinding);
-    if (deviceFilter === 'hotas-bound') result = result.filter((r) => r.assignedBinding);
-    else if (deviceFilter === 'hotas-unbound') result = result.filter((r) => !r.assignedBinding);
+
+    // Profile-based filtering (ignores game defaults)
+    if (bindingFilter === 'hotas-assigned' || deviceFilter === 'hotas-assigned') {
+      result = result.filter((r) => r.assignedBinding);
+    } else if (bindingFilter === 'hotas-empty' || deviceFilter === 'hotas-empty') {
+      result = result.filter((r) => !r.assignedBinding);
+    } else if (bindingFilter === 'fully-unbound' || deviceFilter === 'fully-unbound') {
+      result = result.filter((r) => !r.assignedBinding);
+    }
+    // kb-assigned and kb-empty don't apply to the HOTAS input view
+
+    // Search
     if (searchQuery?.trim()) {
       const term = searchQuery.toLowerCase();
       result = result.filter((r) =>

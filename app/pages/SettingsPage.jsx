@@ -1,4 +1,4 @@
-import { Container, Stack, Text, Tabs, Card, NumberInput, Button, Alert, Select } from '@mantine/core';
+import { Container, Stack, Text, Tabs, Card, NumberInput, Button, Alert, Select, TextInput } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiGet, apiPost, appendErrorLog, clearOmniCoreStorage, useSettingsStore } from '../platform-core';
@@ -18,6 +18,10 @@ export default function SettingsPage() {
   const [calcInput, setCalcInput] = useState(1000);
   const [calcOutput, setCalcOutput] = useState(1000);
   const [calcResult, setCalcResult] = useState(null);
+  const [backupPath, setBackupPath] = useState('');
+  const [backupStatus, setBackupStatus] = useState(null);
+  const [backupSaving, setBackupSaving] = useState(false);
+  const [syncResult, setSyncResult] = useState(null);
 
   useEffect(() => {
     apiGet('/api/pricing')
@@ -31,6 +35,9 @@ export default function SettingsPage() {
           timestamp: new Date().toISOString()
         });
       });
+    apiGet('/api/backup/status')
+      .then((data) => { setBackupStatus(data); setBackupPath(data.folderPath || ''); })
+      .catch(() => {});
   }, []);
 
   const calculateCost = async () => {
@@ -62,6 +69,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="general" color="cyan">
         <Tabs.List style={{ borderBottom: '1px solid rgba(0, 217, 255, 0.2)' }}>
           <Tabs.Tab value="general">General</Tabs.Tab>
+          <Tabs.Tab value="backup">Backup</Tabs.Tab>
           <Tabs.Tab value="aws">AWS & Costs</Tabs.Tab>
         </Tabs.List>
 
@@ -124,6 +132,88 @@ export default function SettingsPage() {
                 >
                   Reset All Local Data
                 </Button>
+              </div>
+            </SciFiFrame>
+          </Stack>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="backup" pt="xl">
+          <Stack gap="lg">
+            <SciFiFrame variant="corners" cornerLength={12} strokeWidth={1.5} padding={0}>
+              <div style={{ padding: '1.5rem' }}>
+                <h2 style={{ color: '#22d17b', marginTop: 0, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Cloud Backup Folder
+                </h2>
+                <Text size="sm" c="dimmed" mb="md">
+                  Set a folder path where OmniCore will sync your HOTAS profiles, game settings, and configuration files.
+                  Point this to a Google Drive, OneDrive, or Dropbox sync folder for automatic cloud backup.
+                </Text>
+                <Stack gap="md">
+                  <TextInput
+                    label="Backup Folder Path"
+                    placeholder="e.g. G:\My Drive\OmniCore-Backup"
+                    value={backupPath}
+                    onChange={(e) => setBackupPath(e.currentTarget.value)}
+                  />
+                  <Button
+                    color="green"
+                    variant="light"
+                    loading={backupSaving}
+                    onClick={async () => {
+                      setBackupSaving(true);
+                      setSyncResult(null);
+                      try {
+                        await apiPost('/api/backup/configure', { enabled: !!backupPath, folderPath: backupPath });
+                        const status = await apiGet('/api/backup/status');
+                        setBackupStatus(status);
+                      } catch (err) {
+                        setSyncResult({ success: false, error: err.message });
+                      } finally {
+                        setBackupSaving(false);
+                      }
+                    }}
+                  >
+                    Save Backup Configuration
+                  </Button>
+                  {backupStatus?.ready && (
+                    <Button
+                      color="cyan"
+                      variant="light"
+                      onClick={async () => {
+                        setSyncResult(null);
+                        try {
+                          const result = await apiPost('/api/backup/sync', {});
+                          setSyncResult(result);
+                          const status = await apiGet('/api/backup/status');
+                          setBackupStatus(status);
+                        } catch (err) {
+                          setSyncResult({ success: false, error: err.message });
+                        }
+                      }}
+                    >
+                      Sync Now
+                    </Button>
+                  )}
+                  {backupStatus && (
+                    <Card withBorder style={{ background: 'rgba(0,0,0,0.2)', borderColor: backupStatus.ready ? 'rgba(34,209,123,0.3)' : 'rgba(255,107,107,0.3)' }} p="sm">
+                      <Text size="xs" fw={600} mb="xs" style={{ color: backupStatus.ready ? '#22d17b' : '#ff6b6b' }}>
+                        {backupStatus.ready ? '✓ Backup Ready' : '✗ Backup Not Ready'}
+                      </Text>
+                      <Text size="xs" c="dimmed">Path: {backupStatus.folderPath || 'Not set'}</Text>
+                      <Text size="xs" c="dimmed">Folder exists: {backupStatus.folderExists ? 'Yes' : 'No'}</Text>
+                      {backupStatus.lastSyncAt && (
+                        <Text size="xs" c="dimmed">Last sync: {new Date(backupStatus.lastSyncAt).toLocaleString()} ({backupStatus.lastSyncFiles} files)</Text>
+                      )}
+                    </Card>
+                  )}
+                  {syncResult && (
+                    <Alert color={syncResult.success ? 'green' : 'red'} variant="light">
+                      {syncResult.success
+                        ? `Sync complete: ${syncResult.filesCopied} file(s) copied`
+                        : `Sync failed: ${syncResult.error}`}
+                    </Alert>
+                  )}
+                </Stack>
               </div>
             </SciFiFrame>
           </Stack>

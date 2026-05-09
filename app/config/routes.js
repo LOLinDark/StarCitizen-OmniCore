@@ -50,6 +50,12 @@ export const routeConfig = {
       category: 'Main App',
       color: 'cyan',
     },
+    {
+      label: '/game-settings',
+      path: '/game-settings',
+      category: 'Main App',
+      color: 'cyan',
+    },
   ],
 
   themeLab: [

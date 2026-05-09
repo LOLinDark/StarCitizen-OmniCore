@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Group, Badge, Text, Box, ActionIcon, Tooltip, Code } from '@mantine/core';
-import { IconPin, IconPinnedOff, IconExternalLink } from '@tabler/icons-react';
+import { IconPin, IconPinnedOff, IconExternalLink, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import useAppStore from '../stores/useAppStore';
 import {
   X52_BUTTONS,
@@ -33,14 +33,16 @@ export function KeyPressIndicator({
   inputLabel = null,
   assignmentLabel = '',
   connected = null,
-  // Dev-mode extras (passed from HC05)
   rawInput = null,
   activeInputs = null,
   axisValues = null,
   gamepadInfo = null,
+  searchByLiveInput = false,
+  onToggleSearchByLiveInput = null,
 }) {
   const devMode = useAppStore((s) => s.devMode);
   const [isDocked, setIsDocked] = useState(true);
+  const [isMinimised, setIsMinimised] = useState(false);
   const [isWindowed, setIsWindowed] = useState(false);
   const [modeReady, setModeReady] = useState(false);
   const [windowContainer, setWindowContainer] = useState(null);
@@ -283,14 +285,32 @@ export function KeyPressIndicator({
       }}
     >
       {/* Header row */}
-      <Box style={{ paddingRight: inWindow ? '11.5rem' : '12.5rem', marginBottom: 4 }}>
-        <Text
-          size="xs"
-          fw={700}
-          style={{ color: '#00d9ff', textTransform: 'uppercase', letterSpacing: '0.05em' }}
-        >
-          {title}
-        </Text>
+      <Box style={{ paddingRight: inWindow ? '11.5rem' : '12.5rem', marginBottom: isMinimised ? 0 : 4 }}>
+        <Group gap="sm" align="center">
+          <Text
+            size="xs"
+            fw={700}
+            style={{ color: '#00d9ff', textTransform: 'uppercase', letterSpacing: '0.05em' }}
+          >
+            {title}
+          </Text>
+          {onToggleSearchByLiveInput && (
+            <Badge
+              size="xs"
+              variant={searchByLiveInput ? 'filled' : 'outline'}
+              color={searchByLiveInput ? 'green' : 'gray'}
+              style={{ cursor: 'pointer' }}
+              onClick={() => onToggleSearchByLiveInput(!searchByLiveInput)}
+            >
+              {searchByLiveInput ? 'LIVE SEARCH ON' : 'LIVE SEARCH OFF'}
+            </Badge>
+          )}
+          {inputLabel && (
+            <Text size="xs" fw={600} style={{ color: '#e3f2fd' }}>
+              {inputLabel}
+            </Text>
+          )}
+        </Group>
       </Box>
 
       <Group
@@ -321,6 +341,19 @@ export function KeyPressIndicator({
               </ActionIcon>
             </Tooltip>
           )}
+          {!inWindow && (
+            <Tooltip label={isMinimised ? 'Expand panel' : 'Minimise panel'} position="left" withArrow>
+              <ActionIcon
+                size="xs"
+                variant="subtle"
+                color="cyan"
+                onClick={() => setIsMinimised((v) => !v)}
+                aria-label={isMinimised ? 'Expand' : 'Minimise'}
+              >
+                {isMinimised ? <IconChevronDown size={14} /> : <IconChevronUp size={14} />}
+              </ActionIcon>
+            </Tooltip>
+          )}
           <Tooltip
             label={inWindow ? 'Return to page panel' : 'Pop out to window'}
             position="left"
@@ -339,19 +372,8 @@ export function KeyPressIndicator({
       </Group>
 
       {/* Current input */}
-      {inputLabel ? (
-        <Text
-          size={inWindow ? 'xs' : 'sm'}
-          fw={700}
-          style={{ color: '#e3f2fd', marginBottom: '0.2rem', lineHeight: 1.2 }}
-        >
-          {inputLabel}
-        </Text>
-      ) : (
-        <Text size="xs" style={{ color: 'rgba(255,255,255,0.35)', marginBottom: '0.2rem', lineHeight: 1.2 }}>
-          No input detected
-        </Text>
-      )}
+      {!isMinimised && (
+        <>
 
       {/* Assignment label */}
       {!!assignmentLabel && (
@@ -520,6 +542,9 @@ export function KeyPressIndicator({
           )}
         </>
       )}
+      {/* end isMinimised conditional */}
+      </>
+      )}
     </Box>
   );
 
@@ -593,8 +618,8 @@ export function KeyPressIndicator({
         </Box>
       </Tooltip>
 
-      {/* Fixed floating overlay */}
-      <Box style={{ position: 'fixed', top: '5rem', right: '1.5rem', zIndex: 1000 }}>
+      {/* Fixed floating overlay — clamped below sticky header */}
+      <Box style={{ position: 'fixed', top: '120px', right: '1.5rem', zIndex: 1000 }}>
         {cardContent({ pinned: false, onToggleDock: () => setIsDocked(true) })}
       </Box>
     </>

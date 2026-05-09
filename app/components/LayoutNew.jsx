@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { apiGet, useAppStore, useSettingsStore } from '../platform-core';
 import DevFooter from './DevFooter';
-import DeveloperNotes from './DeveloperNotes';
 import AerobookBar from './AerobookBar';
 import BrandWordmark from './BrandWordmark';
 
@@ -215,7 +214,6 @@ export default function Layout() {
       <AppShell.Main>
         <AerobookBar />
         <Container size="xl" py="md">
-          <DeveloperNotes />
           <Outlet />
         </Container>
       </AppShell.Main>

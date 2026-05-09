@@ -90,8 +90,8 @@ export default function ProfileCardScroller({ profiles, selectedProfile, onSelec
               <div
                 onClick={() => onSelect(card.value || card.name)}
                 style={{
-                  flex: '0 0 220px',
-                  height: 100,
+                  flex: '0 0 180px',
+                  height: 90,
                   borderRadius: 10,
                   padding: '0.75rem',
                   cursor: 'pointer',

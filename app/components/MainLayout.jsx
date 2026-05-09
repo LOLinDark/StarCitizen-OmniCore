@@ -2,7 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import AppHeader from './AppHeader';
 import AerobookBar from './AerobookBar';
-import DeveloperNotes from './DeveloperNotes';
+import AppFooter from './AppFooter';
 import { trackAppView } from '../platform-core';
 
 export default function MainLayout() {
@@ -41,9 +41,11 @@ export default function MainLayout() {
 
       {/* Main Content */}
       <div style={{ padding: '2rem 3%', position: 'relative', zIndex: 1, maxWidth: '100%' }}>
-        <DeveloperNotes />
         <Outlet />
       </div>
+
+      {/* Footer */}
+      <AppFooter />
 
       {/* Made By The Community badge */}
       <img

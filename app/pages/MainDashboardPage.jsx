@@ -217,6 +217,16 @@ const getToolsArray = () => [
     enabled: true,
   },
   {
+    id: 'game-settings',
+    title: 'Game Settings',
+    desc: 'Browse and search Star Citizen in-game settings — the search the game forgot to add',
+    image: null,
+    alt: 'Game Settings - Star Citizen attributes and configuration',
+    color: '#22d17b',
+    path: '/game-settings',
+    enabled: true,
+  },
+  {
     id: 'new-player-guide',
     title: 'Training Academy',
     desc: 'Structured courses and field briefings for recruits entering the verse',

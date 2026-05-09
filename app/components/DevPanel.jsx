@@ -13,6 +13,7 @@ export default function DevPanel() {
   const paperRef = useRef(null);
   const dragRef = useRef(null);
   const panelWidth = 294;
+  const MIN_TOP = 120; // Below sticky header (60px header + 44px bookmarks + 16px gap)
 
   // Hide panel when Dev Mode is off
   if (!devMode) return null;
@@ -29,14 +30,14 @@ export default function DevPanel() {
 
     const panelHeight = paperRef.current?.offsetHeight || 0;
     const maxLeft = Math.max(0, window.innerWidth - panelWidth);
-    const maxTop = Math.max(0, window.innerHeight - panelHeight);
+    const maxTop = Math.max(MIN_TOP, window.innerHeight - panelHeight);
 
     const nextLeft = e.clientX - dragRef.current.offsetX;
     const nextTop = e.clientY - dragRef.current.offsetY;
 
     setPosition({
       left: Math.min(Math.max(0, nextLeft), maxLeft),
-      top: Math.min(Math.max(0, nextTop), maxTop),
+      top: Math.min(Math.max(MIN_TOP, nextTop), maxTop),
     });
   };
 

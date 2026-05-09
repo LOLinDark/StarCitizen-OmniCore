@@ -38,10 +38,37 @@ function useNetworkStatus() {
   }, [online, backendOk]);
 }
 
+function useBackupStatus() {
+  const [status, setStatus] = useState({ ready: false, label: '...', color: '#6a8898' });
+
+  useEffect(() => {
+    let active = true;
+    async function check() {
+      try {
+        const r = await fetch('/api/backup/status', { cache: 'no-store' });
+        if (!r.ok) throw new Error();
+        const data = await r.json();
+        if (!active) return;
+        if (!data.enabled) setStatus({ ready: false, label: 'NO BACKUP', color: '#6a8898' });
+        else if (data.ready) setStatus({ ready: true, label: 'BACKUP OK', color: '#22d17b' });
+        else setStatus({ ready: false, label: 'BACKUP ERR', color: '#ff5c5c' });
+      } catch {
+        if (active) setStatus({ ready: false, label: 'NO BACKUP', color: '#6a8898' });
+      }
+    }
+    check();
+    const id = setInterval(check, 60000);
+    return () => { active = false; clearInterval(id); };
+  }, []);
+
+  return status;
+}
+
 export default function AppHeader() {
   const navigate = useNavigate();
   const rsiHandle = localStorage.getItem('rsiHandle') || 'Citizen';
   const network = useNetworkStatus();
+  const backup = useBackupStatus();
 
   return (
     <div
@@ -83,6 +110,18 @@ export default function AppHeader() {
           {network.label}
         </Badge>
         <Badge size="xs" variant="light" color="cyan">{FRONTEND_VERSION}</Badge>
+        <Badge
+          size="xs"
+          variant="dot"
+          style={{
+            '--badge-dot-color': backup.color,
+            color: backup.color,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+          }}
+        >
+          {backup.label}
+        </Badge>
       </Group>
 
       {/* Center: Game titles + Brand */}

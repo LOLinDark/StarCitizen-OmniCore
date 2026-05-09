@@ -16,6 +16,7 @@ import HOTASConfigMainPage from './pages/HOTASConfigMainPage';
 import HOTASConfigModesLabPage from './pages/HOTASConfigModesLabPage';
 import DeveloperHotasProfileMatrixLabPage from './pages/DeveloperHotasProfileMatrixLabPage';
 import ShipDatabasePage from './pages/ShipDatabasePage';
+import GameSettingsPage from './pages/GameSettingsPage';
 import { trackAppView, installGlobalErrorHandlers, startPerformanceMonitoring, useAppStore } from './platform-core';
 import { Loader, Center } from '@mantine/core';
 
@@ -35,6 +36,8 @@ const ScreenshotsPage = lazy(() => import('./pages/ScreenshotsPage'));
 const APITestPage = lazy(() => import('./pages/APITestPage'));
 const DeveloperContextIndexPage = lazy(() => import('./pages/DeveloperContextIndexPage'));
 const DeveloperNavChartsLabPage = lazy(() => import('./pages/DeveloperNavChartsLabPage'));
+const HOTASDiagramPage = lazy(() => import('./pages/HOTASDiagramPage'));
+const HOTASOverlayPage = lazy(() => import('./pages/HOTASOverlayPage'));
 
 
 // Theme Lab Pages
@@ -106,11 +109,14 @@ function App() {
           <Route path="hotas-config" element={<HOTASConfigMainPage />} />
           <Route path="hotas-config-modes-lab" element={<HOTASConfigModesLabPage />} />
           <Route path="ship-database" element={<ShipDatabasePage />} />
+          <Route path="game-settings" element={<GameSettingsPage />} />
           <Route path="settings" element={<Lazy Component={SettingsPage} />} />
           <Route path="settings/hotas" element={<Lazy Component={HOTASTestPage} />} />
           <Route path="settings/theme" element={<Lazy Component={ThemePage} />} />
           <Route path="about" element={<Lazy Component={AboutPage} />} />
           <Route path="screenshots" element={<Lazy Component={ScreenshotsPage} />} />
+          <Route path="hotas-diagram" element={<HOTASDiagramPage />} />
+          <Route path="hotas-overlay" element={<HOTASOverlayPage />} />
         </Route>
 
         {/* Admin/Backend/Developer Area (with AdminLayout - Sidebar layout) */}

@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Stack,
   Group,
   Select,
-  Button,
   TextInput,
   Text,
   Box,
@@ -11,7 +10,7 @@ import {
   Switch,
   SegmentedControl,
 } from '@mantine/core';
-import { IconSearch, IconFolderOpen } from '@tabler/icons-react';
+import { IconSearch } from '@tabler/icons-react';
 import { HOTASTable } from '../components/HOTASTable';
 import HOTASInputView from '../components/HOTASInputView';
 import ProfileCardScroller from '../components/ProfileCardScroller';
@@ -36,8 +35,7 @@ export default function HOTASConfigMainPage() {
   const [profiles, setProfiles] = useState([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [profilesError, setProfilesError] = useState(null);
-  const [bindingFilter, setBindingFilter] = useState('all');
-  const [deviceFilter, setDeviceFilter] = useState('all');
+  const [profileFilter, setProfileFilter] = useState('all');
   const [searchByLiveInput, setSearchByLiveInput] = useState(false);
   const [profileName, setProfileName] = useState('');
   const [mergedBindings, setMergedBindings] = useState(null);
@@ -734,24 +732,20 @@ export default function HOTASConfigMainPage() {
       results = lastHotasInput ? results.filter((binding) => isBindingLive(binding)) : [];
     }
 
-    if (bindingFilter === 'unbound') {
-      results = results.filter(binding => !binding.primaryKey && !binding.secondaryKey && !binding.hotasBinding && !binding.keyboardBinding);
-    } else if (bindingFilter === 'bound') {
-      results = results.filter(binding => binding.primaryKey || binding.secondaryKey || binding.hotasBinding || binding.keyboardBinding);
-    }
-
-    if (deviceFilter === 'hotas-bound') {
+    if (profileFilter === 'hotas-assigned') {
       results = results.filter(binding => binding.hotasBinding);
-    } else if (deviceFilter === 'hotas-unbound') {
+    } else if (profileFilter === 'hotas-empty') {
       results = results.filter(binding => !binding.hotasBinding);
-    } else if (deviceFilter === 'kb-bound') {
-      results = results.filter(binding => binding.keyboardBinding || binding.primaryKey);
-    } else if (deviceFilter === 'kb-unbound') {
-      results = results.filter(binding => !binding.keyboardBinding && !binding.primaryKey);
+    } else if (profileFilter === 'kb-assigned') {
+      results = results.filter(binding => binding.keyboardBinding);
+    } else if (profileFilter === 'kb-empty') {
+      results = results.filter(binding => !binding.keyboardBinding);
+    } else if (profileFilter === 'fully-unbound') {
+      results = results.filter(binding => !binding.hotasBinding && !binding.keyboardBinding);
     }
 
     return results;
-  }, [effectiveBindings, bindingFilter, deviceFilter, searchByLiveInput, lastHotasInput, isBindingLive]);
+  }, [effectiveBindings, profileFilter, searchByLiveInput, lastHotasInput, isBindingLive]);
 
   const liveMatchedBindings = useMemo(() => {
     if (!lastHotasInput) return [];
@@ -804,19 +798,8 @@ export default function HOTASConfigMainPage() {
     return undefined;
   };
 
-  const handleOpenFolder = async () => {
-    try {
-      const response = await fetch('/api/hotas/open-folder', { method: 'POST' });
-      if (!response.ok) throw new Error('Failed to open folder');
-      console.log('[HC01] Profiles folder opened');
-    } catch (error) {
-      console.error('[HC01] Error opening folder:', error);
-      alert('Could not open profiles folder');
-    }
-  };
-
-  const handleLoadProfile = async (profileName) => {
-    if (!profileName) {
+  const handleLoadProfile = async (newProfileName) => {
+    if (!newProfileName) {
       setSelectedProfile('');
       setProfileName('');
       setMergedBindings(null);
@@ -867,12 +850,14 @@ export default function HOTASConfigMainPage() {
     };
 
     // Handle AI-generated profile
-    if (profileName === '__ai_x52_optimal') {
+    if (newProfileName === '__ai_x52_optimal') {
       console.log('[HC05] Loading AI-generated X52 Optimal profile');
-      setSelectedProfile(profileName);
+      setSelectedProfile(newProfileName);
       setProfileName(logitechX52ProOptimal.profileName);
       setHotasOverrides({});
       setKeyboardOverrides({});
+      savedHotasOverridesRef.current = null;
+      savedKeyboardOverridesRef.current = null;
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
       setCaptureWarning('');
@@ -898,12 +883,14 @@ export default function HOTASConfigMainPage() {
     }
 
     try {
-      console.log(`[HC05] Loading profile: ${profileName}`);
-      setSelectedProfile(profileName);
+      console.log(`[HC05] Loading profile: ${newProfileName}`);
+      setSelectedProfile(newProfileName);
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
       setCaptureWarning('');
-      const response = await fetch(`/api/hotas/profile/${profileName}`);
+      savedHotasOverridesRef.current = null;
+      savedKeyboardOverridesRef.current = null;
+      const response = await fetch(`/api/hotas/profile/${newProfileName}`);
       if (!response.ok) throw new Error('Failed to load profile');
       const data = await response.json();
       console.log(`[HC05] Profile loaded:`, data.profile);
@@ -912,8 +899,8 @@ export default function HOTASConfigMainPage() {
       // Extract and set profile name from XML if available
       if (data.profileName) {
         setProfileName(data.profileName);
-      } else if (profileName) {
-        setProfileName(profileName);
+      } else if (newProfileName) {
+        setProfileName(newProfileName);
       }
       setHotasOverrides({});
       setKeyboardOverrides({});
@@ -1004,7 +991,13 @@ export default function HOTASConfigMainPage() {
   };
 
   const filterControls = (
-    <Group grow align="flex-end" gap="md" wrap="wrap">
+    <Group
+      grow
+      align="flex-end"
+      gap="md"
+      wrap="wrap"
+      style={{ flexWrap: 'wrap', rowGap: 16, columnGap: 16 }}
+    >
       <TextInput
         label="Search"
         placeholder={searchByLiveInput ? 'Live input active' : 'Search keybindings...'}
@@ -1012,7 +1005,7 @@ export default function HOTASConfigMainPage() {
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.currentTarget.value)}
         disabled={searchByLiveInput}
-        style={{ flex: 2, minWidth: 180 }}
+        style={{ flex: 2, minWidth: 220, flexBasis: 300 }}
       />
       <Select
         label="Category"
@@ -1027,50 +1020,39 @@ export default function HOTASConfigMainPage() {
           })),
         ]}
         searchable
-        style={{ flex: 1, minWidth: 160 }}
+        style={{ flex: 1, minWidth: 200, flexBasis: 220 }}
       />
-      <SegmentedControl
-        value={bindingFilter}
-        onChange={setBindingFilter}
-        data={[
-          { value: 'all', label: 'All' },
-          { value: 'bound', label: 'Bound' },
-          { value: 'unbound', label: 'Unbound' },
-        ]}
-        size="xs"
-      />
-      <SegmentedControl
-        value={deviceFilter}
-        onChange={setDeviceFilter}
-        data={[
-          { value: 'all', label: 'All Devices' },
-          { value: 'hotas-bound', label: 'HOTAS Bound' },
-          { value: 'hotas-unbound', label: 'HOTAS Unbound' },
-          { value: 'kb-bound', label: 'KB Bound' },
-          { value: 'kb-unbound', label: 'KB Unbound' },
-        ]}
-        size="xs"
-      />
+      <div style={{ minWidth: 0, flexBasis: 180 }}>
+        <Text size="sm" fw={500} mb={4}>Filter</Text>
+        <SegmentedControl
+          value={profileFilter}
+          onChange={setProfileFilter}
+          data={[
+            { value: 'all', label: 'All' },
+            { value: 'hotas-assigned', label: 'HOTAS Assigned' },
+            { value: 'hotas-empty', label: 'HOTAS Empty' },
+            { value: 'kb-assigned', label: 'KB/M Assigned' },
+            { value: 'kb-empty', label: 'KB/M Empty' },
+            { value: 'fully-unbound', label: 'Fully Unbound' },
+          ]}
+          size="xs"
+          style={{ overflow: 'visible' }}
+        />
+      </div>
       <Switch
         label="Search by Live Input"
         checked={searchByLiveInput}
         onChange={(e) => setSearchByLiveInput(e.currentTarget.checked)}
         size="sm"
+        style={{ display: 'none' }}
+        style={{ flexBasis: 180 }}
       />
-      <Button
-        variant="outline"
-        size="sm"
-        leftSection={<IconFolderOpen size={16} />}
-        onClick={handleOpenFolder}
-      >
-        Open Folder
-      </Button>
     </Group>
   );
 
   return (
     <Stack gap="xl">
-        {/* Header + Banner side by side */}
+        {/* Header + Banner */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', alignItems: 'center' }}>
           <div>
             <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="HC05" />Technology Config</h1>
@@ -1079,7 +1061,7 @@ export default function HOTASConfigMainPage() {
                 {profileName}
               </Text>
             )}
-            <Text c="dimmed">Configure your flight stick, mouse, and keyboard for precision control</Text>
+            <Text c="dimmed" mb="md">Configure your flight stick, mouse, and keyboard for precision control</Text>
           </div>
           <Box
             style={{
@@ -1120,16 +1102,6 @@ export default function HOTASConfigMainPage() {
           </Box>
         )}
 
-        {/* Profile Card Scroller — above Live Input */}
-        <ProfileCardScroller
-          profiles={profiles}
-          selectedProfile={selectedProfile}
-          onSelect={handleLoadProfile}
-          aiProfiles={[
-            { value: '__ai_x52_optimal', name: '__ai_x52_optimal', label: logitechX52ProOptimal.profileName, meta: { color: '#b300ff', gameMode: 'default', description: 'AI-generated optimal X52 layout' } },
-          ]}
-        />
-
         {/* Live Input Panel */}
         <KeyPressIndicator
           title="HC05 Live Input"
@@ -1140,26 +1112,26 @@ export default function HOTASConfigMainPage() {
           activeInputs={activeInputs}
           axisValues={axisValues}
           gamepadInfo={gamepadInfo}
+          searchByLiveInput={searchByLiveInput}
+          onToggleSearchByLiveInput={(v) => setSearchByLiveInput(v)}
+        />
+
+        {/* Profile Card Scroller */}
+        <ProfileCardScroller
+          profiles={profiles}
+          selectedProfile={selectedProfile}
+          onSelect={handleLoadProfile}
+          aiProfiles={[
+            { value: '__ai_x52_optimal', name: '__ai_x52_optimal', label: logitechX52ProOptimal.profileName, meta: { color: '#b300ff', gameMode: 'default', description: 'AI-generated optimal X52 layout' } },
+          ]}
         />
 
         {/* Filters — above table, below live input */}
         {filterControls}
 
-        {/* Info Bar */}
+        {/* Info Bar (no duplicate category info) */}
         <Group justify="space-between" style={{ color: '#666' }}>
           <Group gap="sm" align="center">
-            <Text size="sm">
-              {selectedCategory && currentCategory ? (
-                <>
-                  <strong>{currentCategory.label}</strong> — {currentCategory.description}
-                </>
-              ) : (
-                'All Categories'
-              )}
-            </Text>
-            <Badge color={gamepadConnected ? 'green' : 'gray'} variant="light" size="sm">
-              {gamepadConnected ? `Live: ${liveInputLabel}` : 'HOTAS disconnected'}
-            </Badge>
             {selectedProfile && !selectedProfile.startsWith('__ai_') && xmlSaveStatus !== 'idle' && (
               <Badge
                 color={xmlSaveStatus === 'saving' ? 'blue' : (xmlSaveStatus === 'saved' ? 'green' : 'red')}
@@ -1220,8 +1192,8 @@ export default function HOTASConfigMainPage() {
           <HOTASInputView
             bindings={effectiveBindings}
             hotasOverrides={hotasOverrides}
-            bindingFilter={bindingFilter}
-            deviceFilter={deviceFilter}
+            bindingFilter={profileFilter}
+            deviceFilter={profileFilter}
             searchQuery={searchQuery}
             onAssign={(bindingId, xmlToken) => {
               setHotasOverrides((prev) => ({ ...prev, [bindingId]: xmlToken }));

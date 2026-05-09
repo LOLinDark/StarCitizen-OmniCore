@@ -20,7 +20,7 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { BedrockRuntimeClient, InvokeModelCommand, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { appendFileSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
@@ -939,6 +939,159 @@ app.post('/api/hotas/open-folder', (req, res) => {
   } catch (error) {
     log('HOTAS open folder error:', error.message);
     res.status(500).json({ error: 'Failed to open folder' });
+  }
+});
+
+// --- Game Settings Endpoint ---
+const STAR_CITIZEN_ATTRIBUTES_PATH = join(STAR_CITIZEN_MAPPINGS_PATH, '..', '..', 'Profiles', 'default', 'attributes.xml');
+
+app.get('/api/game/settings', (req, res) => {
+  try {
+    const xml = readFileSync(STAR_CITIZEN_ATTRIBUTES_PATH, 'utf-8');
+    const attrPattern = /<Attr\s+name="([^"]+)"\s+value="([^"]*)"\s*\/>/gi;
+    const settings = [];
+    let match;
+    while ((match = attrPattern.exec(xml)) !== null) {
+      const name = match[1];
+      const value = match[2];
+      // Simple heuristic: if value is 0 or 1 for most settings, it's likely default
+      const isDefault = value === '1' || value === '0' || value === '';
+      settings.push({ name, value, category: categorizeSettingName(name), isDefault });
+    }
+    res.json({ settings, count: settings.length });
+  } catch (error) {
+    log('Game settings error:', error.message);
+    res.status(500).json({ error: 'Failed to read game settings' });
+  }
+});
+
+function categorizeSettingName(name) {
+  const n = name.toLowerCase();
+  if (n.startsWith('audio')) return 'Audio';
+  if (n.startsWith('sysspec')) return 'Graphics';
+  if (n.startsWith('headtracking') || n.startsWith('tobii') || n.startsWith('foip')) return 'Head Tracking';
+  if (n.startsWith('lookahead')) return 'Look Ahead';
+  if (n.startsWith('flight') || n.startsWith('pilot') || n.startsWith('speed')) return 'Flight';
+  if (n.startsWith('turret')) return 'Turrets';
+  if (n.startsWith('hmd')) return 'VR / HMD';
+  if (n.startsWith('gforce') || n.startsWith('shake') || n.startsWith('motionblur')) return 'Effects';
+  if (n.startsWith('preset') || n.startsWith('selectedship')) return 'Profile / Ship';
+  if (n.startsWith('weapon')) return 'Weapons';
+  if (n.startsWith('width') || n.startsWith('height') || n.startsWith('resolution') || n.startsWith('window') || n.startsWith('overscan') || n.startsWith('aspect') || n.startsWith('upscaling')) return 'Display';
+  if (n.startsWith('textinput')) return 'Input';
+  if (n.startsWith('crosshair') || n.startsWith('autozoom')) return 'HUD';
+  if (n.startsWith('salvage') || n.startsWith('ads')) return 'Gameplay';
+  return 'Other';
+}
+
+// --- Backup/Sync Service ---
+const DATA_DIR = join(process.cwd(), 'server', 'data');
+const BACKUP_CONFIG_PATH = join(DATA_DIR, 'backup-config.json');
+
+function getBackupConfig() {
+  try {
+    if (!existsSync(BACKUP_CONFIG_PATH)) return { enabled: false, folderPath: '' };
+    return JSON.parse(readFileSync(BACKUP_CONFIG_PATH, 'utf-8'));
+  } catch { return { enabled: false, folderPath: '' }; }
+}
+
+function saveBackupConfig(config) {
+  ensureDataDir();
+  writeFileSync(BACKUP_CONFIG_PATH, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+function ensureDataDir() {
+  if (!existsSync(DATA_DIR)) {
+    mkdirSync(DATA_DIR, { recursive: true });
+  }
+}
+
+function runBackupSync() {
+  const config = getBackupConfig();
+  if (!config.enabled || !config.folderPath) {
+    return { success: false, error: 'Backup not configured' };
+  }
+
+  try {
+    if (!existsSync(config.folderPath)) {
+      mkdirSync(config.folderPath, { recursive: true });
+    }
+
+    const sources = [
+      { dir: STAR_CITIZEN_MAPPINGS_PATH, subdir: 'hotas-profiles', pattern: /\.(xml|json)$/i },
+      { dir: join(STAR_CITIZEN_MAPPINGS_PATH, '..', '..', 'Profiles', 'default'), subdir: 'game-settings', pattern: /\.xml$/i },
+    ];
+
+    let filesCopied = 0;
+    for (const source of sources) {
+      if (!existsSync(source.dir)) continue;
+      const destDir = join(config.folderPath, source.subdir);
+      if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
+
+      const files = readdirSync(source.dir).filter(f => source.pattern.test(f));
+      for (const file of files) {
+        const src = join(source.dir, file);
+        const dest = join(destDir, file);
+        const srcStat = statSync(src);
+        let needsCopy = true;
+        try {
+          const destStat = statSync(dest);
+          needsCopy = srcStat.mtimeMs > destStat.mtimeMs;
+        } catch { /* dest doesn't exist */ }
+        if (needsCopy) {
+          writeFileSync(dest, readFileSync(src));
+          filesCopied++;
+        }
+      }
+    }
+
+    const result = { success: true, filesCopied, syncedAt: new Date().toISOString() };
+    saveBackupConfig({ ...config, lastSyncAt: result.syncedAt, lastSyncFiles: filesCopied });
+    return result;
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+app.get('/api/backup/status', (req, res) => {
+  const config = getBackupConfig();
+  const folderExists = config.folderPath ? existsSync(config.folderPath) : false;
+  res.json({
+    enabled: config.enabled,
+    folderPath: config.folderPath,
+    folderExists,
+    ready: config.enabled && folderExists,
+    lastSyncAt: config.lastSyncAt || null,
+    lastSyncFiles: config.lastSyncFiles || 0,
+  });
+});
+
+app.post('/api/backup/configure', (req, res) => {
+  const folderPath = String(req.body?.folderPath || '').trim();
+  const enabled = Boolean(req.body?.enabled);
+
+  if (enabled && !folderPath) {
+    return res.status(400).json({ error: 'Folder path is required when enabling backup' });
+  }
+
+  // Basic path validation
+  if (folderPath && (folderPath.includes('..') || folderPath.length > 260)) {
+    return res.status(400).json({ error: 'Invalid folder path' });
+  }
+
+  const config = { ...getBackupConfig(), enabled, folderPath };
+  saveBackupConfig(config);
+  log(`Backup configured: enabled=${enabled}, path=${folderPath}`);
+  res.json({ success: true, ...config });
+});
+
+app.post('/api/backup/sync', (req, res) => {
+  const result = runBackupSync();
+  if (result.success) {
+    log(`Backup sync complete: ${result.filesCopied} files copied`);
+    res.json(result);
+  } else {
+    res.status(500).json(result);
   }
 });
 
