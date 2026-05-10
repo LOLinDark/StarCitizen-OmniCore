@@ -29,6 +29,7 @@ import { registerShipRoutes } from './api/ships/index.js';
 import { registerVersemailRoutes } from './api/versemail/index.js';
 import { registerHotasModeRoutes } from './peripherals/hotas/index.js';
 import { registerDownloadRoutes } from './api/dev/download/index.js';
+import hotasOverlayApi from './api/hotasOverlayApi.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -794,7 +795,13 @@ app.get('/api/hotas/profiles', (req, res) => {
         let meta = {};
         try {
           const metaPath = join(STAR_CITIZEN_MAPPINGS_PATH, `${name}.omnicore.json`);
-          meta = JSON.parse(readFileSync(metaPath, 'utf-8'));
+          const metaRaw = readFileSync(metaPath, 'utf-8');
+          try {
+            meta = JSON.parse(metaRaw);
+          } catch (e) {
+            log(`HOTAS: Malformed JSON in ${metaPath}: ${e.message}`);
+            meta = { error: 'Malformed JSON' };
+          }
         } catch { /* no sidecar */ }
         return { name, path: file, filename: file, meta };
       });
@@ -1100,6 +1107,7 @@ registerShipRoutes(app);
 registerVersemailRoutes(app);
 registerHotasModeRoutes(app);
 registerDownloadRoutes(app);
+app.use(hotasOverlayApi);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

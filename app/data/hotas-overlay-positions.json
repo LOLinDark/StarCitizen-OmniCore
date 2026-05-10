@@ -1,0 +1,353 @@
+[
+  {
+    "id": "hair-trigger",
+    "label": "Hair Trigger",
+    "style": {
+      "left": "57.80%",
+      "top": "24.62%",
+      "size": "5.29%"
+    }
+  },
+  {
+    "id": "trigger-full",
+    "label": "Trigger Full",
+    "style": {
+      "left": "65.83%",
+      "top": "28.77%",
+      "size": "5.14%"
+    }
+  },
+  {
+    "id": "safe",
+    "label": "Safe Button",
+    "style": {
+      "left": "64.66%",
+      "top": "8.54%",
+      "size": "4.86%"
+    }
+  },
+  {
+    "id": "button-a",
+    "label": "Button A",
+    "style": {
+      "left": "70.43%",
+      "top": "9.40%",
+      "size": "3.57%"
+    }
+  },
+  {
+    "id": "button-b",
+    "label": "Button B",
+    "style": {
+      "left": "70.57%",
+      "top": "14.74%",
+      "size": "4.29%"
+    }
+  },
+  {
+    "id": "button-c",
+    "label": "Button C",
+    "style": {
+      "left": "61.34%",
+      "top": "18.54%",
+      "size": "4.14%"
+    }
+  },
+  {
+    "id": "pinkie-switch",
+    "label": "Pinkie Switch",
+    "style": {
+      "left": "62.98%",
+      "top": "42.09%",
+      "size": "5.00%"
+    }
+  },
+  {
+    "id": "pov-hat-1-n",
+    "label": "POV Hat 1 North",
+    "style": {
+      "left": "44.20%",
+      "top": "12.00%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-1-e",
+    "label": "POV Hat 1 East",
+    "style": {
+      "left": "91.46%",
+      "top": "28.59%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-1-s",
+    "label": "POV Hat 1 South",
+    "style": {
+      "left": "35.80%",
+      "top": "7.40%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-1-w",
+    "label": "POV Hat 1 West",
+    "style": {
+      "left": "51.00%",
+      "top": "3.40%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "throttle",
+    "label": "Throttle",
+    "style": {
+      "left": "17.80%",
+      "top": "69.40%",
+      "size": "9.40%"
+    }
+  },
+  {
+    "id": "button-d",
+    "label": "Button D",
+    "style": {
+      "left": "32.80%",
+      "top": "41.20%",
+      "size": "3.00%"
+    }
+  },
+  {
+    "id": "fire-d",
+    "label": "Fire D",
+    "style": {
+      "left": "23.09%",
+      "top": "6.49%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "button-e",
+    "label": "Button E",
+    "style": {
+      "left": "27.00%",
+      "top": "32.11%",
+      "size": "4.00%"
+    }
+  },
+  {
+    "id": "mouse-button",
+    "label": "Mouse Button",
+    "style": {
+      "left": "31.83%",
+      "top": "60.66%",
+      "size": "3.71%"
+    }
+  },
+  {
+    "id": "mini-stick",
+    "label": "Mini Stick",
+    "style": {
+      "left": "27.09%",
+      "top": "16.26%",
+      "size": "7%"
+    }
+  },
+  {
+    "id": "rotary-1",
+    "label": "Rotary 1",
+    "style": {
+      "left": "26.36%",
+      "top": "38.88%",
+      "size": "4.00%"
+    }
+  },
+  {
+    "id": "rotary-2",
+    "label": "Rotary 2",
+    "style": {
+      "left": "35.00%",
+      "top": "48.72%",
+      "size": "4.29%"
+    }
+  },
+  {
+    "id": "slider",
+    "label": "Slider",
+    "style": {
+      "left": "27.31%",
+      "top": "44.83%",
+      "size": "4.86%"
+    }
+  },
+  {
+    "id": "pov-hat-2-n",
+    "label": "POV Hat 2 North",
+    "style": {
+      "left": "1.80%",
+      "top": "14.40%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-2-e",
+    "label": "POV Hat 2 East",
+    "style": {
+      "left": "-1.20%",
+      "top": "30.40%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-2-s",
+    "label": "POV Hat 2 South",
+    "style": {
+      "left": "7.60%",
+      "top": "43.40%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-2-w",
+    "label": "POV Hat 2 West",
+    "style": {
+      "left": "16.60%",
+      "top": "13.80%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-3-n",
+    "label": "POV Hat 3 North",
+    "style": {
+      "left": "58.40%",
+      "top": "79.80%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-3-e",
+    "label": "POV Hat 3 East",
+    "style": {
+      "left": "6.60%",
+      "top": "22.60%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-3-s",
+    "label": "POV Hat 3 South",
+    "style": {
+      "left": "41.00%",
+      "top": "22.80%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "pov-hat-3-w",
+    "label": "POV Hat 3 West",
+    "style": {
+      "left": "93.17%",
+      "top": "83.40%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "toggle-t1",
+    "label": "Toggle T1",
+    "style": {
+      "left": "67.00%",
+      "top": "71.43%",
+      "size": "4.86%"
+    }
+  },
+  {
+    "id": "toggle-t2",
+    "label": "Toggle T2",
+    "style": {
+      "left": "71.77%",
+      "top": "80.86%",
+      "size": "4.29%"
+    }
+  },
+  {
+    "id": "toggle-t3",
+    "label": "Toggle T3",
+    "style": {
+      "left": "73.43%",
+      "top": "70.51%",
+      "size": "4.43%"
+    }
+  },
+  {
+    "id": "toggle-t4",
+    "label": "Toggle T4",
+    "style": {
+      "left": "78.23%",
+      "top": "78.77%",
+      "size": "4.29%"
+    }
+  },
+  {
+    "id": "toggle-t5",
+    "label": "Toggle T5",
+    "style": {
+      "left": "80.06%",
+      "top": "69.31%",
+      "size": "4.00%"
+    }
+  },
+  {
+    "id": "toggle-t6",
+    "label": "Toggle T6",
+    "style": {
+      "left": "84.63%",
+      "top": "76.71%",
+      "size": "4.43%"
+    }
+  },
+  {
+    "id": "mode-m1",
+    "label": "Mode Switch M1",
+    "style": {
+      "left": "71.94%",
+      "top": "1.09%",
+      "size": "3.71%"
+    }
+  },
+  {
+    "id": "mode-m2",
+    "label": "Mode Switch M2",
+    "style": {
+      "left": "78.00%",
+      "top": "3.57%",
+      "size": "3.57%"
+    }
+  },
+  {
+    "id": "mode-m3",
+    "label": "Mode Switch M3",
+    "style": {
+      "left": "80.57%",
+      "top": "8.57%",
+      "size": "4.29%"
+    }
+  },
+  {
+    "id": "clutch",
+    "label": "Clutch",
+    "style": {
+      "left": "83.71%",
+      "top": "90.00%",
+      "size": "6%"
+    }
+  },
+  {
+    "id": "wheel-mouse-btn-2",
+    "label": "Wheel Mouse Button 2",
+    "style": {
+      "left": "31.31%",
+      "top": "56.48%",
+      "size": "4.00%"
+    }
+  }
+]

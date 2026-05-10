@@ -18,6 +18,10 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: '../dist',
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'app/index.html'),
+        // hotasOverlayPopout: path.resolve(__dirname, 'app/popout/HOTASOverlayPopout.html'), // Removed: file missing
+      },
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) {

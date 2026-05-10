@@ -41,7 +41,7 @@ export default function AboutPage() {
               A comprehensive Star Citizen companion dashboard providing tools, guides, and resources for citizens of the verse.
             </Text>
             <Text size="sm">
-              Source: <Anchor href="https://github.com/RyanBayne/OMNI-CORE" target="_blank" rel="noreferrer">github.com/RyanBayne/OMNI-CORE</Anchor>
+              Source: <Anchor href="https://github.com/LOLinDark/StarCitizen-OmniCore" target="_blank" rel="noreferrer">github.com/LOLinDark/StarCitizen-OmniCore</Anchor>
             </Text>
           </div>
         </SciFiFrame>
@@ -82,7 +82,7 @@ export default function AboutPage() {
             </h2>
             <Text size="sm" mb="md">For feedback, suggestions, or bug reports:</Text>
             <Text size="sm">
-              GitHub: <Anchor href="https://github.com/RyanBayne/OMNI-CORE/issues" target="_blank" rel="noreferrer">Open an issue</Anchor>
+              GitHub: <Anchor href="https://github.com/LOLinDark/StarCitizen-OmniCore/issues" target="_blank" rel="noreferrer">Open an issue</Anchor>
             </Text>
           </div>
         </SciFiFrame>

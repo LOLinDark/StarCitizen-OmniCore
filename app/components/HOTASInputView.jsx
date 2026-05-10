@@ -146,7 +146,7 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
           data={[
             { value: 'none', label: 'No Modes' },
             { value: '0', label: 'M1 Red' },
-            { value: '1', label: 'M2 Purple' },
+            { value: '1', label: 'M2 Orange' },
             { value: '2', label: 'M3 Blue' },
             { value: 'all', label: 'All Modes' },
           ]}

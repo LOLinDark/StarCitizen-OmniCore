@@ -39,6 +39,7 @@ export function KeyPressIndicator({
   gamepadInfo = null,
   searchByLiveInput = false,
   onToggleSearchByLiveInput = null,
+  children,
 }) {
   const devMode = useAppStore((s) => s.devMode);
   const [isDocked, setIsDocked] = useState(true);
@@ -371,179 +372,180 @@ export function KeyPressIndicator({
           </Tooltip>
       </Group>
 
-      {/* Current input */}
+      {/* Current input and children (only when not minimized) */}
       {!isMinimised && (
         <>
-
-      {/* Assignment label */}
-      {!!assignmentLabel && (
-        <Text
-          size="xs"
-          fw={600}
-          style={{
-            color: assignmentLabel.toLowerCase().includes('unassigned') ? '#ffb74d' : '#81c784',
-            marginBottom: sortedKeys.length > 0 ? '0.35rem' : 0,
-            lineHeight: 1.2,
-          }}
-        >
-          {assignmentLabel}
-        </Text>
-      )}
-
-      {/* Keyboard keys (if any) */}
-      {sortedKeys.length > 0 && (
-        <Group gap="xs" wrap="wrap">
-          {sortedKeys.map(key => (
-            <Badge
-              key={key}
-              color="cyan"
-              variant="filled"
-              size="md"
-              style={{ fontWeight: 700, fontSize: '0.85rem', padding: '0.35rem 0.65rem' }}
+          {/* Assignment label */}
+          {!!assignmentLabel && (
+            <Text
+              size="xs"
+              fw={600}
+              style={{
+                color: assignmentLabel.toLowerCase().includes('unassigned') ? '#ffb74d' : '#81c784',
+                marginBottom: sortedKeys.length > 0 ? '0.35rem' : 0,
+                lineHeight: 1.2,
+              }}
             >
-              {keyLabels[key] || key}
-            </Badge>
-          ))}
-        </Group>
-      )}
-
-      {/* ── Dev Mode extras ───────────────────────────────────────────────── */}
-      {devMode && (
-        <>
-          <Box style={{ borderTop: '1px solid rgba(0, 217, 255, 0.2)', margin: '0.4rem 0', paddingTop: '0.4rem' }} />
-
-          {/* Device ID */}
-          {gamepadInfo && (
-            <Text size="xs" style={{ color: 'rgba(255,255,255,0.45)', marginBottom: '0.5rem', wordBreak: 'break-all' }}>
-              {gamepadInfo.id}
+              {assignmentLabel}
             </Text>
           )}
 
-          {/* Active inputs grid — same layout as test page */}
-          {activeInputs && (
-            <Box mb="xs">
-              <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.4rem' }}>
-                Active Inputs
-              </Text>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                {/* Buttons 0-29 */}
-                {Array.from({ length: 30 }, (_, i) => i).map((idx) => {
-                  const on = activeInputs.has(`button-${idx}`);
-                  return (
-                    <div
-                      key={`b${idx}`}
-                      title={X52_LOOKUP[idx]?.name || `Button ${getDisplayButtonNumber(idx)}`}
-                      style={{
-                        width: 28, height: 28, borderRadius: 3,
-                        background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
-                        border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 8, fontWeight: 700,
-                        color: on ? '#000' : 'rgba(0,217,255,0.5)',
-                        transition: 'all 0.1s',
-                      }}
-                    >
-                      B{getDisplayButtonNumber(idx)}
-                    </div>
-                  );
-                })}
-                {/* Axes 0-8 */}
-                {Array.from({ length: 9 }, (_, i) => i).map((idx) => {
-                  const on = activeInputs.has(`axis-${idx}`);
-                  return (
-                    <div
-                      key={`a${idx}`}
-                      title={X52_LOOKUP[`${idx}-axis`]?.name || `Axis ${idx}`}
-                      style={{
-                        width: 28, height: 28, borderRadius: 3,
-                        background: on ? '#ff9800' : 'rgba(255,152,0,0.08)',
-                        border: on ? '1px solid #ff9800' : '1px solid rgba(255,152,0,0.25)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 8, fontWeight: 700,
-                        color: on ? '#000' : 'rgba(255,152,0,0.5)',
-                        transition: 'all 0.1s',
-                      }}
-                    >
-                      A{idx}
-                    </div>
-                  );
-                })}
-                {/* POV HAT */}
-                {HAT_DIRS.map((dir) => {
-                  const on = activeInputs.has(`button-${dir}`);
-                  const arrow = HAT_ARROWS[dir.split('-').pop()];
-                  return (
-                    <div
-                      key={dir}
-                      title={`POV HAT ${dir.split('-').pop().toUpperCase()}`}
-                      style={{
-                        width: 28, height: 28, borderRadius: 3,
-                        background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
-                        border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 700,
-                        color: on ? '#000' : 'rgba(0,217,255,0.5)',
-                        transition: 'all 0.1s',
-                      }}
-                    >
-                      {arrow}
-                    </div>
-                  );
-                })}
-              </div>
-            </Box>
+          {/* Keyboard keys (if any) */}
+          {sortedKeys.length > 0 && (
+            <Group gap="xs" wrap="wrap">
+              {sortedKeys.map(key => (
+                <Badge
+                  key={key}
+                  color="cyan"
+                  variant="filled"
+                  size="md"
+                  style={{ fontWeight: 700, fontSize: '0.85rem', padding: '0.35rem 0.65rem' }}
+                >
+                  {keyLabels[key] || key}
+                </Badge>
+              ))}
+            </Group>
           )}
 
-          {/* Axis value bars */}
-          {axisValues && Object.keys(axisValues).length > 0 && (
-            <Box mb="xs">
-              <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.4rem' }}>
-                Axis Values
-              </Text>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 8px' }}>
-                {Object.entries(axisValues).map(([idx, val]) => {
-                  const name = X52_LOOKUP[`${idx}-axis`]?.name || `Axis ${idx}`;
-                  const pct = ((parseFloat(val) + 1) / 2) * 100;
-                  return (
-                    <div key={idx}>
-                      <Text size="xs" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.2 }}>
-                        {name}
-                      </Text>
-                      <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
-                        <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${pct}%`, background: '#ff9800', borderRadius: 3, transition: 'width 0.05s' }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Box>
+          {/* ── Dev Mode extras ───────────────────────────────────────────────── */}
+          {devMode && (
+            <>
+              <Box style={{ borderTop: '1px solid rgba(0, 217, 255, 0.2)', margin: '0.4rem 0', paddingTop: '0.4rem' }} />
+
+              {/* Device ID */}
+              {gamepadInfo && (
+                <Text size="xs" style={{ color: 'rgba(255,255,255,0.45)', marginBottom: '0.5rem', wordBreak: 'break-all' }}>
+                  {gamepadInfo.id}
+                </Text>
+              )}
+
+              {/* Active inputs grid — same layout as test page */}
+              {activeInputs && (
+                <Box mb="xs">
+                  <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.4rem' }}>
+                    Active Inputs
+                  </Text>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {/* Buttons 0-29 */}
+                    {Array.from({ length: 30 }, (_, i) => i).map((idx) => {
+                      const on = activeInputs.has(`button-${idx}`);
+                      return (
+                        <div
+                          key={`b${idx}`}
+                          title={X52_LOOKUP[idx]?.name || `Button ${getDisplayButtonNumber(idx)}`}
+                          style={{
+                            width: 28, height: 28, borderRadius: 3,
+                            background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
+                            border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 8, fontWeight: 700,
+                            color: on ? '#000' : 'rgba(0,217,255,0.5)',
+                            transition: 'all 0.1s',
+                          }}
+                        >
+                          B{getDisplayButtonNumber(idx)}
+                        </div>
+                      );
+                    })}
+                    {/* Axes 0-8 */}
+                    {Array.from({ length: 9 }, (_, i) => i).map((idx) => {
+                      const on = activeInputs.has(`axis-${idx}`);
+                      return (
+                        <div
+                          key={`a${idx}`}
+                          title={X52_LOOKUP[`${idx}-axis`]?.name || `Axis ${idx}`}
+                          style={{
+                            width: 28, height: 28, borderRadius: 3,
+                            background: on ? '#ff9800' : 'rgba(255,152,0,0.08)',
+                            border: on ? '1px solid #ff9800' : '1px solid rgba(255,152,0,0.25)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 8, fontWeight: 700,
+                            color: on ? '#000' : 'rgba(255,152,0,0.5)',
+                            transition: 'all 0.1s',
+                          }}
+                        >
+                          A{idx}
+                        </div>
+                      );
+                    })}
+                    {/* POV HAT */}
+                    {HAT_DIRS.map((dir) => {
+                      const on = activeInputs.has(`button-${dir}`);
+                      const arrow = HAT_ARROWS[dir.split('-').pop()];
+                      return (
+                        <div
+                          key={dir}
+                          title={`POV HAT ${dir.split('-').pop().toUpperCase()}`}
+                          style={{
+                            width: 28, height: 28, borderRadius: 3,
+                            background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
+                            border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 13, fontWeight: 700,
+                            color: on ? '#000' : 'rgba(0,217,255,0.5)',
+                            transition: 'all 0.1s',
+                          }}
+                        >
+                          {arrow}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Box>
+              )}
+
+              {/* Axis value bars */}
+              {axisValues && Object.keys(axisValues).length > 0 && (
+                <Box mb="xs">
+                  <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.4rem' }}>
+                    Axis Values
+                  </Text>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px 8px' }}>
+                    {Object.entries(axisValues).map(([idx, val]) => {
+                      const name = X52_LOOKUP[`${idx}-axis`]?.name || `Axis ${idx}`;
+                      const pct = ((parseFloat(val) + 1) / 2) * 100;
+                      return (
+                        <div key={idx}>
+                          <Text size="xs" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.2 }}>
+                            {name}
+                          </Text>
+                          <div style={{ position: 'relative', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${pct}%`, background: '#ff9800', borderRadius: 3, transition: 'width 0.05s' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </Box>
+              )}
+
+              {/* Raw lastInput JSON */}
+              {rawInput && (
+                <Box>
+                  <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.4rem' }}>
+                    Raw Event
+                  </Text>
+                  <Code
+                    block
+                    style={{
+                      background: 'rgba(0,0,0,0.4)',
+                      color: '#00ff88',
+                      fontSize: '0.68rem',
+                      padding: '0.5rem',
+                      maxHeight: '160px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {JSON.stringify(rawInput, null, 2)}
+                  </Code>
+                </Box>
+              )}
+            </>
           )}
 
-          {/* Raw lastInput JSON */}
-          {rawInput && (
-            <Box>
-              <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.4rem' }}>
-                Raw Event
-              </Text>
-              <Code
-                block
-                style={{
-                  background: 'rgba(0,0,0,0.4)',
-                  color: '#00ff88',
-                  fontSize: '0.68rem',
-                  padding: '0.5rem',
-                  maxHeight: '160px',
-                  overflowY: 'auto',
-                }}
-              >
-                {JSON.stringify(rawInput, null, 2)}
-              </Code>
-            </Box>
-          )}
+          {/* Overlay demo or other children go here */}
+          {children}
         </>
-      )}
-      {/* end isMinimised conditional */}
-      </>
       )}
     </Box>
   );

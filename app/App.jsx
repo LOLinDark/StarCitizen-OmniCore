@@ -116,7 +116,6 @@ function App() {
           <Route path="about" element={<Lazy Component={AboutPage} />} />
           <Route path="screenshots" element={<Lazy Component={ScreenshotsPage} />} />
           <Route path="hotas-diagram" element={<HOTASDiagramPage />} />
-          <Route path="hotas-overlay" element={<HOTASOverlayPage />} />
         </Route>
 
         {/* Admin/Backend/Developer Area (with AdminLayout - Sidebar layout) */}

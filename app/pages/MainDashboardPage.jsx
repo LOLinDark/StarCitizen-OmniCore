@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { SciFiFrame } from '../components/ui';
 import DevTag from '../components/DevTag';
 import { getAssetUrl } from '../utils/pathUtils';
+import HC05LiveInputContainer from '../containers/HC05LiveInputContainer.jsx';
 
 // ═══════════════════════════════════════════════════════════════
 // WIREFRAME COMPONENTS
@@ -410,7 +411,7 @@ export default function MainDashboardPage() {
   const TOOLS = useMemo(() => getToolsArray(), []);
   
   return (
-    <Container size="xl" py="xl">
+    <Container size="xl" py="lg">
       {/* Header */}
       <div style={{ marginBottom: '3rem' }}>
         <h1 className="scifi-heading" style={{ marginBottom: '0.5rem', fontSize: '2rem', margin: 0 }}>
@@ -433,6 +434,18 @@ export default function MainDashboardPage() {
           <ToolCard key={tool.id} tool={tool} />
         ))}
       </SimpleGrid>
+
+      <Stack>
+        {/* Add HOTAS Live Input (HC05) section */}
+        <Box mt="xl" mb="xl">
+          <HC05LiveInputContainer
+            overlays={[]}
+            onOverlayChange={() => {}}
+            keybindings={[]}
+            deviceMap={{ X52_BUTTONS: {}, X52_AXES: {}, X52_MODES: {}, X52_POV_DIRECTIONS: [] }}
+          />
+        </Box>
+      </Stack>
     </Container>
   );
 }
