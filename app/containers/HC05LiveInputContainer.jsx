@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Box, Title, Text } from '@mantine/core';
 import Moveable from 'react-moveable';
 import HOTASInputView from '../components/HOTASInputView.jsx';
@@ -9,30 +9,73 @@ const HOTAS_IMAGE = '/assets/hotas/x52-hotas-transparent-background-omnicore-sta
 export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, deviceMap, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
   // Overlay refs for Moveable
   const overlayRefs = useRef([]);
+  const latestOverlaysRef = useRef(overlays);
+  const [saveStatus, setSaveStatus] = useState('idle');
   const containerWidth = 700;
   const containerHeight = 700;
+
+  useEffect(() => {
+    latestOverlaysRef.current = overlays;
+  }, [overlays]);
   // Convert percent to px for draggable default position
   const percentToPx = (percent, base) => (parseFloat(percent) / 100) * base;
   const pxToPercent = (px, base) => `${((px / base) * 100).toFixed(2)}%`;
+
+  const saveOverlaysToFile = useCallback(async (overlaysToSave, timeoutMs = 5000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch('/api/hotas-overlay-positions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(overlaysToSave),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save overlay positions');
+      }
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }, []);
 
 
   // Auto-save overlays to backend every minute in dev edit mode
   useEffect(() => {
     if (isDevMode && devEditMode) {
       const save = () => {
-        fetch('/api/hotas-overlay-positions', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(overlays),
-        }).then(res => {
-          if (!res.ok) throw new Error('Failed to save overlay positions');
-        }).catch(e => console.error('Overlay auto-save error:', e));
+        saveOverlaysToFile(latestOverlaysRef.current).catch(e => console.error('Overlay auto-save error:', e));
       };
       save(); // Save immediately on enable
       const interval = setInterval(save, 60000);
       return () => clearInterval(interval);
     }
-  }, [isDevMode, devEditMode, overlays]);
+  }, [isDevMode, devEditMode, saveOverlaysToFile]);
+
+  const handleToggleEditMode = async () => {
+    if (!setDevEditMode) return;
+
+    if (devEditMode) {
+      const overlaysSnapshot = overlays;
+      setDevEditMode(false);
+      setSaveStatus('saving');
+
+      try {
+        await saveOverlaysToFile(overlaysSnapshot);
+        setSaveStatus('saved');
+      } catch (error) {
+        console.error('Overlay save error:', error);
+        setSaveStatus('error');
+      }
+
+      return;
+    }
+
+    setSaveStatus('idle');
+    setDevEditMode((value) => !value);
+  };
 
   // Export overlays to JSON (manual download)
   const handleExport = () => {
@@ -41,7 +84,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'hotas-overlay-positions.json';
+    a.download = 'hotas-x52-overlay-positions.jsonc';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -138,6 +181,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
           {isDevMode && (
             <Box mt="md" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               <button
+                type="button"
                 style={{
                   padding: '6px 18px',
                   fontSize: 16,
@@ -153,6 +197,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
                 Export Overlay Positions to JSON
               </button>
               <button
+                type="button"
                 style={{
                   padding: '6px 18px',
                   fontSize: 16,
@@ -163,10 +208,13 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
                   cursor: 'pointer',
                   marginBottom: 8,
                 }}
-                onClick={() => setDevEditMode && setDevEditMode((v) => !v)}
+                onClick={handleToggleEditMode}
               >
-                {devEditMode ? 'Disable Resize/Drag' : 'Enable Resize/Drag'}
+                {devEditMode ? 'Disable Resize/Drag + Save' : 'Enable Resize/Drag'}
               </button>
+              {saveStatus === 'saving' && <Text size="sm" c="dimmed">Saving overlay positions...</Text>}
+              {saveStatus === 'saved' && <Text size="sm" c="green">Overlay positions saved.</Text>}
+              {saveStatus === 'error' && <Text size="sm" c="red">Save failed. Check backend/API and try again.</Text>}
             </Box>
           )}
         </Box>

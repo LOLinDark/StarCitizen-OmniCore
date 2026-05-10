@@ -15,9 +15,11 @@ export function getImagePath(relativePath) {
   
   // Remove leading slash from relative path if present
   const cleanPath = relativePath.startsWith('/') ? relativePath.slice(1) : relativePath;
+  const isAbsoluteBase = /^https?:\/\//i.test(baseUrl);
+  const resolvedBaseUrl = isAbsoluteBase ? baseUrl : new URL(baseUrl, window.location.origin).toString();
   
   try {
-    return new URL(cleanPath, baseUrl).pathname;
+    return new URL(cleanPath, resolvedBaseUrl).pathname;
   } catch (e) {
     // Fallback: just prepend baseUrl if URL constructor fails
     console.warn('[pathUtils] URL construction failed, using fallback:', e.message);

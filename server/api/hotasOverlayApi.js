@@ -8,8 +8,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const router = express.Router();
 
-// Adjust this path if your project structure changes
-const HOTAS_OVERLAY_PATH = path.join(__dirname, '../../app/data/hotas-overlay-positions.json');
+
+// Model-specific overlay path (X52)
+const HOTAS_OVERLAY_PATH = path.join(__dirname, '../../app/data/hotas/overlays/hotas-x52-overlay-positions.jsonc');
 
 router.post('/api/hotas-overlay-positions', express.json({ limit: '1mb' }), (req, res) => {
   const overlays = req.body;

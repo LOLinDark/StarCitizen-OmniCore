@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import overlaysData from '../data/hotas-overlay-positions.json';
+import overlaysData from '../data/hotas/overlays/hotas-x52-overlay-positions.jsonc';
 import { Box, Title, Text } from '@mantine/core';
 import Draggable from 'react-draggable';
 import Moveable from 'react-moveable';
@@ -36,7 +36,7 @@ export default function HOTASOverlayPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'hotas-overlay-positions.json';
+        a.download = 'hotas-x52-overlay-positions.jsonc';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

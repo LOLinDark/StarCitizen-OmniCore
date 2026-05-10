@@ -100,9 +100,9 @@ export const X52_POV_DIRECTIONS = [
 // Activated by the 3-position Mode switch on throttle
 // ─────────────────────────────────────────────
 export const X52_MODES = {
-  0: { name: 'Red Mode',    color: 'red',    indicator: 'M1' },
-  1: { name: 'Purple Mode', color: 'violet', indicator: 'M2' },
-  2: { name: 'Blue Mode',   color: 'blue',   indicator: 'M3' },
+  0: { name: 'Green Mode',  color: 'green',  indicator: 'M1' },
+  1: { name: 'Orange Mode', color: 'orange', indicator: 'M2' },
+  2: { name: 'Red Mode',    color: 'red',    indicator: 'M3' },
 };
 
 // ─────────────────────────────────────────────

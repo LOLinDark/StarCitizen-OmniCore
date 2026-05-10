@@ -1,10 +1,9 @@
-import { Container, Text, SimpleGrid, Stack, Image, Group } from '@mantine/core';
+import { Container, Text, SimpleGrid, Image, Group, Stack } from '@mantine/core';
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SciFiFrame } from '../components/ui';
 import DevTag from '../components/DevTag';
 import { getAssetUrl } from '../utils/pathUtils';
-import HC05LiveInputContainer from '../containers/HC05LiveInputContainer.jsx';
 
 // ═══════════════════════════════════════════════════════════════
 // WIREFRAME COMPONENTS
@@ -434,18 +433,6 @@ export default function MainDashboardPage() {
           <ToolCard key={tool.id} tool={tool} />
         ))}
       </SimpleGrid>
-
-      <Stack>
-        {/* Add HOTAS Live Input (HC05) section */}
-        <Box mt="xl" mb="xl">
-          <HC05LiveInputContainer
-            overlays={[]}
-            onOverlayChange={() => {}}
-            keybindings={[]}
-            deviceMap={{ X52_BUTTONS: {}, X52_AXES: {}, X52_MODES: {}, X52_POV_DIRECTIONS: [] }}
-          />
-        </Box>
-      </Stack>
     </Container>
   );
 }

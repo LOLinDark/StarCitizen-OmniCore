@@ -1,4 +1,11 @@
-﻿import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+﻿import HOTASViewSwitcher from '../components/HOTASViewSwitcher';
+import HOTASInfoBar from '../components/HOTASInfoBar';
+import HOTASErrorDisplay from '../components/HOTASErrorDisplay';
+import HOTASNotesSection from '../components/HOTASNotesSection';
+import HOTASFilterControls from '../components/HOTASFilterControls';
+import { useHotasOverlayState } from '../hooks/useHotasOverlayState';
+import { formatKeyboardInputForXml, formatMouseInputForXml } from '../utils/hotasKeyboardMouseFormatters';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Stack,
   Group,
@@ -20,155 +27,72 @@ import { useHOTASFiltering } from '../hooks/useHOTASFiltering';
 import { shipKeybindings, shipControlsCategories } from '../data/starcitizen-keybindings';
 import { logitechX52ProOptimal } from '../utils/defaultProfiles';
 import { StarCitizenProfileParser } from '../utils/starCitizenProfileParser';
+
 import { featureToStarCitizenAction, parseInputString, formatInputForDisplay } from '../utils/starCitizenActionMap';
 import { useHotasInput, LogitechX52Device } from '../libraries/hotas';
 import DevTag from '../components/DevTag';
 import HC05LiveInputContainer from '../containers/HC05LiveInputContainer';
-import React from 'react';
-// Overlay demo initial state (from HOTASOverlayPage.jsx)
-const initialOverlays = [
-  { id: 'hair-trigger', label: 'Hair Trigger', style: { left: '60%', top: '35%', size: '7%' } },
-  { id: 'trigger-full', label: 'Trigger Full', style: { left: '66%', top: '35%', size: '7%' } },
-  { id: 'safe', label: 'Safe Button', style: { left: '62%', top: '30%', size: '6%' } },
-  { id: 'button-a', label: 'Button A', style: { left: '68%', top: '28%', size: '6%' } },
-  { id: 'button-b', label: 'Button B', style: { left: '70%', top: '32%', size: '6%' } },
-  { id: 'button-c', label: 'Button C', style: { left: '65%', top: '25%', size: '6%' } },
-  { id: 'pinkie-switch', label: 'Pinkie Switch', style: { left: '58%', top: '45%', size: '7%' } },
-  { id: 'pov-hat-1-n', label: 'POV Hat 1 North', style: { left: '62%', top: '20%', size: '6%' } },
-  { id: 'pov-hat-1-e', label: 'POV Hat 1 East', style: { left: '68%', top: '22%', size: '6%' } },
-  { id: 'pov-hat-1-s', label: 'POV Hat 1 South', style: { left: '65%', top: '28%', size: '6%' } },
-  { id: 'pov-hat-1-w', label: 'POV Hat 1 West', style: { left: '60%', top: '25%', size: '6%' } },
-  { id: 'throttle', label: 'Throttle', style: { left: '7%', top: '55%', size: '30%' } },
-  { id: 'button-d', label: 'Button D', style: { left: '20%', top: '60%', size: '6%' } },
-  { id: 'fire-d', label: 'Fire D', style: { left: '25%', top: '65%', size: '6%' } },
-  { id: 'button-e', label: 'Button E', style: { left: '15%', top: '70%', size: '6%' } },
-  { id: 'mouse-button', label: 'Mouse Button', style: { left: '10%', top: '80%', size: '6%' } },
-  { id: 'mini-stick', label: 'Mini Stick', style: { left: '30%', top: '80%', size: '7%' } },
-  { id: 'rotary-1', label: 'Rotary 1', style: { left: '35%', top: '90%', size: '7%' } },
-  { id: 'rotary-2', label: 'Rotary 2', style: { left: '40%', top: '95%', size: '7%' } },
-  { id: 'slider', label: 'Slider', style: { left: '45%', top: '85%', size: '7%' } },
-  { id: 'pov-hat-2-n', label: 'POV Hat 2 North', style: { left: '12%', top: '60%', size: '6%' } },
-  { id: 'pov-hat-2-e', label: 'POV Hat 2 East', style: { left: '18%', top: '62%', size: '6%' } },
-  { id: 'pov-hat-2-s', label: 'POV Hat 2 South', style: { left: '15%', top: '68%', size: '6%' } },
-  { id: 'pov-hat-2-w', label: 'POV Hat 2 West', style: { left: '10%', top: '65%', size: '6%' } },
-  { id: 'pov-hat-3-n', label: 'POV Hat 3 North', style: { left: '25%', top: '70%', size: '6%' } },
-  { id: 'pov-hat-3-e', label: 'POV Hat 3 East', style: { left: '30%', top: '72%', size: '6%' } },
-  { id: 'pov-hat-3-s', label: 'POV Hat 3 South', style: { left: '28%', top: '78%', size: '6%' } },
-  { id: 'pov-hat-3-w', label: 'POV Hat 3 West', style: { left: '23%', top: '75%', size: '6%' } },
-  { id: 'toggle-t1', label: 'Toggle T1', style: { left: '50%', top: '60%', size: '6%' } },
-  { id: 'toggle-t2', label: 'Toggle T2', style: { left: '55%', top: '62%', size: '6%' } },
-  { id: 'toggle-t3', label: 'Toggle T3', style: { left: '60%', top: '64%', size: '6%' } },
-  { id: 'toggle-t4', label: 'Toggle T4', style: { left: '65%', top: '66%', size: '6%' } },
-  { id: 'toggle-t5', label: 'Toggle T5', style: { left: '70%', top: '68%', size: '6%' } },
-  { id: 'toggle-t6', label: 'Toggle T6', style: { left: '75%', top: '70%', size: '6%' } },
-  { id: 'mode-m1', label: 'Mode Switch M1', style: { left: '80%', top: '20%', size: '6%' } },
-  { id: 'mode-m2', label: 'Mode Switch M2', style: { left: '85%', top: '22%', size: '6%' } },
-  { id: 'mode-m3', label: 'Mode Switch M3', style: { left: '90%', top: '24%', size: '6%' } },
-  { id: 'clutch', label: 'Clutch', style: { left: '95%', top: '90%', size: '6%' } },
-  { id: 'wheel-mouse-btn-2', label: 'Wheel Mouse Button 2', style: { left: '20%', top: '85%', size: '6%' } },
-];
-
+import { normalizeText, getInputKind, getInputAction } from '../utils/hotasUtils';
+import { formatHotasBindingFromInput, formatHotasInputForXml } from '../utils/hotasInputFormatters';
 
 export default function HOTASConfigMainPage() {
-  // Overlay state for HOTAS overlay demo (persisted in localStorage)
-  const [overlays, setOverlays] = React.useState(() => {
-    try {
-      const saved = localStorage.getItem('hotasOverlayPositions');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return initialOverlays;
-  });
-  const [dragged, setDragged] = React.useState(null);
-  // Dev mode: toggle resize/drag handles, persist in localStorage
-  const [devEditMode, setDevEditMode] = React.useState(() => {
-    try {
-      const saved = localStorage.getItem('hotasOverlayDevEditMode');
-      if (saved !== null) return saved === 'true';
-    } catch (e) {}
-    return true;
-  });
+      // Overlay state for HOTAS overlay demo (persisted in localStorage)
+      // Always load overlays from the overlays JSONC file for X52
+      // Use custom hook for overlays and devEditMode state
+      const { overlays, setOverlays, devEditMode, setDevEditMode } = useHotasOverlayState([]);
+      const [dragged, setDragged] = React.useState(null);
+      // Load overlays from JSONC file on mount
+      useEffect(() => {
+        async function loadOverlays() {
+          try {
+            const res = await fetch('/data/hotas/overlays/hotas-x52-overlay-positions.jsonc');
+            const text = await res.text();
+            const { parse } = await import('jsonc-parser');
+            setOverlays(parse(text));
+          } catch (e) {
+            console.error('Failed to load overlays JSONC:', e);
+          }
+        }
+        loadOverlays();
+      }, [setOverlays]);
+      const CAPTURE_WINDOW_MS = 3000;
 
-  // Save overlays to localStorage on change
-  React.useEffect(() => {
-    try {
-      localStorage.setItem('hotasOverlayPositions', JSON.stringify(overlays));
-    } catch (e) {}
-  }, [overlays]);
+      const [selectedProfile, setSelectedProfile] = useState('');
+      const [selectedCategory, setSelectedCategory] = useState('');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [sortBy, setSortBy] = useState('feature');
+      const [sortOrder, setSortOrder] = useState('asc');
+      const [tableView, setTableView] = useState('features');
+      const [profiles, setProfiles] = useState([]);
+      const [profilesLoading, setProfilesLoading] = useState(true);
+      const [profilesError, setProfilesError] = useState(null);
+      const [profileFilter, setProfileFilter] = useState('all');
+      const [searchByLiveInput, setSearchByLiveInput] = useState(false);
+      const [profileName, setProfileName] = useState('');
+      const [mergedBindings, setMergedBindings] = useState(null);
+      const [hotasOverrides, setHotasOverrides] = useState({});
+      const [keyboardOverrides, setKeyboardOverrides] = useState({});
+      const [captureBindingId, setCaptureBindingId] = useState(null);
+      const [captureProgress, setCaptureProgress] = useState(0);
+      const [captureKeyboardBindingId, setCaptureKeyboardBindingId] = useState(null);
+      const [captureKeyboardProgress, setCaptureKeyboardProgress] = useState(0);
+      const [xmlSaveStatus, setXmlSaveStatus] = useState('idle');
+      const [xmlSaveMessage, setXmlSaveMessage] = useState('');
+      const [captureWarning, setCaptureWarning] = useState('');
+      const captureStartedAtRef = useRef(0);
+      const keyboardCaptureStartedAtRef = useRef(0);
+      const captureInitialSignatureRef = useRef('');
+      const isInitializedRef = useRef(false);
+      const savedHotasOverridesRef = useRef(null);
+      const savedKeyboardOverridesRef = useRef(null);
+      const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo } = useHotasInput({
+        enabled: true,
+        trackKeyboard: false,
+        device: LogitechX52Device,
+      });
 
-  // Save devEditMode to localStorage on change
-  React.useEffect(() => {
-    try {
-      localStorage.setItem('hotasOverlayDevEditMode', devEditMode ? 'true' : 'false');
-    } catch (e) {}
-  }, [devEditMode]);
-  const CAPTURE_WINDOW_MS = 3000;
 
-  const [selectedProfile, setSelectedProfile] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('feature');
-  const [sortOrder, setSortOrder] = useState('asc');
-  const [tableView, setTableView] = useState('features');
-  const [profiles, setProfiles] = useState([]);
-  const [profilesLoading, setProfilesLoading] = useState(true);
-  const [profilesError, setProfilesError] = useState(null);
-  const [profileFilter, setProfileFilter] = useState('all');
-  const [searchByLiveInput, setSearchByLiveInput] = useState(false);
-  const [profileName, setProfileName] = useState('');
-  const [mergedBindings, setMergedBindings] = useState(null);
-  const [hotasOverrides, setHotasOverrides] = useState({});
-  const [keyboardOverrides, setKeyboardOverrides] = useState({});
-  const [captureBindingId, setCaptureBindingId] = useState(null);
-  const [captureProgress, setCaptureProgress] = useState(0);
-  const [captureKeyboardBindingId, setCaptureKeyboardBindingId] = useState(null);
-  const [captureKeyboardProgress, setCaptureKeyboardProgress] = useState(0);
-  const [xmlSaveStatus, setXmlSaveStatus] = useState('idle');
-  const [xmlSaveMessage, setXmlSaveMessage] = useState('');
-  const [captureWarning, setCaptureWarning] = useState('');
-  const captureStartedAtRef = useRef(0);
-  const keyboardCaptureStartedAtRef = useRef(0);
-  const captureInitialSignatureRef = useRef('');
-  const isInitializedRef = useRef(false);
-  const savedHotasOverridesRef = useRef(null);
-  const savedKeyboardOverridesRef = useRef(null);
-  const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo } = useHotasInput({
-    enabled: true,
-    trackKeyboard: false,
-    device: LogitechX52Device,
-  });
-
-  const normalizeText = (value) => String(value || '').toLowerCase();
-
-  const getInputKind = useCallback((input) => {
-    if (!input) return '';
-    if (input.type === 'Button' || input.type === 'Axis') return input.type;
-
-    if (typeof input.index === 'string' && input.index.startsWith('9-hat-')) {
-      return 'Button';
-    }
-
-    const metaType = normalizeText(input.meta?.type);
-    if (metaType === 'button' || metaType === 'hat') return 'Button';
-    if (metaType === 'axis' || metaType === 'slider') return 'Axis';
-
-    if (typeof input.value === 'number') return 'Axis';
-    if (Number.isInteger(input.displayIndex) || Number.isInteger(input.index)) return 'Button';
-
-    return '';
-  }, []);
-
-  const getInputAction = useCallback((input) => {
-    if (!input) return '';
-    if (input.action) return input.action;
-
-    const kind = getInputKind(input);
-    if (kind === 'Axis') {
-      const numeric = Number(input.value);
-      return Number.isFinite(numeric) && Math.abs(numeric) >= 0.12 ? 'Engaged' : 'Released';
-    }
-
-    return '';
-  }, [getInputKind]);
+      // normalizeText, getInputKind, getInputAction are now imported from utils/hotasUtils.js
 
   const getInputSignature = useCallback((input) => {
     if (!input) return '';
@@ -184,148 +108,9 @@ export default function HOTASConfigMainPage() {
       .join('|');
   }, [getInputAction, getInputKind]);
 
-  const formatHotasBindingFromInput = useCallback((input) => {
-    if (!input) return '';
+  // formatHotasBindingFromInput and formatHotasInputForXml are now imported from utils/hotasInputFormatters.js
 
-    const kind = getInputKind(input);
-
-    if (kind === 'Button') {
-      if (typeof input.index === 'string' && input.index.startsWith('9-hat-')) {
-        const dir = input.index.replace('9-hat-', '').toUpperCase();
-        return `POV HAT ${dir}`;
-      }
-      const displayNumber = Number.isInteger(input.displayIndex)
-        ? input.displayIndex
-        : (Number.isInteger(input.index) ? input.index + 1 : '?');
-      return `Button ${displayNumber}`;
-    }
-
-    if (kind === 'Axis') {
-      const axisIndex = Number.isInteger(input.index) ? input.index : '?';
-      const axisName = input.name || `Axis ${axisIndex}`;
-      return `Axis ${axisIndex} (${axisName})`;
-    }
-
-    return input.name || '';
-  }, [getInputKind]);
-
-  const formatHotasInputForXml = useCallback((input) => {
-    if (!input) return '';
-
-    const kind = getInputKind(input);
-    if (kind === 'Button') {
-      if (typeof input.index === 'string' && input.index.startsWith('9-hat-')) {
-        const dir = input.index.replace('9-hat-', '').toLowerCase();
-        return `js1_pov_${dir}`;
-      }
-
-      const buttonNumber = Number.isInteger(input.displayIndex)
-        ? input.displayIndex
-        : (Number.isInteger(input.index) ? input.index + 1 : null);
-
-      return Number.isInteger(buttonNumber) ? `js1_button${buttonNumber}` : '';
-    }
-
-    if (kind === 'Axis') {
-      const axisTokenByIndex = {
-        0: 'js1_x',
-        1: 'js1_y',
-        2: 'js1_z',
-        5: 'js1_rz',
-      };
-
-      if (Number.isInteger(input.index) && axisTokenByIndex[input.index]) {
-        return axisTokenByIndex[input.index];
-      }
-
-      const axisName = normalizeText(input.name);
-      if (axisName.includes('x axis')) return 'js1_x';
-      if (axisName.includes('y axis')) return 'js1_y';
-      if (axisName.includes('z axis')) return 'js1_z';
-      if (axisName.includes('z rotation')) return 'js1_rz';
-      if (axisName.includes('slider')) return 'js1_slider1';
-    }
-
-    return '';
-  }, [getInputKind]);
-
-  const formatKeyboardInputForXml = useCallback((event) => {
-    if (!event) return '';
-
-    const modifierOnlyCodes = new Set([
-      'ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight',
-    ]);
-    if (modifierOnlyCodes.has(event.code)) return '';
-
-    const simpleCodeMap = {
-      Space: 'space',
-      Tab: 'tab',
-      Enter: 'enter',
-      Backspace: 'backspace',
-      Escape: 'escape',
-      ArrowUp: 'up',
-      ArrowDown: 'down',
-      ArrowLeft: 'left',
-      ArrowRight: 'right',
-      Comma: 'comma',
-      Period: 'period',
-      Slash: 'slash',
-      Semicolon: 'semicolon',
-      Quote: 'apostrophe',
-      BracketLeft: 'lbracket',
-      BracketRight: 'rbracket',
-      Backslash: 'backslash',
-      Minus: 'minus',
-      Equal: 'equals',
-      Backquote: 'tilde',
-      Home: 'home',
-      End: 'end',
-      Insert: 'insert',
-      Delete: 'delete',
-      PageUp: 'pgup',
-      PageDown: 'pgdn',
-      CapsLock: 'capslock',
-      NumpadAdd: 'np_plus',
-      NumpadSubtract: 'np_minus',
-      NumpadMultiply: 'np_mul',
-      NumpadDivide: 'np_div',
-      NumpadDecimal: 'np_decimal',
-      NumpadEnter: 'np_enter',
-    };
-
-    let baseToken = '';
-    if (event.code?.startsWith('Key')) {
-      baseToken = event.code.slice(3).toLowerCase();
-    } else if (event.code?.startsWith('Digit')) {
-      baseToken = event.code.slice(5);
-    } else if (event.code?.startsWith('Numpad') && /^Numpad\d$/.test(event.code)) {
-      baseToken = `np_${event.code.slice(6)}`;
-    } else if (/^F\d{1,2}$/.test(event.code || '')) {
-      baseToken = event.code.toLowerCase();
-    } else {
-      baseToken = simpleCodeMap[event.code] || '';
-    }
-
-    if (!baseToken) return '';
-
-    const modifiers = [];
-    if (event.ctrlKey) modifiers.push('lctrl');
-    if (event.altKey) modifiers.push('lalt');
-    if (event.shiftKey) modifiers.push('lshift');
-
-    return `kb1_${[...modifiers, baseToken].join('+')}`;
-  }, []);
-
-  const formatMouseInputForXml = useCallback((button) => {
-    const map = {
-      0: 'mouse1',
-      1: 'mouse3',
-      2: 'mouse2',
-      3: 'mouse4',
-      4: 'mouse5',
-    };
-    return map[button] || '';
-  }, []);
+  // formatKeyboardInputForXml and formatMouseInputForXml are now imported from utils/hotasKeyboardMouseFormatters.js
 
   const isInputCapturable = useCallback((input) => {
     if (!input) return false;
@@ -1067,63 +852,20 @@ export default function HOTASConfigMainPage() {
     }
   };
 
+
+  // Render filter controls using extracted component
   const filterControls = (
-    <Group
-      grow
-      align="flex-end"
-      gap="md"
-      wrap="wrap"
-      style={{ flexWrap: 'wrap', rowGap: 16, columnGap: 16 }}
-    >
-      <TextInput
-        label="Search"
-        placeholder={searchByLiveInput ? 'Live input active' : 'Search keybindings...'}
-        leftSection={<IconSearch size={16} />}
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.currentTarget.value)}
-        disabled={searchByLiveInput}
-        style={{ flex: 2, minWidth: 220, flexBasis: 300 }}
-      />
-      <Select
-        label="Category"
-        placeholder="All Categories"
-        value={selectedCategory}
-        onChange={(value) => setSelectedCategory(value || '')}
-        data={[
-          { value: '', label: 'All Categories' },
-          ...categoryList.map(([key, category]) => ({
-            value: key,
-            label: category.label,
-          })),
-        ]}
-        searchable
-        style={{ flex: 1, minWidth: 200, flexBasis: 220 }}
-      />
-      <div style={{ minWidth: 0, flexBasis: 180 }}>
-        <Text size="sm" fw={500} mb={4}>Filter</Text>
-        <SegmentedControl
-          value={profileFilter}
-          onChange={setProfileFilter}
-          data={[
-            { value: 'all', label: 'All' },
-            { value: 'hotas-assigned', label: 'HOTAS Assigned' },
-            { value: 'hotas-empty', label: 'HOTAS Empty' },
-            { value: 'kb-assigned', label: 'KB/M Assigned' },
-            { value: 'kb-empty', label: 'KB/M Empty' },
-            { value: 'fully-unbound', label: 'Fully Unbound' },
-          ]}
-          size="xs"
-          style={{ overflow: 'visible' }}
-        />
-      </div>
-      <Switch
-        label="Search by Live Input"
-        checked={searchByLiveInput}
-        onChange={(e) => setSearchByLiveInput(e.currentTarget.checked)}
-        size="sm"
-        style={{ flexBasis: 180 }}
-      />
-    </Group>
+    <HOTASFilterControls
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      selectedCategory={selectedCategory}
+      setSelectedCategory={setSelectedCategory}
+      categoryList={categoryList}
+      profileFilter={profileFilter}
+      setProfileFilter={setProfileFilter}
+      searchByLiveInput={searchByLiveInput}
+      setSearchByLiveInput={setSearchByLiveInput}
+    />
   );
 
   return (
@@ -1171,21 +913,8 @@ export default function HOTASConfigMainPage() {
           </Box>
         </div>
 
-        {/* Error Display */}
-        {profilesError && (
-          <Box
-            p="md"
-            style={{
-              background: 'rgba(255, 107, 107, 0.1)',
-              border: '1px solid rgba(255, 107, 107, 0.3)',
-              borderRadius: '8px',
-            }}
-          >
-            <Text size="sm" style={{ color: '#ff6b6b' }}>
-              ⚠️ {profilesError}
-            </Text>
-          </Box>
-        )}
+        {/* Error Display (extracted) */}
+        <HOTASErrorDisplay error={profilesError} />
 
 
         {/* Live Input Panel (restored) */}
@@ -1220,45 +949,17 @@ export default function HOTASConfigMainPage() {
         {/* Filters — above table, below live input */}
         {filterControls}
 
-        {/* Info Bar (no duplicate category info) */}
-        <Group justify="space-between" style={{ color: '#666' }}>
-          <Group gap="sm" align="center">
-            {selectedProfile && !selectedProfile.startsWith('__ai_') && xmlSaveStatus !== 'idle' && (
-              <Badge
-                color={xmlSaveStatus === 'saving' ? 'blue' : (xmlSaveStatus === 'saved' ? 'green' : 'red')}
-                variant="light"
-                size="sm"
-                title={xmlSaveMessage}
-              >
-                {xmlSaveStatus === 'saving'
-                  ? 'XML saving...'
-                  : (xmlSaveStatus === 'saved' ? 'XML saved' : 'XML save failed')}
-              </Badge>
-            )}
-            {captureWarning && (
-              <Badge color="orange" variant="light" size="sm" title={captureWarning}>
-                Binding conflict warning
-              </Badge>
-            )}
-          </Group>
-          <Text size="sm" fw={600}>
-            {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
-          </Text>
-        </Group>
+        {/* Info Bar (extracted) */}
+        <HOTASInfoBar
+          selectedProfile={selectedProfile}
+          xmlSaveStatus={xmlSaveStatus}
+          xmlSaveMessage={xmlSaveMessage}
+          captureWarning={captureWarning}
+          sortedBindings={sortedBindings}
+        />
 
-        {/* View Switcher */}
-        <Group gap="md" align="center">
-          <Text size="sm" fw={600}>View:</Text>
-          <SegmentedControl
-            value={tableView}
-            onChange={setTableView}
-            data={[
-              { value: 'features', label: 'Features → Inputs' },
-              { value: 'inputs', label: 'HOTAS Inputs → Features' },
-            ]}
-            size="xs"
-          />
-        </Group>
+        {/* View Switcher (extracted) */}
+        <HOTASViewSwitcher tableView={tableView} setTableView={setTableView} />
 
         {/* Table */}
         {tableView === 'features' ? (
@@ -1293,33 +994,8 @@ export default function HOTASConfigMainPage() {
           />
         )}
 
-        {/* Notes Section */}
-        <Box
-          style={{
-            background: 'rgba(0, 0, 0, 0.05)',
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            borderRadius: '8px',
-            padding: '1rem',
-          }}
-        >
-          <Text size="xs" fw={600} style={{ marginBottom: '0.5rem' }}>
-            ℹ️ Notes
-          </Text>
-          <Stack gap="xs">
-            <Text size="xs">
-              • <strong>Profiles</strong>: Load pre-made profiles or create your own. Export to XML for backup.
-            </Text>
-            <Text size="xs">
-              • <strong>States</strong>: Filter by context (ground, space flight, weapons, etc.) to reduce noise.
-            </Text>
-            <Text size="xs">
-              • <strong>Modifiers</strong>: SHIFT, CTRL, ALT can be combined with any key.
-            </Text>
-            <Text size="xs">
-              • <strong>Binding capture</strong>: Right-click the Keyboard/Mouse or HOTAS column for any row, then press the desired input.
-            </Text>
-          </Stack>
-        </Box>
+        {/* Notes Section (extracted) */}
+        <HOTASNotesSection />
       </Stack>
   );
 }

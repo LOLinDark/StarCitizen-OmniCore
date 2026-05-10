@@ -252,7 +252,11 @@ app.get('/api/citizen/:handle', async (req, res) => {
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: 'Too many requests, please try again later.'
+  message: 'Too many requests, please try again later.',
+  skip: (req) => {
+    const requestPath = String(req.originalUrl || req.path || '');
+    return requestPath.includes('/api/hotas-overlay-positions');
+  },
 });
 app.use('/api/', limiter);
 

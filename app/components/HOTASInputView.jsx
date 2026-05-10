@@ -66,7 +66,18 @@ function findAssignedFeature(input, bindings, hotasOverrides) {
   return null;
 }
 
-const MODE_COLORS = { 0: 'red', 1: 'violet', 2: 'blue' };
+const MODE_COLORS = Object.fromEntries(
+  Object.entries(X52_MODES).map(([modeIdx, mode]) => [modeIdx, mode.color])
+);
+
+const MODE_SEGMENTS = [
+  { value: 'none', label: 'No Modes' },
+  ...Object.entries(X52_MODES).map(([modeIdx, mode]) => ({
+    value: String(modeIdx),
+    label: `${mode.indicator} ${mode.name.replace(/ Mode$/, '')}`,
+  })),
+  { value: 'all', label: 'All Modes' },
+];
 
 export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign }) {
   const [modeFilter, setModeFilter] = useState('none');
@@ -143,13 +154,7 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
         <SegmentedControl
           value={modeFilter}
           onChange={setModeFilter}
-          data={[
-            { value: 'none', label: 'No Modes' },
-            { value: '0', label: 'M1 Red' },
-            { value: '1', label: 'M2 Orange' },
-            { value: '2', label: 'M3 Blue' },
-            { value: 'all', label: 'All Modes' },
-          ]}
+          data={MODE_SEGMENTS}
           size="xs"
         />
         <Badge color="cyan" variant="light" size="sm">
@@ -233,7 +238,7 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
                             {row.assignedBinding.feature}
                           </Text>
                         ) : (
-                          <Text size="sm" style={{ color: '#555', fontStyle: 'italic' }}>Click to assign...</Text>
+                          <Text size="sm" style={{ color: '#555', fontStyle: 'italic' }}>Click to assign Star Citizen feature...</Text>
                         )}
                       </div>
                     )}
