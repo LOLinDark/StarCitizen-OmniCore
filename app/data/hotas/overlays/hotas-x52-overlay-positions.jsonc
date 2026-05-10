@@ -102,9 +102,9 @@
     "id": "throttle",
     "label": "Throttle",
     "style": {
-      "left": "42.19%",
-      "top": "43.77%",
-      "size": "13.57%"
+      "left": "16.28%",
+      "top": "67.86%",
+      "size": "11.57%"
     }
   },
   {
@@ -192,8 +192,8 @@
     "id": "pov-hat-2-e",
     "label": "POV Hat 2 East",
     "style": {
-      "left": "3.86%",
-      "top": "36.71%",
+      "left": "7.29%",
+      "top": "37.14%",
       "size": "6%"
     }
   },

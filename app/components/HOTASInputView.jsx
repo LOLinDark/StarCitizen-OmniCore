@@ -66,6 +66,42 @@ function findAssignedFeature(input, bindings, hotasOverrides) {
   return null;
 }
 
+function readAxisValue(axisValues, axisIndex) {
+  if (Array.isArray(axisValues)) return Number(axisValues[axisIndex]);
+  if (axisValues && typeof axisValues === 'object') return Number(axisValues[axisIndex]);
+  return NaN;
+}
+
+function isInputActive(input, activeInputs, axisValues, lastHotasInput) {
+  if (!input) return false;
+
+  if (input.type === 'Button') {
+    const effectiveIndex = input.index;
+
+    if (activeInputs?.has?.(`button-${effectiveIndex}`)) return true;
+    if (Number.isInteger(lastHotasInput?.index) && lastHotasInput.index === effectiveIndex) return true;
+    const displayIndex = X52_BUTTONS[effectiveIndex]?.windowsIndex ?? effectiveIndex + 1;
+    if (Number.isInteger(lastHotasInput?.displayIndex) && lastHotasInput.displayIndex === displayIndex) return true;
+    return false;
+  }
+
+  if (input.type === 'Axis') {
+    const axisValue = readAxisValue(axisValues, input.index);
+    if (Number.isFinite(axisValue) && Math.abs(axisValue) >= 0.12) return true;
+    if (Number.isInteger(lastHotasInput?.index) && lastHotasInput.index === input.index) {
+      const liveValue = Number(lastHotasInput?.value);
+      return Number.isFinite(liveValue) && Math.abs(liveValue) >= 0.12;
+    }
+    return false;
+  }
+
+  if (input.type === 'POV' && typeof lastHotasInput?.index === 'string') {
+    return lastHotasInput.index.includes(`hat-${input.index}`);
+  }
+
+  return false;
+}
+
 const MODE_COLORS = Object.fromEntries(
   Object.entries(X52_MODES).map(([modeIdx, mode]) => [modeIdx, mode.color])
 );
@@ -79,7 +115,7 @@ const MODE_SEGMENTS = [
   { value: 'all', label: 'All Modes' },
 ];
 
-export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign }) {
+export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, activeInputs, axisValues, lastHotasInput }) {
   const [modeFilter, setModeFilter] = useState('none');
   const [editingRowId, setEditingRowId] = useState(null);
 
@@ -95,8 +131,9 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
     return inputList.map((input) => ({
       ...input,
       assignedBinding: findAssignedFeature(input, bindings, hotasOverrides),
+      isActive: isInputActive(input, activeInputs, axisValues, lastHotasInput),
     }));
-  }, [inputList, bindings, hotasOverrides]);
+  }, [inputList, bindings, hotasOverrides, activeInputs, axisValues, lastHotasInput]);
 
   const filteredRows = useMemo(() => {
     let result = rows;
@@ -204,7 +241,7 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
                       </Badge>
                     </td>
                   )}
-                  <td style={{ ...tdStyle, color: '#e0eaf4', fontWeight: 600 }}>{row.name}</td>
+                  <td style={{ ...tdStyle, color: row.isActive ? '#ff9500' : '#e0eaf4', fontWeight: 600 }}>{row.name}</td>
                   <td style={{ ...tdStyle, color: '#6a8898' }}>{row.group}</td>
                   <td style={tdStyle}>
                     <Badge size="xs" variant="light" color={row.type === 'Button' ? 'cyan' : row.type === 'Axis' ? 'orange' : 'green'}>

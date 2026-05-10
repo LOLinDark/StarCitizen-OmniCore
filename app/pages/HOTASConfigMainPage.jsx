@@ -934,6 +934,10 @@ export default function HOTASConfigMainPage() {
                 overlays={overlays}
                 onOverlayChange={setOverlays}
                 keybindings={effectiveBindings}
+                hotasOverrides={hotasOverrides}
+                activeInputs={activeInputs}
+                axisValues={axisValues}
+                lastHotasInput={lastHotasInput}
                 deviceMap={LogitechX52Device}
                 devEditMode={devEditMode}
                 setDevEditMode={setDevEditMode}

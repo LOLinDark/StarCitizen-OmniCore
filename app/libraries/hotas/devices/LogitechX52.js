@@ -26,12 +26,12 @@ export const X52_BUTTONS = {
   3:  { name: 'Button B',               group: 'Stick',      type: 'button', code: 'BTN_STICK_B' },
   4:  { name: 'Button C',               group: 'Stick',      type: 'button', code: 'BTN_STICK_C' },
   5:  { name: 'Pinkie Switch',          group: 'Stick',      type: 'button', code: 'BTN_PINKIE',          note: 'Modifier – doubles all other buttons' },
-  14: { name: 'Trigger Full Press',     group: 'Stick',      type: 'button', code: 'BTN_STICK_TRIG_FULL', note: 'Full squeeze' },
+  15: { name: 'Trigger Full Press',     group: 'Stick',      type: 'button', code: 'BTN_STICK_TRIG_FULL', note: 'Full squeeze' },
 
   // ── Throttle / Grip ─────────────────────────
   6:  { name: 'D',                      group: 'Throttle',   type: 'button', code: 'BTN_THR_D' },
-  7:  { name: 'Fire D',                 group: 'Throttle',   type: 'button', code: 'BTN_THR_FIRED' },
-  8:  { name: 'Button E',               group: 'Throttle',   type: 'button', code: 'BTN_THR_E' },
+  7:  { name: 'Button E',               group: 'Throttle',   type: 'button', code: 'BTN_THR_E' },
+  8:  { name: 'Fire D',                 group: 'Throttle',   type: 'button', code: 'BTN_THR_FIRED' },
   16: { name: 'Mouse Button',           group: 'Throttle',   type: 'button', code: 'BTN_THR_MOUSE' },
 
   // ── Toggle Switches (T1–T6) ─────────────────
@@ -40,7 +40,7 @@ export const X52_BUTTONS = {
   11: { name: 'Toggle T3',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T3' },
   12: { name: 'Toggle T4',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T4' },
   13: { name: 'Toggle T5',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T5' },
-  15: { name: 'Toggle T6',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T6' },
+  14: { name: 'Toggle T6',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T6' },
 
   // ── Stick HAT 1 (8-way, reported as 4 discrete buttons by some drivers) ──
   17: { name: 'HAT 1 North',            group: 'Stick HAT',  type: 'button', code: 'HAT_1_N' },

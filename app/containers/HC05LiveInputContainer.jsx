@@ -1,16 +1,198 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Title, Text } from '@mantine/core';
+import { Box, Title, Text, Tooltip } from '@mantine/core';
 import Moveable from 'react-moveable';
 import HOTASInputView from '../components/HOTASInputView.jsx';
+import { X52_BUTTONS, X52_AXES } from '../libraries/hotas';
 
 // Path to the HOTAS image (place in public/assets or adjust as needed)
 const HOTAS_IMAGE = '/assets/hotas/x52-hotas-transparent-background-omnicore-starcitizen.png';
 
-export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, deviceMap, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
+const OVERLAY_AXIS_MAP = {
+  throttle: 2,
+  'rotary-1': 4,
+  'rotary-2': 3,
+  slider: 6,
+};
+
+const OVERLAY_POV_MAP = {
+  'pov-hat-1-n': 'n',
+  'pov-hat-1-e': 'e',
+  'pov-hat-1-s': 's',
+  'pov-hat-1-w': 'w',
+  'pov-hat-2-n': 'n',
+  'pov-hat-2-e': 'e',
+  'pov-hat-2-s': 's',
+  'pov-hat-2-w': 'w',
+  'pov-hat-3-n': 'n',
+  'pov-hat-3-e': 'e',
+  'pov-hat-3-s': 's',
+  'pov-hat-3-w': 'w',
+};
+
+const OVERLAY_BUTTON_ALIASES = {
+  'hair-trigger': ['Hair Trigger'],
+  'trigger-full': ['Trigger Full Press'],
+  safe: ['Safe Button'],
+  'button-a': ['Button A'],
+  'button-b': ['Button B'],
+  'button-c': ['Button C'],
+  'pinkie-switch': ['Pinkie Switch'],
+  'button-d': ['D'],
+  'fire-d': ['Fire D'],
+  'button-e': ['Button E'],
+  'mouse-button': ['Mouse Button'],
+};
+
+function normalizeName(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function findButtonIndexByNameCandidates(candidates) {
+  if (!Array.isArray(candidates) || candidates.length === 0) return null;
+  const wanted = new Set(candidates.map(normalizeName));
+
+  for (const [indexText, meta] of Object.entries(X52_BUTTONS)) {
+    if (wanted.has(normalizeName(meta?.name))) {
+      return Number(indexText);
+    }
+  }
+
+  return null;
+}
+
+function resolveOverlayButtonIndex(overlay) {
+  const toggleMatch = String(overlay?.id || '').match(/^toggle-t([1-6])$/i);
+  if (toggleMatch) {
+    return findButtonIndexByNameCandidates([`Toggle T${toggleMatch[1]}`]);
+  }
+
+  const aliases = OVERLAY_BUTTON_ALIASES[overlay?.id] || [overlay?.label || ''];
+  return findButtonIndexByNameCandidates(aliases);
+}
+
+function buildOverlayInputMeta(overlay) {
+  if (Object.prototype.hasOwnProperty.call(OVERLAY_AXIS_MAP, overlay.id)) {
+    const axisIndex = OVERLAY_AXIS_MAP[overlay.id];
+    return {
+      type: 'Axis',
+      index: axisIndex,
+      windowsIndex: null,
+      xmlToken: `js1_axis${axisIndex}`,
+    };
+  }
+
+  if (Object.prototype.hasOwnProperty.call(OVERLAY_POV_MAP, overlay.id)) {
+    const povDir = OVERLAY_POV_MAP[overlay.id];
+    return {
+      type: 'POV',
+      index: povDir,
+      windowsIndex: null,
+      xmlToken: `js1_pov_${povDir}`,
+    };
+  }
+
+  const buttonIndex = resolveOverlayButtonIndex(overlay);
+  if (buttonIndex !== null) {
+    const buttonMeta = X52_BUTTONS[buttonIndex] || {};
+    const windowsIndex = buttonMeta.windowsIndex ?? buttonIndex + 1;
+    return {
+      type: 'Button',
+      index: buttonIndex,
+      windowsIndex,
+      xmlToken: `js1_button${windowsIndex}`,
+    };
+  }
+
+  return null;
+}
+
+function findAssignedFeature(input, bindings, hotasOverrides) {
+  if (!input || !bindings?.length) return null;
+  const token = input.xmlToken.toLowerCase();
+  const buttonNum = input.type === 'Button' ? input.windowsIndex : null;
+
+  for (const binding of bindings) {
+    const hotasVal = (hotasOverrides[binding.id] || binding.hotasBinding || '').toLowerCase();
+    if (!hotasVal) continue;
+    if (hotasVal === token) return binding;
+    if (input.type === 'Button' && buttonNum !== null) {
+      if (hotasVal === `button ${buttonNum}`) return binding;
+      if (hotasVal.includes(`button ${buttonNum}`) && !hotasVal.includes(`button ${buttonNum}0`)) return binding;
+    }
+    if (input.type === 'Axis') {
+      const axisName = (X52_AXES[input.index]?.name || '').toLowerCase();
+      if (axisName && hotasVal.includes(axisName.split('(')[0].trim())) return binding;
+    }
+    if (input.type === 'POV') {
+      if (hotasVal.includes('hat') && hotasVal.includes(input.index)) return binding;
+      if (hotasVal.includes('pov') && hotasVal.includes(input.index)) return binding;
+    }
+  }
+
+  return null;
+}
+
+function buildOverlayTooltip(overlay, bindings, hotasOverrides) {
+  const inputMeta = buildOverlayInputMeta(overlay);
+  const assignedBinding = findAssignedFeature(inputMeta, bindings, hotasOverrides);
+  const featureLine = assignedBinding?.feature ? `Assigned: ${assignedBinding.feature}` : 'Assigned: Unassigned';
+
+  if (!inputMeta) {
+    return `${overlay.label}\nInput: Unknown\n${featureLine}`;
+  }
+
+  if (inputMeta.type === 'Button') {
+    return `${overlay.label}\nInput: Windows Button ${inputMeta.windowsIndex} (${inputMeta.xmlToken})\n${featureLine}`;
+  }
+
+  if (inputMeta.type === 'Axis') {
+    const axisName = X52_AXES[inputMeta.index]?.name || `Axis ${inputMeta.index}`;
+    return `${overlay.label}\nInput: ${axisName} (${inputMeta.xmlToken})\n${featureLine}`;
+  }
+
+  return `${overlay.label}\nInput: POV ${String(inputMeta.index).toUpperCase()} (${inputMeta.xmlToken})\n${featureLine}`;
+}
+
+function readAxisValue(axisValues, axisIndex) {
+  if (Array.isArray(axisValues)) return Number(axisValues[axisIndex]);
+  if (axisValues && typeof axisValues === 'object') return Number(axisValues[axisIndex]);
+  return NaN;
+}
+
+function isOverlayInputActive(overlay, activeInputs, axisValues, lastHotasInput) {
+  const inputMeta = buildOverlayInputMeta(overlay);
+  if (!inputMeta) return false;
+
+  if (inputMeta.type === 'Button') {
+    if (activeInputs?.has?.(`button-${inputMeta.index}`)) return true;
+    if (Number.isInteger(lastHotasInput?.index) && lastHotasInput.index === inputMeta.index) return true;
+    if (Number.isInteger(lastHotasInput?.displayIndex) && lastHotasInput.displayIndex === inputMeta.windowsIndex) return true;
+    return false;
+  }
+
+  if (inputMeta.type === 'Axis') {
+    const axisValue = readAxisValue(axisValues, inputMeta.index);
+    if (Number.isFinite(axisValue) && Math.abs(axisValue) >= 0.12) return true;
+    if (Number.isInteger(lastHotasInput?.index) && lastHotasInput.index === inputMeta.index) {
+      const liveValue = Number(lastHotasInput?.value);
+      return Number.isFinite(liveValue) && Math.abs(liveValue) >= 0.12;
+    }
+    return false;
+  }
+
+  if (typeof lastHotasInput?.index === 'string') {
+    return lastHotasInput.index.includes(`hat-${inputMeta.index}`);
+  }
+
+  return false;
+}
+
+export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, hotasOverrides = {}, activeInputs, axisValues, lastHotasInput, deviceMap, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
   // Overlay refs for Moveable
   const overlayRefs = useRef([]);
   const latestOverlaysRef = useRef(overlays);
   const [saveStatus, setSaveStatus] = useState('idle');
+  const [lastSavedAt, setLastSavedAt] = useState(null);
   const containerWidth = 700;
   const containerHeight = 700;
 
@@ -46,7 +228,9 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
   useEffect(() => {
     if (isDevMode && devEditMode) {
       const save = () => {
-        saveOverlaysToFile(latestOverlaysRef.current).catch(e => console.error('Overlay auto-save error:', e));
+        saveOverlaysToFile(latestOverlaysRef.current)
+          .then(() => setLastSavedAt(new Date()))
+          .catch(e => console.error('Overlay auto-save error:', e));
       };
       save(); // Save immediately on enable
       const interval = setInterval(save, 60000);
@@ -64,6 +248,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
 
       try {
         await saveOverlaysToFile(overlaysSnapshot);
+        setLastSavedAt(new Date());
         setSaveStatus('saved');
       } catch (error) {
         console.error('Overlay save error:', error);
@@ -114,26 +299,58 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
               const leftPx = percentToPx(overlay.style.left, containerWidth);
               const topPx = percentToPx(overlay.style.top, containerHeight);
               const sizePx = percentToPx(overlay.style.size, containerWidth);
+              const isActive = isOverlayInputActive(overlay, activeInputs, axisValues, lastHotasInput);
+              const tooltipLabel = buildOverlayTooltip(overlay, keybindings, hotasOverrides);
+
+              const tooltipContent = (
+                <Box>
+                  {tooltipLabel.split('\n').map((line) => (
+                    <Text key={`${overlay.id}-${line}`} size="xs" c="#e8f7ff" style={{ lineHeight: 1.35 }}>
+                      {line}
+                    </Text>
+                  ))}
+                </Box>
+              );
+
               return (
                 <React.Fragment key={overlay.id}>
-                  <div
-                    ref={el => overlayRefs.current[idx] = el}
-                    title={overlay.label}
-                    style={{
-                      position: 'absolute',
-                      left: leftPx,
-                      top: topPx,
-                      width: sizePx,
-                      height: sizePx,
-                      background: 'rgba(0,200,255,0.18)',
-                      border: '2px solid #00d9ff',
-                      cursor: isDevMode && devEditMode ? 'move' : 'pointer',
-                      transition: 'background 0.2s',
-                      borderRadius: '50%',
-                      zIndex: dragged === overlay.id ? 2 : 1,
-                      boxSizing: 'border-box',
+                  <Tooltip
+                    label={tooltipContent}
+                    multiline
+                    withArrow
+                    openDelay={100}
+                    closeDelay={80}
+                    transitionProps={{ duration: 120 }}
+                    bg="rgba(8, 22, 33, 0.96)"
+                    color="#e8f7ff"
+                    styles={{
+                      tooltip: {
+                        border: '1px solid rgba(0, 217, 255, 0.5)',
+                        boxShadow: '0 10px 24px rgba(0, 0, 0, 0.45)',
+                        borderRadius: 8,
+                        padding: '8px 10px',
+                        maxWidth: 280,
+                      },
                     }}
-                  />
+                  >
+                    <div
+                      ref={el => overlayRefs.current[idx] = el}
+                      style={{
+                        position: 'absolute',
+                        left: leftPx,
+                        top: topPx,
+                        width: sizePx,
+                        height: sizePx,
+                        background: isActive ? 'rgba(255, 149, 0, 0.30)' : 'rgba(0,200,255,0.18)',
+                        border: isActive ? '2px solid #ff9500' : '2px solid #00d9ff',
+                        cursor: isDevMode && devEditMode ? 'move' : 'pointer',
+                        transition: 'background 0.2s',
+                        borderRadius: '50%',
+                        zIndex: dragged === overlay.id ? 2 : 1,
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </Tooltip>
                   {isDevMode && devEditMode && (
                     <Moveable
                       target={overlayRefs.current[idx]}
@@ -215,13 +432,24 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
               {saveStatus === 'saving' && <Text size="sm" c="dimmed">Saving overlay positions...</Text>}
               {saveStatus === 'saved' && <Text size="sm" c="green">Overlay positions saved.</Text>}
               {saveStatus === 'error' && <Text size="sm" c="red">Save failed. Check backend/API and try again.</Text>}
+              {lastSavedAt && (
+                <Text size="sm" c="cyan">
+                  Last saved: {lastSavedAt.toLocaleTimeString()}
+                </Text>
+              )}
             </Box>
           )}
         </Box>
       </div>
       {/* Live Input Table/Mapping */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <HOTASInputView deviceMap={deviceMap} keybindings={keybindings} />
+        <HOTASInputView
+          bindings={keybindings}
+          hotasOverrides={hotasOverrides}
+          activeInputs={activeInputs}
+          axisValues={axisValues}
+          lastHotasInput={lastHotasInput}
+        />
       </div>
     </div>
   );

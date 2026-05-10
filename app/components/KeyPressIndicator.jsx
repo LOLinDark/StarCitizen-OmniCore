@@ -14,6 +14,8 @@ const AXIS_COMPAT = Object.fromEntries(
 );
 const X52_LOOKUP = { ...X52_BUTTONS, ...AXIS_COMPAT };
 const getDisplayButtonNumber = (idx) => X52_LOOKUP[idx]?.windowsIndex ?? (idx + 1);
+const getButtonToken = (idx) => `js1_button${getDisplayButtonNumber(idx)}`;
+const getAxisToken = (idx) => `js1_axis${idx}`;
 
 const HAT_DIRS = ['9-hat-n','9-hat-ne','9-hat-e','9-hat-se','9-hat-s','9-hat-sw','9-hat-w','9-hat-nw'];
 const HAT_ARROWS = { n:'↑', ne:'↗', e:'→', se:'↘', s:'↓', sw:'↙', w:'←', nw:'↖' };
@@ -429,65 +431,111 @@ export function KeyPressIndicator({
                     {/* Buttons 0-29 */}
                     {Array.from({ length: 30 }, (_, i) => i).map((idx) => {
                       const on = activeInputs.has(`button-${idx}`);
+                      const meta = X52_LOOKUP[idx];
+                      const buttonLabel = meta?.name || `Button ${getDisplayButtonNumber(idx)}`;
+                      const buttonTooltip = [
+                        buttonLabel,
+                        `Gamepad index: ${idx}`,
+                        `Windows input: Button ${getDisplayButtonNumber(idx)}`,
+                        `Token: ${getButtonToken(idx)}`,
+                        `Active key: button-${idx}`,
+                      ].join('\n');
+
                       return (
-                        <div
+                        <Tooltip
                           key={`b${idx}`}
-                          title={X52_LOOKUP[idx]?.name || `Button ${getDisplayButtonNumber(idx)}`}
-                          style={{
-                            width: 28, height: 28, borderRadius: 3,
-                            background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
-                            border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 8, fontWeight: 700,
-                            color: on ? '#000' : 'rgba(0,217,255,0.5)',
-                            transition: 'all 0.1s',
-                          }}
+                          label={buttonTooltip}
+                          multiline
+                          withArrow
+                          openDelay={120}
+                          styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                         >
-                          B{getDisplayButtonNumber(idx)}
-                        </div>
+                          <div
+                            style={{
+                              width: 28, height: 28, borderRadius: 3,
+                              background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
+                              border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 8, fontWeight: 700,
+                              color: on ? '#000' : 'rgba(0,217,255,0.5)',
+                              transition: 'all 0.1s',
+                            }}
+                          >
+                            B{getDisplayButtonNumber(idx)}
+                          </div>
+                        </Tooltip>
                       );
                     })}
                     {/* Axes 0-8 */}
                     {Array.from({ length: 9 }, (_, i) => i).map((idx) => {
                       const on = activeInputs.has(`axis-${idx}`);
+                      const axisName = X52_LOOKUP[`${idx}-axis`]?.name || `Axis ${idx}`;
+                      const axisTooltip = [
+                        axisName,
+                        `Axis index: ${idx}`,
+                        `Token: ${getAxisToken(idx)}`,
+                        `Active key: axis-${idx}`,
+                      ].join('\n');
+
                       return (
-                        <div
+                        <Tooltip
                           key={`a${idx}`}
-                          title={X52_LOOKUP[`${idx}-axis`]?.name || `Axis ${idx}`}
-                          style={{
-                            width: 28, height: 28, borderRadius: 3,
-                            background: on ? '#ff9800' : 'rgba(255,152,0,0.08)',
-                            border: on ? '1px solid #ff9800' : '1px solid rgba(255,152,0,0.25)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 8, fontWeight: 700,
-                            color: on ? '#000' : 'rgba(255,152,0,0.5)',
-                            transition: 'all 0.1s',
-                          }}
+                          label={axisTooltip}
+                          multiline
+                          withArrow
+                          openDelay={120}
+                          styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                         >
-                          A{idx}
-                        </div>
+                          <div
+                            style={{
+                              width: 28, height: 28, borderRadius: 3,
+                              background: on ? '#ff9800' : 'rgba(255,152,0,0.08)',
+                              border: on ? '1px solid #ff9800' : '1px solid rgba(255,152,0,0.25)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 8, fontWeight: 700,
+                              color: on ? '#000' : 'rgba(255,152,0,0.5)',
+                              transition: 'all 0.1s',
+                            }}
+                          >
+                            A{idx}
+                          </div>
+                        </Tooltip>
                       );
                     })}
                     {/* POV HAT */}
                     {HAT_DIRS.map((dir) => {
                       const on = activeInputs.has(`button-${dir}`);
-                      const arrow = HAT_ARROWS[dir.split('-').pop()];
+                      const direction = dir.split('-').pop();
+                      const arrow = HAT_ARROWS[direction];
+                      const hatTooltip = [
+                        `POV HAT ${direction.toUpperCase()}`,
+                        `Token: js1_pov_${direction}`,
+                        `Active key: button-${dir}`,
+                      ].join('\n');
+
                       return (
-                        <div
+                        <Tooltip
                           key={dir}
-                          title={`POV HAT ${dir.split('-').pop().toUpperCase()}`}
-                          style={{
-                            width: 28, height: 28, borderRadius: 3,
-                            background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
-                            border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 13, fontWeight: 700,
-                            color: on ? '#000' : 'rgba(0,217,255,0.5)',
-                            transition: 'all 0.1s',
-                          }}
+                          label={hatTooltip}
+                          multiline
+                          withArrow
+                          openDelay={120}
+                          styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                         >
-                          {arrow}
-                        </div>
+                          <div
+                            style={{
+                              width: 28, height: 28, borderRadius: 3,
+                              background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
+                              border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 13, fontWeight: 700,
+                              color: on ? '#000' : 'rgba(0,217,255,0.5)',
+                              transition: 'all 0.1s',
+                            }}
+                          >
+                            {arrow}
+                          </div>
+                        </Tooltip>
                       );
                     })}
                   </div>
