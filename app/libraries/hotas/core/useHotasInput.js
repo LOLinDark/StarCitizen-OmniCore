@@ -62,6 +62,24 @@ export function useHotasInput({
 
   // ─── Poller event handlers ───────────────────────────────────────────────
 
+  const normalizeButtonEvent = useCallback((event) => {
+    if (!event || !Number.isInteger(event.displayIndex)) return event;
+    if (typeof device?.getButtonByWindowsIndex !== 'function') return event;
+
+    const resolved = device.getButtonByWindowsIndex(event.displayIndex);
+    if (!resolved) return event;
+
+    return {
+      ...event,
+      index: resolved.gamepadIndex,
+      name: resolved.name,
+      meta: {
+        ...(event.meta || {}),
+        ...resolved,
+      },
+    };
+  }, [device]);
+
   const attachPollerHandlers = useCallback((poller) => {
     poller.on('connected', ({ gamepad }) => {
       setGamepadConnected(true);
@@ -74,24 +92,35 @@ export function useHotasInput({
       activeInputsRef.current = new Set();
       setActiveInputs(new Set());
       setAxisValues({});
+      setCurrentMode(0);
     });
 
     poller.on('buttonPressed', (e) => {
-      const key = `button-${e.index}`;
+      const normalizedEvent = normalizeButtonEvent(e);
+      const key = `button-${normalizedEvent.index}`;
       activeInputsRef.current = new Set([...activeInputsRef.current, key]);
       setActiveInputs(new Set(activeInputsRef.current));
-      setLastInput(e);
-      setInputHistory((prev) => [e, ...prev.slice(0, historyLimit - 1)]);
+
+      // Update mode only from explicit Mode-group button metadata.
+      if (normalizedEvent.meta?.group === 'Mode') {
+        if (normalizedEvent.meta?.windowsIndex === 24) setCurrentMode(0); // Mode 1 (Green)
+        if (normalizedEvent.meta?.windowsIndex === 25) setCurrentMode(1); // Mode 2 (Orange)
+        if (normalizedEvent.meta?.windowsIndex === 26) setCurrentMode(2); // Mode 3 (Red)
+      }
+
+      setLastInput(normalizedEvent);
+      setInputHistory((prev) => [normalizedEvent, ...prev.slice(0, historyLimit - 1)]);
     });
 
     poller.on('buttonReleased', (e) => {
-      const key = `button-${e.index}`;
+      const normalizedEvent = normalizeButtonEvent(e);
+      const key = `button-${normalizedEvent.index}`;
       const next = new Set(activeInputsRef.current);
       next.delete(key);
       activeInputsRef.current = next;
       setActiveInputs(new Set(next));
-      setLastInput(e);
-      setInputHistory((prev) => [e, ...prev.slice(0, historyLimit - 1)]);
+      setLastInput(normalizedEvent);
+      setInputHistory((prev) => [normalizedEvent, ...prev.slice(0, historyLimit - 1)]);
     });
 
     poller.on('axisChanged', (e) => {
@@ -131,7 +160,7 @@ export function useHotasInput({
       setLastInput(e);
       setInputHistory((prev) => [e, ...prev.slice(0, historyLimit - 1)]);
     });
-  }, [historyLimit]);
+  }, [historyLimit, normalizeButtonEvent]);
 
   // ─── Keyboard listener ───────────────────────────────────────────────────
 
@@ -163,6 +192,7 @@ export function useHotasInput({
   useEffect(() => {
     if (!isMonitoring) return;
     let rafId;
+
     const syncInfo = () => {
       const gamepads = navigator.getGamepads?.() ?? [];
       const gp = gamepads[0];
@@ -180,6 +210,7 @@ export function useHotasInput({
           });
           return next;
         });
+
       } else {
         setGamepadConnected(false);
         setGamepadInfo(null);
@@ -209,6 +240,7 @@ export function useHotasInput({
     activeInputsRef.current = new Set();
     setActiveInputs(new Set());
     setAxisValues({});
+    setCurrentMode(0);
   }, []);
 
   const clearHistory = useCallback(() => {

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import overlaysData from '../data/hotas/overlays/hotas-x52-overlay-positions.jsonc';
+import { parse as parseJsonc } from 'jsonc-parser';
+import overlaysDataRaw from '../data/hotas/overlays/hotas-x52-overlay-positions.jsonc?raw';
 import { Box, Title, Text } from '@mantine/core';
 import Draggable from 'react-draggable';
 import Moveable from 'react-moveable';
@@ -8,7 +9,7 @@ import Moveable from 'react-moveable';
 const HOTAS_IMAGE = '/assets/hotas/x52-hotas-transparent-background-omnicore-starcitizen.png';
 
 // All overlays are now circles (width = height, borderRadius = 50%)
-const initialOverlays = overlaysData;
+const initialOverlays = parseJsonc(overlaysDataRaw) ?? [];
 
 
 export default function HOTASOverlayPage() {

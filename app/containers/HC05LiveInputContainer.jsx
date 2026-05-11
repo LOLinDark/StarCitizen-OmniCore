@@ -33,6 +33,7 @@ const OVERLAY_BUTTON_ALIASES = {
   'fire-d': ['D', 'Fire D'], // Fire D is same as D button
   'button-e': ['Button E'],
   'mouse-button': ['Mouse Button'],
+  clutch: ['Information (i) / Clutch', 'Clutch', 'Button 30'],
   // HAT 1 (stick) — discrete buttons
   'pov-hat-1-n': ['HAT 1 North'],
   'pov-hat-1-e': ['HAT 1 East'],
@@ -195,6 +196,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
   const latestOverlaysRef = useRef(overlays);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState('');
   const containerWidth = 700;
   const containerHeight = 700;
 
@@ -204,6 +206,20 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
   // Convert percent to px for draggable default position
   const percentToPx = (percent, base) => (parseFloat(percent) / 100) * base;
   const pxToPercent = (px, base) => `${((px / base) * 100).toFixed(2)}%`;
+
+  const triggerOverlayBackupDownload = useCallback((overlaysSnapshot) => {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const data = JSON.stringify(overlaysSnapshot, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `hotas-x52-overlay-positions-backup-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
 
   const saveOverlaysToFile = useCallback(async (overlaysToSave, timeoutMs = 5000) => {
     const controller = new AbortController();
@@ -218,7 +234,14 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
       });
 
       if (!response.ok) {
-        throw new Error('Failed to save overlay positions');
+        let detail = '';
+        try {
+          const payload = await response.json();
+          detail = payload?.detail || payload?.error || '';
+        } catch {
+          // Ignore parse failure and use generic fallback below.
+        }
+        throw new Error(detail || `Failed to save overlay positions (${response.status})`);
       }
     } finally {
       clearTimeout(timeoutId);
@@ -231,7 +254,10 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
     if (isDevMode && devEditMode) {
       const save = () => {
         saveOverlaysToFile(latestOverlaysRef.current)
-          .then(() => setLastSavedAt(new Date()))
+          .then(() => {
+            setLastSavedAt(new Date());
+            setSaveErrorMessage('');
+          })
           .catch(e => console.error('Overlay auto-save error:', e));
       };
       save(); // Save immediately on enable
@@ -247,6 +273,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
       const overlaysSnapshot = overlays;
       setDevEditMode(false);
       setSaveStatus('saving');
+      setSaveErrorMessage('');
 
       try {
         await saveOverlaysToFile(overlaysSnapshot);
@@ -254,6 +281,8 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
         setSaveStatus('saved');
       } catch (error) {
         console.error('Overlay save error:', error);
+        triggerOverlayBackupDownload(overlaysSnapshot);
+        setSaveErrorMessage(error?.message || 'Unknown save error');
         setSaveStatus('error');
       }
 
@@ -433,7 +462,11 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
               </button>
               {saveStatus === 'saving' && <Text size="sm" c="dimmed">Saving overlay positions...</Text>}
               {saveStatus === 'saved' && <Text size="sm" c="green">Overlay positions saved.</Text>}
-              {saveStatus === 'error' && <Text size="sm" c="red">Save failed. Check backend/API and try again.</Text>}
+              {saveStatus === 'error' && (
+                <Text size="sm" c="red">
+                  Save failed. Local backup downloaded. {saveErrorMessage ? `Reason: ${saveErrorMessage}` : 'Check backend/API and try again.'}
+                </Text>
+              )}
               {lastSavedAt && (
                 <Text size="sm" c="cyan">
                   Last saved: {lastSavedAt.toLocaleTimeString()}

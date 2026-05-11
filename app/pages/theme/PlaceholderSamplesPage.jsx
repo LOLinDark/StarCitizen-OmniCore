@@ -512,7 +512,7 @@ const HybridStyle = ({ tool }) => {
 // ═══════════════════════════════════════════════════════════════
 export default function PlaceholderSamplesPage() {
   const tools = [
-    { id: 'tech', title: 'Technology Config', color: '#ff6b00' },
+    { id: 'tech', title: 'Peripheral Config', color: '#ff6b00' },
     { id: 'ship', title: 'Ship Database', color: '#00d9ff' },
   ];
 

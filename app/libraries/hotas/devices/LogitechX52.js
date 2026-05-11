@@ -13,12 +13,13 @@
  *
  * 2. Windows Game Controller: 1-based numbering  
  *    └─ Device Manager shows "Button 1", "Button 2", ..., "Button 32"
- *    └─ Formula: Windows number = Gamepad index + 1
- *    └─ Used in: Windows settings, Game Controller test utility, display labels
+ *    └─ Usually Windows number = Gamepad index + 1, but the X52 browser mapping has a gap
+ *       before the mode switch positions, so some controls need explicit windowsIndex metadata.
+ *    └─ Used in: Windows settings, Game Controller test utility, xml tokens
  *
  * 3. UI Display (Bxx badges): Windows 1-based format
- *    └─ "B1" = Gamepad index 0, "B24" = Gamepad index 23, "B25" = Gamepad index 24
- *    └─ Conversion: displayIndex = gamepadIndex + 1
+ *    └─ Bxx should align with Windows button numbers in UI and hover tooltips
+ *    └─ Use explicit windowsIndex overrides when browser and Windows differ
  *
  * STORE EVERYTHING IN GAMEPAD 0-BASED, CONVERT ONLY AT DISPLAY TIME.
  *
@@ -40,51 +41,53 @@ export const X52_PRODUCT_ID = '0x0255';
 // ─────────────────────────────────────────────
 export const X52_BUTTONS = {
   // ── Joystick / Stick ───────────────────────
-  0:  { name: 'Hair Trigger',           group: 'Stick',      type: 'button', code: 'BTN_STICK_TRIG',      note: 'Light pull' },
-  1:  { name: 'Safe Button',            group: 'Stick',      type: 'button', code: 'BTN_STICK_SAFE' },
-  2:  { name: 'Button A',               group: 'Stick',      type: 'button', code: 'BTN_STICK_A' },
-  3:  { name: 'Button B',               group: 'Stick',      type: 'button', code: 'BTN_STICK_B' },
-  4:  { name: 'Button C',               group: 'Stick',      type: 'button', code: 'BTN_STICK_C' },
-  5:  { name: 'Pinkie Switch',          group: 'Stick',      type: 'button', code: 'BTN_PINKIE',          note: 'Modifier – doubles all other buttons' },
-  14: { name: 'Trigger Full Press',     group: 'Stick',      type: 'button', code: 'BTN_STICK_TRIG_FULL', note: 'Full squeeze' },
+  0:  { name: 'Hair Trigger',           group: 'Stick',      type: 'button', code: 'BTN_STICK_TRIG', windowsIndex: 1,      note: 'Light pull' },
+  1:  { name: 'Safe Button',            group: 'Stick',      type: 'button', code: 'BTN_STICK_SAFE', windowsIndex: 2 },
+  2:  { name: 'Button A',               group: 'Stick',      type: 'button', code: 'BTN_STICK_A', windowsIndex: 3 },
+  3:  { name: 'Button B',               group: 'Stick',      type: 'button', code: 'BTN_STICK_B', windowsIndex: 4 },
+  4:  { name: 'Button C',               group: 'Stick',      type: 'button', code: 'BTN_STICK_C', windowsIndex: 5 },
+  5:  { name: 'Pinkie Switch',          group: 'Stick',      type: 'button', code: 'BTN_PINKIE', windowsIndex: 6,          note: 'Modifier – doubles all other buttons' },
+  14: { name: 'Trigger Full Press',     group: 'Stick',      type: 'button', code: 'BTN_STICK_TRIG_FULL', windowsIndex: 15, note: 'Full squeeze' },
 
   // ── Throttle / Grip ─────────────────────────
-  6:  { name: 'D',                      group: 'Throttle',   type: 'button', code: 'BTN_THR_D',         note: 'Also labelled Fire D in manufacturer documentation' },
-  7:  { name: 'Button E',               group: 'Throttle',   type: 'button', code: 'BTN_THR_E' },
+  6:  { name: 'D',                      group: 'Throttle',   type: 'button', code: 'BTN_THR_D', windowsIndex: 7,         note: 'Also labelled Fire D in manufacturer documentation' },
+  7:  { name: 'Button E',               group: 'Throttle',   type: 'button', code: 'BTN_THR_E', windowsIndex: 8 },
 
   // ── Toggle Switches (T1–T6) ─────────────────
-  8:  { name: 'Toggle T1',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T1' },
-  9:  { name: 'Toggle T2',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T2' },
-  10: { name: 'Toggle T3',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T3' },
-  11: { name: 'Toggle T4',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T4' },
-  12: { name: 'Toggle T5',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T5' },
-  13: { name: 'Toggle T6',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T6' },
+  8:  { name: 'Toggle T1',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T1', windowsIndex: 9 },
+  9:  { name: 'Toggle T2',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T2', windowsIndex: 10 },
+  10: { name: 'Toggle T3',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T3', windowsIndex: 11 },
+  11: { name: 'Toggle T4',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T4', windowsIndex: 12 },
+  12: { name: 'Toggle T5',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T5', windowsIndex: 13 },
+  13: { name: 'Toggle T6',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T6', windowsIndex: 14 },
 
   // ── Stick HAT 1 (4-way buttons in this browser mapping) ────────────────
-  15: { name: 'HAT 1 North',            group: 'Stick HAT',  type: 'button', code: 'HAT_1_N' },
-  16: { name: 'HAT 1 East',             group: 'Stick HAT',  type: 'button', code: 'HAT_1_E' },
-  17: { name: 'HAT 1 South',            group: 'Stick HAT',  type: 'button', code: 'HAT_1_S' },
-  18: { name: 'HAT 1 West',             group: 'Stick HAT',  type: 'button', code: 'HAT_1_W' },
+  15: { name: 'HAT 1 North',            group: 'Stick HAT',  type: 'button', code: 'HAT_1_N', windowsIndex: 16 },
+  16: { name: 'HAT 1 East',             group: 'Stick HAT',  type: 'button', code: 'HAT_1_E', windowsIndex: 17 },
+  17: { name: 'HAT 1 South',            group: 'Stick HAT',  type: 'button', code: 'HAT_1_S', windowsIndex: 18 },
+  18: { name: 'HAT 1 West',             group: 'Stick HAT',  type: 'button', code: 'HAT_1_W', windowsIndex: 19 },
 
   // ── HAT 2 is the POV HAT (axis 9) — no discrete button indices ───────────
 
   // ── Throttle HAT 3 (4-way discrete buttons) ────────────────────────────
-  19: { name: 'HAT 3 North',            group: 'Throttle HAT', type: 'button', code: 'HAT_3_N' },
-  20: { name: 'HAT 3 East',             group: 'Throttle HAT', type: 'button', code: 'HAT_3_E' },
-  21: { name: 'HAT 3 South',            group: 'Throttle HAT', type: 'button', code: 'HAT_3_S' },
-  22: { name: 'HAT 3 West',             group: 'Throttle HAT', type: 'button', code: 'HAT_3_W' },
+  19: { name: 'HAT 3 North',            group: 'Throttle HAT', type: 'button', code: 'HAT_3_N', windowsIndex: 20 },
+  20: { name: 'HAT 3 East',             group: 'Throttle HAT', type: 'button', code: 'HAT_3_E', windowsIndex: 21 },
+  21: { name: 'HAT 3 South',            group: 'Throttle HAT', type: 'button', code: 'HAT_3_S', windowsIndex: 22 },
+  22: { name: 'HAT 3 West',             group: 'Throttle HAT', type: 'button', code: 'HAT_3_W', windowsIndex: 23 },
 
   // ── Mode Switches (3-position) ────────────────
-  24: { name: 'Mode 1 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_1',        note: 'Green mode – primary keyset' },
-  25: { name: 'Mode 2 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_2',        note: 'Orange mode – secondary keyset' },
-  26: { name: 'Mode 3 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_3',        note: 'Red mode – tertiary keyset' },
+  // Explicit, fixed mapping from raw gamepad indices to Windows button numbers.
+  23: { name: 'Mode 1 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_1', windowsIndex: 24, aliases: ['Button 24'], note: 'Green mode – primary keyset' },
+  24: { name: 'Mode 2 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_2', windowsIndex: 25, aliases: ['Button 25'], note: 'Orange mode – secondary keyset' },
+  25: { name: 'Mode 3 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_3', windowsIndex: 26, aliases: ['Button 26'], note: 'Red mode – tertiary keyset' },
+  26: { name: 'Function',               group: 'MFD',        type: 'button', code: 'BTN_MFD_FUNCTION', windowsIndex: 27, aliases: ['Button 27'], note: 'MFD Function button' },
 
   // ── Extended / Mode-shifted ─────────────────
-  27: { name: 'Button 27 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_27' },
-  28: { name: 'Button 28 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_28' },
-  29: { name: 'Button 29 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_29' },
+  27: { name: 'Start/Stop Timer',       group: 'MFD',        type: 'button', code: 'BTN_MFD_TIMER_TOGGLE', windowsIndex: 28, aliases: ['Button 28'], note: 'MFD timer start/stop control' },
+  28: { name: 'Reset Timer',            group: 'MFD',        type: 'button', code: 'BTN_MFD_TIMER_RESET', windowsIndex: 29, aliases: ['Button 29'], note: 'MFD timer reset control' },
+  29: { name: 'Information (i) / Clutch', group: 'MFD',      type: 'button', code: 'BTN_MFD_INFO_CLUTCH', windowsIndex: 30, aliases: ['Button 30', 'Clutch', 'Information'] , note: 'MFD info/clutch button' },
   30: { name: 'Mouse Button',           group: 'Throttle',   type: 'button', code: 'BTN_THR_MOUSE', windowsIndex: 31 },
-  31: { name: 'Button 31 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_31', windowsIndex: 32 },
+  31: { name: 'Button 32 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_32', windowsIndex: 32 },
 };
 
 // ─────────────────────────────────────────────
@@ -161,12 +164,23 @@ export const decodePovHat = (value) => {
 export const getButtonInfo = (gamepadIndex) => {
   const meta = X52_BUTTONS[gamepadIndex];
   if (!meta) return null;
+
+  const windowsIndex = Number.isInteger(meta.windowsIndex) ? meta.windowsIndex : gamepadIndex + 1;
+  const windowsLabel = Number.isInteger(windowsIndex) ? `Button ${windowsIndex}` : null;
+  const aliases = Array.from(new Set([
+    meta.name,
+    ...(Array.isArray(meta.aliases) ? meta.aliases : []),
+    windowsLabel,
+  ].filter(Boolean)));
+
   return {
     ...meta,
     gamepadIndex,           // 0-based index used in Gamepad API
-    displayIndex: gamepadIndex + 1, // 1-based for display (Bxx badge)
-    displayLabel: `B${gamepadIndex + 1}`, // "B1", "B24", "B25", etc.
-    windowsIndex: gamepadIndex + 1, // Same as displayIndex; Windows button number
+    displayIndex: windowsIndex,
+    displayLabel: `B${windowsIndex}`,
+    windowsIndex,
+    windowsLabel,
+    aliases,
     key: `button-${gamepadIndex}`, // Key used in activeInputs Set and storage
   };
 };
@@ -177,7 +191,12 @@ export const getButtonInfo = (gamepadIndex) => {
  * @returns {Object|null} Button metadata or null
  */
 export const getButtonByWindowsIndex = (windowsIndex) => {
-  return getButtonInfo(windowsIndex - 1);
+  const match = Object.keys(X52_BUTTONS).find((key) => {
+    const info = getButtonInfo(Number(key));
+    return info?.windowsIndex === windowsIndex;
+  });
+
+  return match === undefined ? null : getButtonInfo(Number(match));
 };
 
 /**
@@ -188,6 +207,7 @@ export const getButtonByWindowsIndex = (windowsIndex) => {
 export const getButtonByDisplayLabel = (displayLabel) => {
   const match = displayLabel.match(/^B(\d+)$/);
   if (!match) return null;
+
   return getButtonByWindowsIndex(Number(match[1]));
 };
 

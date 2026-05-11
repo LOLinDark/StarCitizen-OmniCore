@@ -15,8 +15,10 @@ const AXIS_COMPAT = Object.fromEntries(
   Object.entries(X52_AXES).map(([i, meta]) => [`${i}-axis`, meta])
 );
 const X52_LOOKUP = { ...X52_BUTTONS, ...AXIS_COMPAT };
-const MAX_KNOWN_BUTTON_INDEX = Math.max(...Object.keys(X52_BUTTONS).map((i) => Number(i)), 30);
-const BUTTON_INDICES = Array.from({ length: MAX_KNOWN_BUTTON_INDEX + 1 }, (_, i) => i);
+const BUTTON_INFOS = Object.keys(X52_BUTTONS)
+  .map((i) => getButtonInfo(Number(i)))
+  .filter(Boolean)
+  .sort((a, b) => (a.windowsIndex ?? 0) - (b.windowsIndex ?? 0));
 
 const HAT_DIRS = ['9-hat-n','9-hat-ne','9-hat-e','9-hat-se','9-hat-s','9-hat-sw','9-hat-w','9-hat-nw'];
 const HAT_ARROWS = { n:'↑', ne:'↗', e:'→', se:'↘', s:'↓', sw:'↙', w:'←', nw:'↖' };
@@ -466,127 +468,136 @@ export function KeyPressIndicator({
                   <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.4rem' }}>
                     Active Inputs
                   </Text>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                    {/* Buttons across known device index range */}
-                    {BUTTON_INDICES.map((idx) => {
-                      const on = activeInputs.has(`button-${idx}`);
-                      const buttonInfo = getButtonInfo(idx);
-                      const buttonLabel = buttonInfo?.name || `Button ${idx + 1}`;
-                      const token = buttonInfo ? `js1_button${buttonInfo.windowsIndex}` : `js1_button${idx + 1}`;
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {/* Buttons rendered by Windows button numbers */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {BUTTON_INFOS.map((buttonInfo) => {
+                        const idx = buttonInfo.gamepadIndex;
+                        const windowsIndex = buttonInfo.windowsIndex;
+                        const on = activeInputs.has(`button-${idx}`);
+                        const buttonLabel = buttonInfo.name || `Button ${windowsIndex}`;
+                        const aliasList = (buttonInfo.aliases || []).filter((alias) => alias !== buttonLabel);
+                        const aliasLine = aliasList.length ? `Aliases: ${aliasList.join(', ')}` : null;
+                        const token = `js1_button${windowsIndex}`;
 
-                      const buttonTooltip = [
-                        buttonLabel,
-                        `Gamepad index: ${idx}`,
-                        `Windows input: Button ${idx + 1}`,
-                        `Token: ${token}`,
-                        `Active key: button-${idx}`,
-                      ].join('\n');
+                        const buttonTooltip = [
+                          buttonLabel,
+                          `UI badge: B${windowsIndex}`,
+                          `Gamepad index: ${idx}`,
+                          `Windows input: Button ${windowsIndex}`,
+                          aliasLine,
+                          `Token: ${token}`,
+                          `Active key: button-${idx}`,
+                        ].filter(Boolean).join('\n');
 
-                      return (
-                        <Tooltip
-                          key={`b${idx}`}
-                          label={buttonTooltip}
-                          multiline
-                          withArrow
-                          openDelay={120}
-                          styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
-                        >
-                          <div
-                            onClick={() => handleCopyInputDetails(buttonTooltip)}
-                            style={{
-                              width: 28, height: 28, borderRadius: 3,
-                              background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
-                              border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 8, fontWeight: 700,
-                              color: on ? '#000' : 'rgba(0,217,255,0.5)',
-                              cursor: 'copy',
-                              transition: 'all 0.1s',
-                            }}
+                        return (
+                          <Tooltip
+                            key={`b${windowsIndex}`}
+                            label={buttonTooltip}
+                            multiline
+                            withArrow
+                            openDelay={120}
+                            styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                           >
-                            B{idx + 1}
-                          </div>
-                        </Tooltip>
-                      );
-                    })}
-                    {/* Axes 0-8 */}
-                    {Array.from({ length: 9 }, (_, i) => i).map((idx) => {
-                      const on = activeInputs.has(`axis-${idx}`);
-                      const axisInfo = getAxisInfo(idx);
-                      if (!axisInfo) return null;
+                            <div
+                              onClick={() => handleCopyInputDetails(buttonTooltip)}
+                              style={{
+                                width: 34, height: 34, borderRadius: 4,
+                                background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
+                                border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 9, fontWeight: 700,
+                                color: on ? '#000' : 'rgba(0,217,255,0.5)',
+                                cursor: 'copy',
+                                transition: 'all 0.1s',
+                              }}
+                            >
+                              B{windowsIndex}
+                            </div>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {/* Axes 0-8 */}
+                      {Array.from({ length: 9 }, (_, i) => i).map((idx) => {
+                        const on = activeInputs.has(`axis-${idx}`);
+                        const axisInfo = getAxisInfo(idx);
+                        if (!axisInfo) return null;
 
-                      const axisTooltip = [
-                        axisInfo.name,
-                        `Axis index: ${idx}`,
-                        `Token: js1_axis${idx}`,
-                        `Active key: ${axisInfo.key}`,
-                      ].join('\n');
+                        const axisTooltip = [
+                          axisInfo.name,
+                          `Axis index: ${idx}`,
+                          `Token: js1_axis${idx}`,
+                          `Active key: ${axisInfo.key}`,
+                        ].join('\n');
 
-                      return (
-                        <Tooltip
-                          key={`a${idx}`}
-                          label={axisTooltip}
-                          multiline
-                          withArrow
-                          openDelay={120}
-                          styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
-                        >
-                          <div
-                            onClick={() => handleCopyInputDetails(axisTooltip)}
-                            style={{
-                              width: 28, height: 28, borderRadius: 3,
-                              background: on ? '#ff9800' : 'rgba(255,152,0,0.08)',
-                              border: on ? '1px solid #ff9800' : '1px solid rgba(255,152,0,0.25)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 8, fontWeight: 700,
-                              color: on ? '#000' : 'rgba(255,152,0,0.5)',
-                              cursor: 'copy',
-                              transition: 'all 0.1s',
-                            }}
+                        return (
+                          <Tooltip
+                            key={`a${idx}`}
+                            label={axisTooltip}
+                            multiline
+                            withArrow
+                            openDelay={120}
+                            styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                           >
-                            A{idx}
-                          </div>
-                        </Tooltip>
-                      );
-                    })}
-                    {/* POV HAT */}
-                    {HAT_DIRS.map((dir) => {
-                      const on = activeInputs.has(`button-${dir}`);
-                      const direction = dir.split('-').pop();
-                      const arrow = HAT_ARROWS[direction];
-                      const hatTooltip = [
-                        `POV HAT ${direction.toUpperCase()}`,
-                        `Token: js1_pov_${direction}`,
-                        `Active key: button-${dir}`,
-                      ].join('\n');
+                            <div
+                              onClick={() => handleCopyInputDetails(axisTooltip)}
+                              style={{
+                                width: 34, height: 34, borderRadius: 4,
+                                background: on ? '#ff9800' : 'rgba(255,152,0,0.08)',
+                                border: on ? '1px solid #ff9800' : '1px solid rgba(255,152,0,0.25)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 9, fontWeight: 700,
+                                color: on ? '#000' : 'rgba(255,152,0,0.5)',
+                                cursor: 'copy',
+                                transition: 'all 0.1s',
+                              }}
+                            >
+                              A{idx}
+                            </div>
+                          </Tooltip>
+                        );
+                      })}
+                      {/* POV HAT */}
+                      {HAT_DIRS.map((dir) => {
+                        const on = activeInputs.has(`button-${dir}`);
+                        const direction = dir.split('-').pop();
+                        const arrow = HAT_ARROWS[direction];
+                        const hatTooltip = [
+                          `POV HAT ${direction.toUpperCase()}`,
+                          `Token: js1_pov_${direction}`,
+                          `Active key: button-${dir}`,
+                        ].join('\n');
 
-                      return (
-                        <Tooltip
-                          key={dir}
-                          label={hatTooltip}
-                          multiline
-                          withArrow
-                          openDelay={120}
-                          styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
-                        >
-                          <div
-                            onClick={() => handleCopyInputDetails(hatTooltip)}
-                            style={{
-                              width: 28, height: 28, borderRadius: 3,
-                              background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
-                              border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 13, fontWeight: 700,
-                              color: on ? '#000' : 'rgba(0,217,255,0.5)',
-                              cursor: 'copy',
-                              transition: 'all 0.1s',
-                            }}
+                        return (
+                          <Tooltip
+                            key={dir}
+                            label={hatTooltip}
+                            multiline
+                            withArrow
+                            openDelay={120}
+                            styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                           >
-                            {arrow}
-                          </div>
-                        </Tooltip>
-                      );
-                    })}
+                            <div
+                              onClick={() => handleCopyInputDetails(hatTooltip)}
+                              style={{
+                                width: 34, height: 34, borderRadius: 4,
+                                background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
+                                border: on ? '1px solid #00d9ff' : '1px solid rgba(0,217,255,0.25)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: 15, fontWeight: 700,
+                                color: on ? '#000' : 'rgba(0,217,255,0.5)',
+                                cursor: 'copy',
+                                transition: 'all 0.1s',
+                              }}
+                            >
+                              {arrow}
+                            </div>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
                   </div>
                 </Box>
               )}
