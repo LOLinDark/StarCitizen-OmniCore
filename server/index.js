@@ -29,7 +29,7 @@ import { registerShipRoutes } from './api/ships/index.js';
 import { registerVersemailRoutes } from './api/versemail/index.js';
 import { registerHotasModeRoutes } from './peripherals/hotas/index.js';
 import { registerDownloadRoutes } from './api/dev/download/index.js';
-import hotasOverlayApi from './api/hotasOverlayApi.js';
+import { registerHotasOverlayRoutes } from './api/hotasOverlayApi.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1111,7 +1111,7 @@ registerShipRoutes(app);
 registerVersemailRoutes(app);
 registerHotasModeRoutes(app);
 registerDownloadRoutes(app);
-app.use(hotasOverlayApi);
+registerHotasOverlayRoutes(app);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

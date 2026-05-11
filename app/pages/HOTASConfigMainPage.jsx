@@ -85,7 +85,7 @@ export default function HOTASConfigMainPage() {
       const isInitializedRef = useRef(false);
       const savedHotasOverridesRef = useRef(null);
       const savedKeyboardOverridesRef = useRef(null);
-      const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo } = useHotasInput({
+      const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo, currentMode } = useHotasInput({
         enabled: true,
         trackKeyboard: false,
         device: LogitechX52Device,
@@ -938,6 +938,7 @@ export default function HOTASConfigMainPage() {
                 activeInputs={activeInputs}
                 axisValues={axisValues}
                 lastHotasInput={lastHotasInput}
+                currentMode={currentMode}
                 deviceMap={LogitechX52Device}
                 devEditMode={devEditMode}
                 setDevEditMode={setDevEditMode}

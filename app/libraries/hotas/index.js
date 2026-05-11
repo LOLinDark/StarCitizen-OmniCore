@@ -42,6 +42,13 @@ export {
   getButtonMeta,
   getAxisMeta,
   decodePovHat,
+  // Single source of truth lookups
+  getButtonInfo,
+  getButtonByWindowsIndex,
+  getButtonByDisplayLabel,
+  getAxisInfo,
+  resolveInputIdentifier,
+  getAllInputsInOrder,
 } from './devices/LogitechX52.js';
 
 export {

@@ -3,9 +3,28 @@
  * Complete button, axis, and HAT switch mapping for the X52 (non-Pro)
  * Based on empirical testing with Gamepad API browser mapping
  *
+ * INDEXING CONVENTION (CRITICAL):
+ * ──────────────────────────────
+ * This is the single source of truth. All three systems are related:
+ *
+ * 1. Browser Gamepad API: 0-based indexing
+ *    └─ navigator.getGamepads()[0].buttons[INDEX] where INDEX ∈ [0, 1, 2, ..., 31]
+ *    └─ Used in: X52_BUTTONS keys, gamepadPoller events, useHotasInput activeInputs
+ *
+ * 2. Windows Game Controller: 1-based numbering  
+ *    └─ Device Manager shows "Button 1", "Button 2", ..., "Button 32"
+ *    └─ Formula: Windows number = Gamepad index + 1
+ *    └─ Used in: Windows settings, Game Controller test utility, display labels
+ *
+ * 3. UI Display (Bxx badges): Windows 1-based format
+ *    └─ "B1" = Gamepad index 0, "B24" = Gamepad index 23, "B25" = Gamepad index 24
+ *    └─ Conversion: displayIndex = gamepadIndex + 1
+ *
+ * STORE EVERYTHING IN GAMEPAD 0-BASED, CONVERT ONLY AT DISPLAY TIME.
+ *
  * Physical layout:
  *   Stick: Hair trigger, Safe, A, B, C, Pinkie (modifier), POV HAT, Trigger Full
- *   Throttle: D, Fire-D, E, T1-T6 toggles, Mouse btn, HAT 2, HAT 3
+ *   Throttle: D, E, T1-T6 toggles, HAT 1/2/3, Mouse btn
  *   Axes: X (yaw), Y (pitch), Z-Rot (roll), Throttle, Rotary1, Rotary2, Slider
  *   POV HAT: Reported as axis 9 with analogue values (–1 → +1)
  */
@@ -16,7 +35,8 @@ export const X52_VENDOR_ID = '0x06A3'; // Logitech
 export const X52_PRODUCT_ID = '0x0255';
 
 // ─────────────────────────────────────────────
-// Button Index Map (Gamepad API index → metadata)
+// Button Index Map (Gamepad API 0-based index → metadata)
+// Keys are Gamepad API indices (0–31). Never use Windows 1-based here.
 // ─────────────────────────────────────────────
 export const X52_BUTTONS = {
   // ── Joystick / Stick ───────────────────────
@@ -26,41 +46,45 @@ export const X52_BUTTONS = {
   3:  { name: 'Button B',               group: 'Stick',      type: 'button', code: 'BTN_STICK_B' },
   4:  { name: 'Button C',               group: 'Stick',      type: 'button', code: 'BTN_STICK_C' },
   5:  { name: 'Pinkie Switch',          group: 'Stick',      type: 'button', code: 'BTN_PINKIE',          note: 'Modifier – doubles all other buttons' },
-  15: { name: 'Trigger Full Press',     group: 'Stick',      type: 'button', code: 'BTN_STICK_TRIG_FULL', note: 'Full squeeze' },
+  14: { name: 'Trigger Full Press',     group: 'Stick',      type: 'button', code: 'BTN_STICK_TRIG_FULL', note: 'Full squeeze' },
 
   // ── Throttle / Grip ─────────────────────────
-  6:  { name: 'D',                      group: 'Throttle',   type: 'button', code: 'BTN_THR_D' },
+  6:  { name: 'D',                      group: 'Throttle',   type: 'button', code: 'BTN_THR_D',         note: 'Also labelled Fire D in manufacturer documentation' },
   7:  { name: 'Button E',               group: 'Throttle',   type: 'button', code: 'BTN_THR_E' },
-  8:  { name: 'Fire D',                 group: 'Throttle',   type: 'button', code: 'BTN_THR_FIRED' },
-  16: { name: 'Mouse Button',           group: 'Throttle',   type: 'button', code: 'BTN_THR_MOUSE' },
 
   // ── Toggle Switches (T1–T6) ─────────────────
-  9:  { name: 'Toggle T1',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T1' },
-  10: { name: 'Toggle T2',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T2' },
-  11: { name: 'Toggle T3',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T3' },
-  12: { name: 'Toggle T4',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T4' },
-  13: { name: 'Toggle T5',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T5' },
-  14: { name: 'Toggle T6',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T6' },
+  8:  { name: 'Toggle T1',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T1' },
+  9:  { name: 'Toggle T2',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T2' },
+  10: { name: 'Toggle T3',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T3' },
+  11: { name: 'Toggle T4',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T4' },
+  12: { name: 'Toggle T5',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T5' },
+  13: { name: 'Toggle T6',              group: 'Toggles',    type: 'button', code: 'BTN_TOG_T6' },
 
-  // ── Stick HAT 1 (8-way, reported as 4 discrete buttons by some drivers) ──
-  17: { name: 'HAT 1 North',            group: 'Stick HAT',  type: 'button', code: 'HAT_1_N' },
-  18: { name: 'HAT 1 Northeast',        group: 'Stick HAT',  type: 'button', code: 'HAT_1_NE' },
-  19: { name: 'HAT 1 East',             group: 'Stick HAT',  type: 'button', code: 'HAT_1_E' },
-  20: { name: 'HAT 1 Southeast',        group: 'Stick HAT',  type: 'button', code: 'HAT_1_SE' },
+  // ── Stick HAT 1 (4-way buttons in this browser mapping) ────────────────
+  15: { name: 'HAT 1 North',            group: 'Stick HAT',  type: 'button', code: 'HAT_1_N' },
+  16: { name: 'HAT 1 East',             group: 'Stick HAT',  type: 'button', code: 'HAT_1_E' },
+  17: { name: 'HAT 1 South',            group: 'Stick HAT',  type: 'button', code: 'HAT_1_S' },
+  18: { name: 'HAT 1 West',             group: 'Stick HAT',  type: 'button', code: 'HAT_1_W' },
 
-  // ── Throttle HAT 2 (8-way) ──────────────────
-  21: { name: 'HAT 2 North',            group: 'Throttle HAT', type: 'button', code: 'HAT_2_N' },
-  22: { name: 'HAT 2 Northeast',        group: 'Throttle HAT', type: 'button', code: 'HAT_2_NE' },
-  23: { name: 'HAT 2 East',             group: 'Throttle HAT', type: 'button', code: 'HAT_2_E' },
-  24: { name: 'HAT 2 Southeast',        group: 'Throttle HAT', type: 'button', code: 'HAT_2_SE' },
+  // ── HAT 2 is the POV HAT (axis 9) — no discrete button indices ───────────
+
+  // ── Throttle HAT 3 (4-way discrete buttons) ────────────────────────────
+  19: { name: 'HAT 3 North',            group: 'Throttle HAT', type: 'button', code: 'HAT_3_N' },
+  20: { name: 'HAT 3 East',             group: 'Throttle HAT', type: 'button', code: 'HAT_3_E' },
+  21: { name: 'HAT 3 South',            group: 'Throttle HAT', type: 'button', code: 'HAT_3_S' },
+  22: { name: 'HAT 3 West',             group: 'Throttle HAT', type: 'button', code: 'HAT_3_W' },
+
+  // ── Mode Switches (3-position) ────────────────
+  24: { name: 'Mode 1 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_1',        note: 'Green mode – primary keyset' },
+  25: { name: 'Mode 2 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_2',        note: 'Orange mode – secondary keyset' },
+  26: { name: 'Mode 3 Switch',          group: 'Mode',       type: 'button', code: 'BTN_MODE_3',        note: 'Red mode – tertiary keyset' },
 
   // ── Extended / Mode-shifted ─────────────────
-  25: { name: 'Button 25 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_25' },
-  26: { name: 'Button 26 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_26' },
   27: { name: 'Button 27 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_27' },
   28: { name: 'Button 28 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_28' },
-  // Observed in Windows game controller panel: this reports as Button 31.
-  29: { name: 'Button 29 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_29', windowsIndex: 31 },
+  29: { name: 'Button 29 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_29' },
+  30: { name: 'Mouse Button',           group: 'Throttle',   type: 'button', code: 'BTN_THR_MOUSE', windowsIndex: 31 },
+  31: { name: 'Button 31 (Extended)',   group: 'Extended',   type: 'button', code: 'BTN_EXT_31', windowsIndex: 32 },
 };
 
 // ─────────────────────────────────────────────
@@ -123,6 +147,131 @@ export const decodePovHat = (value) => {
   return X52_POV_DIRECTIONS.find((d) => value >= d.min && value <= d.max)?.dir ?? null;
 };
 
+// ─────────────────────────────────────────────────────────
+// SINGLE SOURCE OF TRUTH: Complete Input Lookup
+// These functions convert between all three indexing systems
+// ─────────────────────────────────────────────────────────
+
+/**
+ * Get complete metadata for a button by Gamepad API index (0-based).
+ * Returns all info needed for display: name, Windows index (1-based), code, etc.
+ * @param {number} gamepadIndex - 0-based Gamepad API index (0–31)
+ * @returns {Object|null} Button metadata with displayIndex, or null if not found
+ */
+export const getButtonInfo = (gamepadIndex) => {
+  const meta = X52_BUTTONS[gamepadIndex];
+  if (!meta) return null;
+  return {
+    ...meta,
+    gamepadIndex,           // 0-based index used in Gamepad API
+    displayIndex: gamepadIndex + 1, // 1-based for display (Bxx badge)
+    displayLabel: `B${gamepadIndex + 1}`, // "B1", "B24", "B25", etc.
+    windowsIndex: gamepadIndex + 1, // Same as displayIndex; Windows button number
+    key: `button-${gamepadIndex}`, // Key used in activeInputs Set and storage
+  };
+};
+
+/**
+ * Get button by Windows index (1-based) → convert to Gamepad index and return full info.
+ * @param {number} windowsIndex - 1-based Windows button number (1–32)
+ * @returns {Object|null} Button metadata or null
+ */
+export const getButtonByWindowsIndex = (windowsIndex) => {
+  return getButtonInfo(windowsIndex - 1);
+};
+
+/**
+ * Get button by display label → convert and return full info.
+ * @param {string} displayLabel - "B1", "B24", "B25", etc.
+ * @returns {Object|null} Button metadata or null
+ */
+export const getButtonByDisplayLabel = (displayLabel) => {
+  const match = displayLabel.match(/^B(\d+)$/);
+  if (!match) return null;
+  return getButtonByWindowsIndex(Number(match[1]));
+};
+
+/**
+ * Get axis by Gamepad API index (0-based).
+ * Returns metadata with displayIndex for consistency.
+ * @param {number} gamepadIndex - 0-based Gamepad API index
+ * @returns {Object|null} Axis metadata, or null if not found
+ */
+export const getAxisInfo = (gamepadIndex) => {
+  const meta = X52_AXES[gamepadIndex];
+  if (!meta) return null;
+  return {
+    ...meta,
+    gamepadIndex,
+    displayIndex: gamepadIndex + 1,
+    key: `axis-${gamepadIndex}`,
+  };
+};
+
+/**
+ * Resolve any input identifier (Gamepad key, Windows index, display label) to full metadata.
+ * Handles: "button-24", "axis-2", "B24", 25, "pov-hat-2-n", etc.
+ * @param {string|number} identifier - Various formats
+ * @returns {Object|null} Complete metadata with gamepadIndex, displayIndex, name, etc.
+ */
+export const resolveInputIdentifier = (identifier) => {
+  // Already a button metadata key like "button-24"
+  if (typeof identifier === 'string' && identifier.startsWith('button-')) {
+    const idx = Number(identifier.split('-')[1]);
+    return getButtonInfo(idx);
+  }
+
+  // Already an axis metadata key like "axis-2"
+  if (typeof identifier === 'string' && identifier.startsWith('axis-')) {
+    const idx = Number(identifier.split('-')[1]);
+    return getAxisInfo(idx);
+  }
+
+  // Display label like "B24"
+  if (typeof identifier === 'string' && identifier.match(/^B\d+$/)) {
+    return getButtonByDisplayLabel(identifier);
+  }
+
+  // Windows 1-based number like 24 or 25
+  if (typeof identifier === 'number') {
+    return getButtonByWindowsIndex(identifier);
+  }
+
+  // HAT direction like "pov-hat-2-n" — return axis info for POV HAT (axis 9)
+  if (typeof identifier === 'string' && identifier.includes('pov-hat')) {
+    return getAxisInfo(9);
+  }
+
+  return null;
+};
+
+/**
+ * Build a canonical array of ALL inputs in order (buttons 0–31, then axes).
+ * Useful for building UI grids that need to map every possible index.
+ * @returns {Array} Array of input metadata in order
+ */
+export const getAllInputsInOrder = () => {
+  const result = [];
+
+  // All button indices 0–31
+  for (let i = 0; i <= 31; i++) {
+    const buttonInfo = getButtonInfo(i);
+    if (buttonInfo) {
+      result.push(buttonInfo);
+    }
+  }
+
+  // Axes in order
+  [0, 1, 2, 3, 4, 5, 6, 9].forEach((axisIdx) => {
+    const axisInfo = getAxisInfo(axisIdx);
+    if (axisInfo) {
+      result.push(axisInfo);
+    }
+  });
+
+  return result;
+};
+
 /** Device descriptor exported for use in DeviceRegistry */
 export const LogitechX52Device = {
   id: X52_DEVICE_ID,
@@ -136,9 +285,17 @@ export const LogitechX52Device = {
   getButtonMeta,
   getAxisMeta,
   decodePovHat,
+  // New single-source-of-truth lookups
+  getButtonInfo,
+  getButtonByWindowsIndex,
+  getButtonByDisplayLabel,
+  getAxisInfo,
+  resolveInputIdentifier,
+  getAllInputsInOrder,
   /** True if the gamepad name string suggests this is an X52 */
   matches: (gamepadId = '') =>
     /x52/i.test(gamepadId) || gamepadId.includes('0255') || gamepadId.includes('06A3'),
 };
 
 export default LogitechX52Device;
+

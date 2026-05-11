@@ -117,15 +117,6 @@
     }
   },
   {
-    "id": "fire-d",
-    "label": "Fire D",
-    "style": {
-      "left": "74.00%",
-      "top": "93.57%",
-      "size": "6%"
-    }
-  },
-  {
     "id": "button-e",
     "label": "Button E",
     "style": {

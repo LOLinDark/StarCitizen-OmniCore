@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Badge, Group, Select, SegmentedControl, Text } from '@mantine/core';
 import { X52_BUTTONS, X52_AXES, X52_MODES, X52_POV_DIRECTIONS } from '../libraries/hotas';
 
@@ -115,15 +115,37 @@ const MODE_SEGMENTS = [
   { value: 'all', label: 'All Modes' },
 ];
 
-export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, activeInputs, axisValues, lastHotasInput }) {
+export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, activeInputs, axisValues, lastHotasInput, currentMode }) {
   const [modeFilter, setModeFilter] = useState('none');
+  const [modeOverride, setModeOverride] = useState(false);
   const [editingRowId, setEditingRowId] = useState(null);
+  const prevModeRef = useRef(currentMode);
+
+  // Auto-sync mode filter to device mode only when device mode changes
+  useEffect(() => {
+    // Only sync if currentMode actually changed on the device
+    if (currentMode === prevModeRef.current) return;
+    prevModeRef.current = currentMode;
+
+    // Device mode changed physically — always update UI and clear override
+    if (currentMode !== undefined && currentMode !== null) {
+      const newMode = String(currentMode);
+      setModeFilter(newMode);
+      setModeOverride(false);  // Clear override on physical device change
+    }
+  }, [currentMode]); // Only depend on currentMode changes
 
   const visibleModes = useMemo(() => {
     if (modeFilter === 'none') return ['0'];
     if (modeFilter === 'all') return ['all'];
     return [modeFilter];
   }, [modeFilter]);
+
+  const handleModeFilterChange = (newMode) => {
+    setModeFilter(newMode);
+    // Any manual click is an override (even to M1/M2/M3)
+    setModeOverride(true);
+  };
 
   const inputList = useMemo(() => buildInputList(visibleModes), [visibleModes]);
 
@@ -190,10 +212,15 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
         <Text size="sm" fw={600}>Modes:</Text>
         <SegmentedControl
           value={modeFilter}
-          onChange={setModeFilter}
+          onChange={handleModeFilterChange}
           data={MODE_SEGMENTS}
           size="xs"
         />
+        {!modeOverride && currentMode !== undefined && currentMode !== null && (
+          <Text size="xs" c="cyan" fw={500}>
+            (Following device)
+          </Text>
+        )}
         <Badge color="cyan" variant="light" size="sm">
           {boundCount}/{filteredRows.length} assigned
         </Badge>

@@ -15,18 +15,10 @@ const OVERLAY_AXIS_MAP = {
 };
 
 const OVERLAY_POV_MAP = {
-  'pov-hat-1-n': 'n',
-  'pov-hat-1-e': 'e',
-  'pov-hat-1-s': 's',
-  'pov-hat-1-w': 'w',
   'pov-hat-2-n': 'n',
   'pov-hat-2-e': 'e',
   'pov-hat-2-s': 's',
   'pov-hat-2-w': 'w',
-  'pov-hat-3-n': 'n',
-  'pov-hat-3-e': 'e',
-  'pov-hat-3-s': 's',
-  'pov-hat-3-w': 'w',
 };
 
 const OVERLAY_BUTTON_ALIASES = {
@@ -38,9 +30,19 @@ const OVERLAY_BUTTON_ALIASES = {
   'button-c': ['Button C'],
   'pinkie-switch': ['Pinkie Switch'],
   'button-d': ['D'],
-  'fire-d': ['Fire D'],
+  'fire-d': ['D', 'Fire D'], // Fire D is same as D button
   'button-e': ['Button E'],
   'mouse-button': ['Mouse Button'],
+  // HAT 1 (stick) — discrete buttons
+  'pov-hat-1-n': ['HAT 1 North'],
+  'pov-hat-1-e': ['HAT 1 East'],
+  'pov-hat-1-s': ['HAT 1 South'],
+  'pov-hat-1-w': ['HAT 1 West'],
+  // HAT 3 (throttle) — discrete buttons
+  'pov-hat-3-n': ['HAT 3 North'],
+  'pov-hat-3-e': ['HAT 3 East'],
+  'pov-hat-3-s': ['HAT 3 South'],
+  'pov-hat-3-w': ['HAT 3 West'],
 };
 
 function normalizeName(value) {
@@ -187,7 +189,7 @@ function isOverlayInputActive(overlay, activeInputs, axisValues, lastHotasInput)
   return false;
 }
 
-export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, hotasOverrides = {}, activeInputs, axisValues, lastHotasInput, deviceMap, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
+export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, hotasOverrides = {}, activeInputs, axisValues, lastHotasInput, currentMode, deviceMap, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
   // Overlay refs for Moveable
   const overlayRefs = useRef([]);
   const latestOverlaysRef = useRef(overlays);
@@ -449,6 +451,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
           activeInputs={activeInputs}
           axisValues={axisValues}
           lastHotasInput={lastHotasInput}
+          currentMode={currentMode}
         />
       </div>
     </div>

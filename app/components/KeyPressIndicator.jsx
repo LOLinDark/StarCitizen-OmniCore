@@ -6,6 +6,8 @@ import useAppStore from '../stores/useAppStore';
 import {
   X52_BUTTONS,
   X52_AXES,
+  getButtonInfo,
+  getAxisInfo,
 } from '../libraries/hotas/index.js';
 
 // Same compat map used by the test page so tooltips show correct names
@@ -13,13 +15,38 @@ const AXIS_COMPAT = Object.fromEntries(
   Object.entries(X52_AXES).map(([i, meta]) => [`${i}-axis`, meta])
 );
 const X52_LOOKUP = { ...X52_BUTTONS, ...AXIS_COMPAT };
-const getDisplayButtonNumber = (idx) => X52_LOOKUP[idx]?.windowsIndex ?? (idx + 1);
-const getButtonToken = (idx) => `js1_button${getDisplayButtonNumber(idx)}`;
-const getAxisToken = (idx) => `js1_axis${idx}`;
+const MAX_KNOWN_BUTTON_INDEX = Math.max(...Object.keys(X52_BUTTONS).map((i) => Number(i)), 30);
+const BUTTON_INDICES = Array.from({ length: MAX_KNOWN_BUTTON_INDEX + 1 }, (_, i) => i);
 
 const HAT_DIRS = ['9-hat-n','9-hat-ne','9-hat-e','9-hat-se','9-hat-s','9-hat-sw','9-hat-w','9-hat-nw'];
 const HAT_ARROWS = { n:'↑', ne:'↗', e:'→', se:'↘', s:'↓', sw:'↙', w:'←', nw:'↖' };
 const MODE_STORAGE_KEY = 'omnicore.liveInput.mode';
+
+async function copyTextToClipboard(text) {
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Fallback to execCommand below
+  }
+
+  try {
+    const temp = document.createElement('textarea');
+    temp.value = text;
+    temp.setAttribute('readonly', '');
+    temp.style.position = 'absolute';
+    temp.style.left = '-9999px';
+    document.body.appendChild(temp);
+    temp.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(temp);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * KeyPressIndicator Component
@@ -49,6 +76,7 @@ export function KeyPressIndicator({
   const [isWindowed, setIsWindowed] = useState(false);
   const [modeReady, setModeReady] = useState(false);
   const [windowContainer, setWindowContainer] = useState(null);
+  const [copyFeedback, setCopyFeedback] = useState('');
   const popupRef = useRef(null);
   const popupContainerRef = useRef(null);
   const [pressedKeys, setPressedKeys] = useState(new Set());
@@ -269,6 +297,12 @@ export function KeyPressIndicator({
     };
   }, [getKeyLabel, onKeysChange]);
 
+  const handleCopyInputDetails = useCallback(async (text) => {
+    const copied = await copyTextToClipboard(text);
+    setCopyFeedback(copied ? 'Copied input details' : 'Copy failed');
+    window.setTimeout(() => setCopyFeedback(''), 1200);
+  }, []);
+
   if (!modeReady) return null;
 
   const sortedKeys = Array.from(pressedKeys).sort();
@@ -329,6 +363,11 @@ export function KeyPressIndicator({
           {connected !== null && (
             <Badge color={connected ? 'green' : 'gray'} variant="filled" size="xs">
               {connected ? 'Connected' : 'Disconnected'}
+            </Badge>
+          )}
+          {!!copyFeedback && (
+            <Badge color="cyan" variant="light" size="xs">
+              {copyFeedback}
             </Badge>
           )}
           {!inWindow && (
@@ -428,16 +467,18 @@ export function KeyPressIndicator({
                     Active Inputs
                   </Text>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                    {/* Buttons 0-29 */}
-                    {Array.from({ length: 30 }, (_, i) => i).map((idx) => {
+                    {/* Buttons across known device index range */}
+                    {BUTTON_INDICES.map((idx) => {
                       const on = activeInputs.has(`button-${idx}`);
-                      const meta = X52_LOOKUP[idx];
-                      const buttonLabel = meta?.name || `Button ${getDisplayButtonNumber(idx)}`;
+                      const buttonInfo = getButtonInfo(idx);
+                      const buttonLabel = buttonInfo?.name || `Button ${idx + 1}`;
+                      const token = buttonInfo ? `js1_button${buttonInfo.windowsIndex}` : `js1_button${idx + 1}`;
+
                       const buttonTooltip = [
                         buttonLabel,
                         `Gamepad index: ${idx}`,
-                        `Windows input: Button ${getDisplayButtonNumber(idx)}`,
-                        `Token: ${getButtonToken(idx)}`,
+                        `Windows input: Button ${idx + 1}`,
+                        `Token: ${token}`,
                         `Active key: button-${idx}`,
                       ].join('\n');
 
@@ -451,6 +492,7 @@ export function KeyPressIndicator({
                           styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                         >
                           <div
+                            onClick={() => handleCopyInputDetails(buttonTooltip)}
                             style={{
                               width: 28, height: 28, borderRadius: 3,
                               background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
@@ -458,10 +500,11 @@ export function KeyPressIndicator({
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontSize: 8, fontWeight: 700,
                               color: on ? '#000' : 'rgba(0,217,255,0.5)',
+                              cursor: 'copy',
                               transition: 'all 0.1s',
                             }}
                           >
-                            B{getDisplayButtonNumber(idx)}
+                            B{idx + 1}
                           </div>
                         </Tooltip>
                       );
@@ -469,12 +512,14 @@ export function KeyPressIndicator({
                     {/* Axes 0-8 */}
                     {Array.from({ length: 9 }, (_, i) => i).map((idx) => {
                       const on = activeInputs.has(`axis-${idx}`);
-                      const axisName = X52_LOOKUP[`${idx}-axis`]?.name || `Axis ${idx}`;
+                      const axisInfo = getAxisInfo(idx);
+                      if (!axisInfo) return null;
+
                       const axisTooltip = [
-                        axisName,
+                        axisInfo.name,
                         `Axis index: ${idx}`,
-                        `Token: ${getAxisToken(idx)}`,
-                        `Active key: axis-${idx}`,
+                        `Token: js1_axis${idx}`,
+                        `Active key: ${axisInfo.key}`,
                       ].join('\n');
 
                       return (
@@ -487,6 +532,7 @@ export function KeyPressIndicator({
                           styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                         >
                           <div
+                            onClick={() => handleCopyInputDetails(axisTooltip)}
                             style={{
                               width: 28, height: 28, borderRadius: 3,
                               background: on ? '#ff9800' : 'rgba(255,152,0,0.08)',
@@ -494,6 +540,7 @@ export function KeyPressIndicator({
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontSize: 8, fontWeight: 700,
                               color: on ? '#000' : 'rgba(255,152,0,0.5)',
+                              cursor: 'copy',
                               transition: 'all 0.1s',
                             }}
                           >
@@ -523,6 +570,7 @@ export function KeyPressIndicator({
                           styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                         >
                           <div
+                            onClick={() => handleCopyInputDetails(hatTooltip)}
                             style={{
                               width: 28, height: 28, borderRadius: 3,
                               background: on ? '#00d9ff' : 'rgba(0,217,255,0.08)',
@@ -530,6 +578,7 @@ export function KeyPressIndicator({
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontSize: 13, fontWeight: 700,
                               color: on ? '#000' : 'rgba(0,217,255,0.5)',
+                              cursor: 'copy',
                               transition: 'all 0.1s',
                             }}
                           >
