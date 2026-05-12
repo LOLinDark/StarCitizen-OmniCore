@@ -9,4 +9,6 @@ export {
   importModeBindings,
   testFireModeBinding,
   sendModeButtonEvent,
+  fetchProfileModeOverrides,
+  saveProfileModeOverrides,
 } from './modesClient.js';

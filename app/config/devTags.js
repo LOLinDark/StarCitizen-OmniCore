@@ -37,6 +37,7 @@ const devTags = {
   APP02:     { label: 'Aerobook',                path: '/aerobook',              file: 'pages/AerobookPage.jsx' },
   APP03:     { label: 'Onboarding Checklist',    path: '/onboarding',            file: 'pages/OnboardingChecklistPage.jsx' },
   APP04:     { label: 'RSI Login',               path: '/login',                 file: 'pages/RSILoginPage.jsx' },
+  APP05:     { label: 'Game Settings',           path: '/game-settings',         file: 'pages/GameSettingsPage.jsx' },
 
   // ── Game Tools ────────────────────────────────
   GT01:      { label: 'Training Academy',        path: '/new-player-guide',      file: 'pages/NewPlayerGuidePage.jsx' },
@@ -54,7 +55,12 @@ const devTags = {
   HC01:      { label: 'HOTAS Config (Light)',    path: '/theme/hotas-config',         file: 'pages/theme/HOTASConfigPage.jsx' },
   HC03:      { label: 'HOTAS Config (Dark)',     path: '/theme/hotas-config-dark',    file: 'pages/theme/HOTASConfigPageDark.jsx' },
   HC04:      { label: 'HOTAS Config (Toggle)',   path: '/theme/hotas-config-toggle',  file: 'pages/theme/HOTASConfigPageToggle.jsx' },
-  HC05:      { label: 'HOTAS Main',              path: '/hotas-config',               file: 'pages/HOTASConfigMainPage.jsx' },
+  HC05:      { label: 'Technology Config',       path: '/hotas-config',               file: 'pages/HOTASConfigMainPage.jsx' },
+  HC06:      { label: 'HOTAS Modes Lab',         path: '/developer/hotas-modes-lab',  file: 'pages/HOTASConfigModesLabPage.jsx' },
+  HC07:      { label: 'HOTAS Live Input Page',   path: '/hotas-live-input',           file: 'pages/HOTASLiveInputPage.jsx' },
+  HC08:      { label: 'HOTAS Overlay Demo',      path: '/hotas-overlay',              file: 'pages/HOTASOverlayPage.jsx' },
+  HC09:      { label: 'Overlay Save Test',       path: '/hotas-overlay-save-test',    file: 'pages/HOTASOverlaySaveTestPage.jsx' },
+  HC10:      { label: 'HOTAS Community Testing', path: '/hotas-testing-routine',      file: 'pages/HOTASCommunityTestingPage.jsx' },
   'HC-TEST': { label: 'HOTAS Input Test Lab',    path: '/settings/hotas',             file: 'pages/settings/HOTASTestPage.jsx' },
   TL01:      { label: 'Theme Lab Landing',       path: '/theme',                      file: 'pages/ThemePage.jsx' },
 };

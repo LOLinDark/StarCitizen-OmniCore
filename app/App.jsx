@@ -39,6 +39,7 @@ const DeveloperNavChartsLabPage = lazy(() => import('./pages/DeveloperNavChartsL
 const HOTASDiagramPage = lazy(() => import('./pages/HOTASDiagramPage'));
 const HOTASOverlayPage = lazy(() => import('./pages/HOTASOverlayPage'));
 const HOTASOverlaySaveTestPage = lazy(() => import('./pages/HOTASOverlaySaveTestPage'));
+const HOTASCommunityTestingPage = lazy(() => import('./pages/HOTASCommunityTestingPage'));
 
 
 // Theme Lab Pages
@@ -108,6 +109,7 @@ function App() {
           <Route path="economy-tracker" element={<EconomyTrackerPage />} />
           <Route path="location-guide" element={<LocationGuidePage />} />
           <Route path="hotas-config" element={<HOTASConfigMainPage />} />
+          <Route path="hotas-testing-routine" element={<Lazy Component={HOTASCommunityTestingPage} />} />
           <Route path="hotas-config-modes-lab" element={<HOTASConfigModesLabPage />} />
           <Route path="ship-database" element={<ShipDatabasePage />} />
           <Route path="game-settings" element={<GameSettingsPage />} />

@@ -2,6 +2,12 @@ import { useMemo, useState, useEffect, useRef } from 'react';
 import { Badge, Group, Select, SegmentedControl, Text } from '@mantine/core';
 import { X52_BUTTONS, X52_AXES, X52_MODES, X52_POV_DIRECTIONS } from '../libraries/hotas';
 
+const MODE_INDEX_TO_KEY = {
+  0: 'green',
+  1: 'orange',
+  2: 'red',
+};
+
 function buildInputList(modes) {
   const inputs = [];
   const modeList = modes.includes('all')
@@ -41,13 +47,18 @@ function buildInputList(modes) {
   return inputs;
 }
 
-function findAssignedFeature(input, bindings, hotasOverrides) {
+function findAssignedFeature(input, bindings, hotasOverrides, { preferSingle = false } = {}) {
   if (!bindings?.length) return null;
   const token = input.xmlToken.toLowerCase();
   const buttonNum = input.type === 'Button' ? (X52_BUTTONS[input.index]?.windowsIndex ?? input.index + 1) : null;
+  const modeKey = MODE_INDEX_TO_KEY[input.modeIdx];
 
   for (const binding of bindings) {
-    const hotasVal = (hotasOverrides[binding.id] || binding.hotasBinding || '').toLowerCase();
+    const modeValue = (!preferSingle && modeKey)
+      ? String(binding.modeHotasBindings?.[modeKey] || '')
+      : '';
+    const singleValue = String(hotasOverrides[binding.id] || binding.hotasBinding || '');
+    const hotasVal = String(modeValue || singleValue || '').toLowerCase();
     if (!hotasVal) continue;
     if (hotasVal === token) return binding;
     if (input.type === 'Button' && buttonNum !== null) {
@@ -152,10 +163,12 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
   const rows = useMemo(() => {
     return inputList.map((input) => ({
       ...input,
-      assignedBinding: findAssignedFeature(input, bindings, hotasOverrides),
+      assignedBinding: findAssignedFeature(input, bindings, hotasOverrides, {
+        preferSingle: modeFilter === 'none',
+      }),
       isActive: isInputActive(input, activeInputs, axisValues, lastHotasInput),
     }));
-  }, [inputList, bindings, hotasOverrides, activeInputs, axisValues, lastHotasInput]);
+  }, [inputList, bindings, hotasOverrides, activeInputs, axisValues, lastHotasInput, modeFilter]);
 
   const filteredRows = useMemo(() => {
     let result = rows;

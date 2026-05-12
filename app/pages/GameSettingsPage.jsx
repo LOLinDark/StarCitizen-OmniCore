@@ -68,7 +68,7 @@ export default function GameSettingsPage() {
     <Stack gap="xl">
       <div>
         <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>
-          <DevTag tag="APP01" />Game Settings
+          <DevTag tag="APP05" />Game Settings
         </h1>
         <Text c="dimmed">Browse and search Star Citizen's in-game settings from attributes.xml</Text>
       </div>

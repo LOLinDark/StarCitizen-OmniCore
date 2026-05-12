@@ -30,10 +30,25 @@ import { StarCitizenProfileParser } from '../utils/starCitizenProfileParser';
 
 import { featureToStarCitizenAction, parseInputString, formatInputForDisplay } from '../utils/starCitizenActionMap';
 import { useHotasInput, LogitechX52Device } from '../libraries/hotas';
+import { fetchProfileModeOverrides, saveProfileModeOverrides } from '../libraries/peripherals/hotas';
 import DevTag from '../components/DevTag';
 import HC05LiveInputContainer from '../containers/HC05LiveInputContainer';
 import { normalizeText, getInputKind, getInputAction } from '../utils/hotasUtils';
 import { formatHotasBindingFromInput, formatHotasInputForXml } from '../utils/hotasInputFormatters';
+
+const HOTAS_MODE_KEYS = ['green', 'orange', 'red'];
+
+const createEmptyModeMap = () => ({
+  green: {},
+  orange: {},
+  red: {},
+});
+
+const coerceModeMap = (input) => ({
+  green: input?.green && typeof input.green === 'object' ? input.green : {},
+  orange: input?.orange && typeof input.orange === 'object' ? input.orange : {},
+  red: input?.red && typeof input.red === 'object' ? input.red : {},
+});
 
 export default function HOTASConfigMainPage() {
       // Overlay state for HOTAS overlay demo (persisted in localStorage)
@@ -64,6 +79,8 @@ export default function HOTASConfigMainPage() {
       const [sortBy, setSortBy] = useState('feature');
       const [sortOrder, setSortOrder] = useState('asc');
       const [tableView, setTableView] = useState('features');
+      const [bindingLayout, setBindingLayout] = useState('single');
+      const [activeBindingMode, setActiveBindingMode] = useState('green');
       const [profiles, setProfiles] = useState([]);
       const [profilesLoading, setProfilesLoading] = useState(true);
       const [profilesError, setProfilesError] = useState(null);
@@ -72,13 +89,17 @@ export default function HOTASConfigMainPage() {
       const [profileName, setProfileName] = useState('');
       const [mergedBindings, setMergedBindings] = useState(null);
       const [hotasOverrides, setHotasOverrides] = useState({});
+      const [modeHotasOverrides, setModeHotasOverrides] = useState(createEmptyModeMap);
       const [keyboardOverrides, setKeyboardOverrides] = useState({});
       const [captureBindingId, setCaptureBindingId] = useState(null);
+      const [captureModeKey, setCaptureModeKey] = useState(null);
       const [captureProgress, setCaptureProgress] = useState(0);
       const [captureKeyboardBindingId, setCaptureKeyboardBindingId] = useState(null);
       const [captureKeyboardProgress, setCaptureKeyboardProgress] = useState(0);
       const [xmlSaveStatus, setXmlSaveStatus] = useState('idle');
       const [xmlSaveMessage, setXmlSaveMessage] = useState('');
+      const [modeOverridesSaveStatus, setModeOverridesSaveStatus] = useState('idle');
+      const [modeOverridesSaveMessage, setModeOverridesSaveMessage] = useState('');
       const [captureWarning, setCaptureWarning] = useState('');
       const captureStartedAtRef = useRef(0);
       const keyboardCaptureStartedAtRef = useRef(0);
@@ -86,6 +107,9 @@ export default function HOTASConfigMainPage() {
       const isInitializedRef = useRef(false);
       const savedHotasOverridesRef = useRef(null);
       const savedKeyboardOverridesRef = useRef(null);
+      const modeOverridesHydratingRef = useRef(false);
+      const modeOverridesSaveTimerRef = useRef(null);
+      const previousBindingLayoutRef = useRef('single');
       const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo, currentMode } = useHotasInput({
         enabled: true,
         trackKeyboard: false,
@@ -177,10 +201,11 @@ export default function HOTASConfigMainPage() {
     }
   }, [selectedProfile]);
 
-  const startHotasCapture = useCallback((bindingId) => {
+  const startHotasCapture = useCallback((bindingId, modeKey = null) => {
     captureStartedAtRef.current = Date.now();
     captureInitialSignatureRef.current = getInputSignature(lastHotasInput);
     setCaptureBindingId(bindingId);
+    setCaptureModeKey(HOTAS_MODE_KEYS.includes(modeKey) ? modeKey : null);
     setCaptureProgress(1);
   }, [getInputSignature, lastHotasInput]);
 
@@ -191,9 +216,20 @@ export default function HOTASConfigMainPage() {
   }, []);
 
   const handleAssignHotasFeature = useCallback((bindingId, xmlToken) => {
+    if (bindingLayout === 'modes') {
+      setModeHotasOverrides((prev) => ({
+        ...prev,
+        [activeBindingMode]: {
+          ...(prev[activeBindingMode] || {}),
+          [bindingId]: xmlToken,
+        },
+      }));
+      return;
+    }
+
     setHotasOverrides((prev) => ({ ...prev, [bindingId]: xmlToken }));
     void persistCapturedBindingToXml(bindingId, xmlToken);
-  }, [persistCapturedBindingToXml]);
+  }, [activeBindingMode, bindingLayout, persistCapturedBindingToXml]);
 
   const getBindingConflictSummary = useCallback((bindingId, displayToken, bindingType) => {
     const normToken = String(displayToken || '').toLowerCase();
@@ -219,6 +255,29 @@ export default function HOTASConfigMainPage() {
     const suffix = conflictFeatures.length > 3 ? ` +${conflictFeatures.length - 3} more` : '';
     return `Potential conflict: ${displayToken} is already used by ${preview}${suffix}`;
   }, [mergedBindings, hotasOverrides, keyboardOverrides]);
+
+  const applyHydratedModeOverrides = useCallback((nextValue) => {
+    modeOverridesHydratingRef.current = true;
+    setModeHotasOverrides(coerceModeMap(nextValue));
+    Promise.resolve().then(() => {
+      modeOverridesHydratingRef.current = false;
+    });
+  }, []);
+
+  const loadModeOverridesForProfile = useCallback(async (profileName) => {
+    if (!profileName) {
+      applyHydratedModeOverrides(createEmptyModeMap());
+      return;
+    }
+
+    try {
+      const payload = await fetchProfileModeOverrides(profileName);
+      applyHydratedModeOverrides(payload?.modeHotasOverrides || createEmptyModeMap());
+    } catch (error) {
+      console.error('[HC05] Failed to load mode overrides:', error);
+      applyHydratedModeOverrides(createEmptyModeMap());
+    }
+  }, [applyHydratedModeOverrides]);
 
   useEffect(() => {
     if (!captureBindingId) return;
@@ -277,21 +336,34 @@ export default function HOTASConfigMainPage() {
 
     const bindingId = captureBindingId;
 
-    setHotasOverrides((prev) => ({
-      ...prev,
-      [bindingId]: formatted,
-    }));
+    if (captureModeKey) {
+      setModeHotasOverrides((prev) => ({
+        ...prev,
+        [captureModeKey]: {
+          ...(prev[captureModeKey] || {}),
+          [bindingId]: formatted,
+        },
+      }));
+      setCaptureWarning('Mode-column HOTAS bindings are stored in OmniCore and not yet written to XML profiles.');
+    } else {
+      setHotasOverrides((prev) => ({
+        ...prev,
+        [bindingId]: formatted,
+      }));
 
-    const hotasToken = formatHotasInputForXml(lastHotasInput);
-    if (hotasToken) {
-      const conflictMessage = getBindingConflictSummary(bindingId, formatted, 'hotas');
-      setCaptureWarning(conflictMessage);
-      void persistCapturedBindingToXml(bindingId, hotasToken);
+      const hotasToken = formatHotasInputForXml(lastHotasInput);
+      if (hotasToken) {
+        const conflictMessage = getBindingConflictSummary(bindingId, formatted, 'hotas');
+        setCaptureWarning(conflictMessage);
+        void persistCapturedBindingToXml(bindingId, hotasToken);
+      }
     }
 
     setCaptureBindingId(null);
+    setCaptureModeKey(null);
     setCaptureProgress(0);
   }, [
+    captureModeKey,
     captureBindingId,
     lastHotasInput,
     getInputSignature,
@@ -462,9 +534,20 @@ export default function HOTASConfigMainPage() {
       const {
         selectedProfile: savedProfile,
         selectedCategory: savedCategory,
+        bindingLayout: savedBindingLayout,
+        activeBindingMode: savedActiveBindingMode,
         hotasOverrides: savedHotasOverrides,
+        modeHotasOverrides: savedModeHotas,
         keyboardOverrides: savedKeyboardOverrides,
       } = JSON.parse(savedState);
+
+      if (savedBindingLayout === 'single' || savedBindingLayout === 'modes') {
+        setBindingLayout(savedBindingLayout);
+      }
+
+      if (HOTAS_MODE_KEYS.includes(savedActiveBindingMode)) {
+        setActiveBindingMode(savedActiveBindingMode);
+      }
       
       if (savedCategory) {
         setSelectedCategory(savedCategory);
@@ -473,6 +556,10 @@ export default function HOTASConfigMainPage() {
       // Store overrides in ref to be restored after profile loads
       if (savedHotasOverrides && typeof savedHotasOverrides === 'object') {
         savedHotasOverridesRef.current = savedHotasOverrides;
+      }
+
+      if (savedModeHotas && typeof savedModeHotas === 'object') {
+        applyHydratedModeOverrides(savedModeHotas);
       }
 
       if (savedKeyboardOverrides && typeof savedKeyboardOverrides === 'object') {
@@ -487,7 +574,7 @@ export default function HOTASConfigMainPage() {
     } catch (error) {
       console.error('[HC05] Error restoring state from localStorage:', error);
     }
-  }, []);
+  }, [applyHydratedModeOverrides]);
 
   // Restore local overrides after profile has been loaded (mergedBindings changes)
   useEffect(() => {
@@ -512,7 +599,10 @@ export default function HOTASConfigMainPage() {
       const stateToSave = {
         selectedProfile,
         selectedCategory,
+        bindingLayout,
+        activeBindingMode,
         hotasOverrides,
+        modeHotasOverrides,
         keyboardOverrides,
       };
       localStorage.setItem('omnicore.hc05.state', JSON.stringify(stateToSave));
@@ -520,7 +610,83 @@ export default function HOTASConfigMainPage() {
     } catch (error) {
       console.error('[HC05] Error saving state to localStorage:', error);
     }
-  }, [selectedProfile, selectedCategory, hotasOverrides, keyboardOverrides]);
+  }, [selectedProfile, selectedCategory, bindingLayout, activeBindingMode, hotasOverrides, modeHotasOverrides, keyboardOverrides]);
+
+  useEffect(() => {
+    const previousLayout = previousBindingLayoutRef.current;
+
+    if (bindingLayout === 'modes' && previousLayout !== 'modes') {
+      const allBaseBindings = (Array.isArray(mergedBindings) && mergedBindings.length > 0)
+        ? mergedBindings
+        : shipKeybindings;
+
+      setModeHotasOverrides((prev) => {
+        const next = coerceModeMap(prev);
+        const nextGreen = { ...(next.green || {}) };
+        let changed = false;
+
+        allBaseBindings.forEach((binding) => {
+          const bindingId = binding?.id;
+          if (!bindingId) return;
+
+          const hasGreenValue = String(nextGreen[bindingId] || '').trim().length > 0;
+          if (hasGreenValue) return;
+
+          const singleHotasValue = String(hotasOverrides[bindingId] || binding.hotasBinding || '').trim();
+          if (!singleHotasValue) return;
+
+          nextGreen[bindingId] = singleHotasValue;
+          changed = true;
+        });
+
+        if (!changed) return prev;
+
+        return {
+          ...next,
+          green: nextGreen,
+        };
+      });
+    }
+
+    previousBindingLayoutRef.current = bindingLayout;
+  }, [bindingLayout, hotasOverrides, mergedBindings]);
+
+  useEffect(() => {
+    if (!isInitializedRef.current) return;
+    if (!selectedProfile) return;
+    if (modeOverridesHydratingRef.current) return;
+    if (bindingLayout !== 'modes') {
+      setModeOverridesSaveStatus('idle');
+      setModeOverridesSaveMessage('');
+      return;
+    }
+
+    if (modeOverridesSaveTimerRef.current) {
+      clearTimeout(modeOverridesSaveTimerRef.current);
+    }
+
+    setModeOverridesSaveStatus('saving');
+    setModeOverridesSaveMessage('Saving mode overrides...');
+
+    modeOverridesSaveTimerRef.current = setTimeout(() => {
+      saveProfileModeOverrides(selectedProfile, modeHotasOverrides)
+        .then(() => {
+          setModeOverridesSaveStatus('saved');
+          setModeOverridesSaveMessage('Mode overrides saved');
+        })
+        .catch((error) => {
+          console.error('[HC05] Failed to save mode overrides:', error);
+          setModeOverridesSaveStatus('error');
+          setModeOverridesSaveMessage(error.message || 'Failed to save mode overrides');
+        });
+    }, 300);
+
+    return () => {
+      if (modeOverridesSaveTimerRef.current) {
+        clearTimeout(modeOverridesSaveTimerRef.current);
+      }
+    };
+  }, [selectedProfile, modeHotasOverrides, bindingLayout]);
 
   // Use shared filtering hook for defaults
   const hookResult = useHOTASFiltering(
@@ -580,17 +746,25 @@ export default function HOTASConfigMainPage() {
   const applyBindingOverrides = useCallback((bindings = []) => {
     if (!Array.isArray(bindings) || bindings.length === 0) return [];
     return bindings.map((binding) => {
-      const hotasOverride = hotasOverrides[binding.id];
+      const selectedModeBinding = modeHotasOverrides[activeBindingMode]?.[binding.id] || '';
+      const hotasOverride = (bindingLayout === 'modes' ? selectedModeBinding : hotasOverrides[binding.id]) || hotasOverrides[binding.id];
       const keyboardOverride = keyboardOverrides[binding.id];
-      if (!hotasOverride && !keyboardOverride) return binding;
+      const modeBindings = {
+        green: modeHotasOverrides.green?.[binding.id] || '',
+        orange: modeHotasOverrides.orange?.[binding.id] || '',
+        red: modeHotasOverrides.red?.[binding.id] || '',
+      };
+
+      if (!hotasOverride && !keyboardOverride && !modeBindings.green && !modeBindings.orange && !modeBindings.red) return binding;
 
       return {
         ...binding,
         hotasBinding: hotasOverride || binding.hotasBinding,
         keyboardBinding: keyboardOverride || binding.keyboardBinding,
+        modeHotasBindings: modeBindings,
       };
     });
-  }, [hotasOverrides, keyboardOverrides]);
+  }, [activeBindingMode, bindingLayout, hotasOverrides, keyboardOverrides, modeHotasOverrides]);
 
   const effectiveBindings = useMemo(() => applyBindingOverrides(unfilteredBindings), [unfilteredBindings, applyBindingOverrides]);
 
@@ -681,9 +855,12 @@ export default function HOTASConfigMainPage() {
       setProfileName('');
       setMergedBindings(null);
       setHotasOverrides({});
+      applyHydratedModeOverrides(createEmptyModeMap());
       setKeyboardOverrides({});
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
+      setModeOverridesSaveStatus('idle');
+      setModeOverridesSaveMessage('');
       setCaptureWarning('');
       return;
     }
@@ -732,11 +909,14 @@ export default function HOTASConfigMainPage() {
       setSelectedProfile(newProfileName);
       setProfileName(logitechX52ProOptimal.profileName);
       setHotasOverrides({});
+      await loadModeOverridesForProfile(newProfileName);
       setKeyboardOverrides({});
       savedHotasOverridesRef.current = null;
       savedKeyboardOverridesRef.current = null;
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
+      setModeOverridesSaveStatus('idle');
+      setModeOverridesSaveMessage('');
       setCaptureWarning('');
       
       // Merge AI profile bindings with defaults
@@ -764,6 +944,8 @@ export default function HOTASConfigMainPage() {
       setSelectedProfile(newProfileName);
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
+      setModeOverridesSaveStatus('idle');
+      setModeOverridesSaveMessage('');
       setCaptureWarning('');
       savedHotasOverridesRef.current = null;
       savedKeyboardOverridesRef.current = null;
@@ -850,13 +1032,19 @@ export default function HOTASConfigMainPage() {
           
           console.log('[HC05] Profile merged into keybindings');
           setMergedBindings(merged);
+          await loadModeOverridesForProfile(newProfileName);
         } catch (parseError) {
           console.error('[HC05] Error parsing profile XML:', parseError);
           alert(`Could not parse profile: ${parseError.message}`);
           setSelectedProfile('');
           setProfileName('');
           setMergedBindings(null);
+          applyHydratedModeOverrides(createEmptyModeMap());
         }
+      }
+
+      if (!data.xmlContent) {
+        await loadModeOverridesForProfile(newProfileName);
       }
     } catch (error) {
       console.error(`[HC05] Error loading profile:`, error);
@@ -864,6 +1052,7 @@ export default function HOTASConfigMainPage() {
       setSelectedProfile('');
       setProfileName('');
       setMergedBindings(null);
+      applyHydratedModeOverrides(createEmptyModeMap());
     }
   };
 
@@ -950,6 +1139,7 @@ export default function HOTASConfigMainPage() {
                 onOverlayChange={setOverlays}
                 keybindings={allEffectiveBindings}
                 hotasOverrides={hotasOverrides}
+                bindingLayout={bindingLayout}
                 onAssignFeature={handleAssignHotasFeature}
                 activeInputs={activeInputs}
                 axisValues={axisValues}
@@ -975,9 +1165,41 @@ export default function HOTASConfigMainPage() {
           selectedProfile={selectedProfile}
           xmlSaveStatus={xmlSaveStatus}
           xmlSaveMessage={xmlSaveMessage}
+          modeOverridesSaveStatus={modeOverridesSaveStatus}
+          modeOverridesSaveMessage={modeOverridesSaveMessage}
+          showModeOverridesStatus={bindingLayout === 'modes'}
           captureWarning={captureWarning}
           sortedBindings={sortedBindings}
         />
+
+        <Group justify="space-between" align="end" wrap="wrap" mt="sm" mb="xs">
+          <Box>
+            <Text size="xs" c="dimmed" mb={4}>HOTAS Column Layout</Text>
+            <SegmentedControl
+              value={bindingLayout}
+              onChange={setBindingLayout}
+              data={[
+                { label: 'Single HOTAS', value: 'single' },
+                { label: 'Per-Mode HOTAS', value: 'modes' },
+              ]}
+            />
+          </Box>
+
+          {bindingLayout === 'modes' && (
+            <Box>
+              <Text size="xs" c="dimmed" mb={4}>Active Mode Column</Text>
+              <SegmentedControl
+                value={activeBindingMode}
+                onChange={setActiveBindingMode}
+                data={[
+                  { label: 'Green', value: 'green' },
+                  { label: 'Orange', value: 'orange' },
+                  { label: 'Red', value: 'red' },
+                ]}
+              />
+            </Box>
+          )}
+        </Group>
 
         {/* View Switcher (extracted) */}
         <HOTASViewSwitcher tableView={tableView} setTableView={setTableView} />
@@ -996,8 +1218,11 @@ export default function HOTASConfigMainPage() {
             showStatusColumn={false}
             onStartHotasCapture={startHotasCapture}
             activeCaptureBindingId={captureBindingId}
+            activeModeCaptureKey={captureBindingId && captureModeKey ? `${captureBindingId}:${captureModeKey}` : ''}
             captureProgress={captureProgress}
+            showModeColumns={bindingLayout === 'modes'}
             onStartKeyboardCapture={startKeyboardCapture}
+            onStartModeHotasCapture={startHotasCapture}
             activeKeyboardCaptureBindingId={captureKeyboardBindingId}
             keyboardCaptureProgress={captureKeyboardProgress}
           />

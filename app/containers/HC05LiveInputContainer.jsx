@@ -49,6 +49,12 @@ const OVERLAY_BUTTON_ALIASES = {
   'pov-hat-3-w': ['HAT 3 West'],
 };
 
+const MODE_INDEX_TO_KEY = {
+  0: 'green',
+  1: 'orange',
+  2: 'red',
+};
+
 function normalizeName(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
@@ -112,13 +118,15 @@ function buildOverlayInputMeta(overlay) {
   return null;
 }
 
-function findAssignedFeature(input, bindings, hotasOverrides) {
+function findAssignedFeature(input, bindings, hotasOverrides, modeKey = null) {
   if (!input || !bindings?.length) return null;
   const token = input.xmlToken.toLowerCase();
   const buttonNum = input.type === 'Button' ? input.windowsIndex : null;
 
   for (const binding of bindings) {
-    const hotasVal = (hotasOverrides[binding.id] || binding.hotasBinding || '').toLowerCase();
+    const modeValue = modeKey ? String(binding.modeHotasBindings?.[modeKey] || '') : '';
+    const singleValue = String(hotasOverrides[binding.id] || binding.hotasBinding || '');
+    const hotasVal = String(modeValue || singleValue || '').toLowerCase();
     if (!hotasVal) continue;
     if (hotasVal === token) return binding;
     if (input.type === 'Button' && buttonNum !== null) {
@@ -138,9 +146,9 @@ function findAssignedFeature(input, bindings, hotasOverrides) {
   return null;
 }
 
-function buildOverlayTooltip(overlay, bindings, hotasOverrides) {
+function buildOverlayTooltip(overlay, bindings, hotasOverrides, modeKey = null) {
   const inputMeta = buildOverlayInputMeta(overlay);
-  const assignedBinding = findAssignedFeature(inputMeta, bindings, hotasOverrides);
+  const assignedBinding = findAssignedFeature(inputMeta, bindings, hotasOverrides, modeKey);
   const featureLine = assignedBinding?.feature ? `Assigned: ${assignedBinding.feature}` : 'Assigned: Unassigned';
 
   if (!inputMeta) {
@@ -193,7 +201,7 @@ function isOverlayInputActive(overlay, activeInputs, axisValues, lastHotasInput)
   return false;
 }
 
-export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, hotasOverrides = {}, activeInputs, axisValues, lastHotasInput, currentMode, deviceMap, onAssignFeature, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
+export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, hotasOverrides = {}, bindingLayout = 'single', activeInputs, axisValues, lastHotasInput, currentMode, deviceMap, onAssignFeature, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
   // Overlay refs for Moveable
   const overlayRefs = useRef([]);
   const latestOverlaysRef = useRef(overlays);
@@ -353,7 +361,8 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
               const topPx = percentToPx(overlay.style.top, containerHeight);
               const sizePx = percentToPx(overlay.style.size, containerWidth);
               const isActive = isOverlayInputActive(overlay, activeInputs, axisValues, lastHotasInput);
-              const tooltipLabel = buildOverlayTooltip(overlay, keybindings, hotasOverrides);
+              const activeModeKey = bindingLayout === 'modes' ? MODE_INDEX_TO_KEY[Number(currentMode)] : null;
+              const tooltipLabel = buildOverlayTooltip(overlay, keybindings, hotasOverrides, activeModeKey);
 
               const tooltipContent = (
                 <Box>

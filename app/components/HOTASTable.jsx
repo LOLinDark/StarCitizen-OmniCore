@@ -33,7 +33,10 @@ export const HOTASTable = ({
   isBindingLive,
   showStatusColumn = true,
   onStartHotasCapture,
+  onStartModeHotasCapture,
+  showModeColumns = false,
   activeCaptureBindingId = null,
+  activeModeCaptureKey = '',
   captureProgress = 0,
   onStartKeyboardCapture,
   activeKeyboardCaptureBindingId = null,
@@ -110,19 +113,55 @@ export const HOTASTable = ({
               >
                 ⌨️ Keyboard/Mouse {sortBy === 'keyboardBinding' && (sortOrder === 'asc' ? '↑' : '↓')}
               </Table.Th>
-              <Table.Th
-                style={{
-                  cursor: 'pointer',
-                  color: '#e91e63',
-                  padding: '1rem',
-                  fontWeight: 600,
-                  borderBottom: '1px solid rgba(233, 30, 99, 0.3)',
-                  textShadow: undefined,
-                }}
-                onClick={() => handleHeaderClick('hotasBinding')}
-              >
-                🎮 HOTAS {sortBy === 'hotasBinding' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Table.Th>
+              {!showModeColumns && (
+                <Table.Th
+                  style={{
+                    cursor: 'pointer',
+                    color: '#e91e63',
+                    padding: '1rem',
+                    fontWeight: 600,
+                    borderBottom: '1px solid rgba(233, 30, 99, 0.3)',
+                    textShadow: undefined,
+                  }}
+                  onClick={() => handleHeaderClick('hotasBinding')}
+                >
+                  {`🎮 HOTAS ${sortBy === 'hotasBinding' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}`}
+                </Table.Th>
+              )}
+              {showModeColumns && (
+                <>
+                  <Table.Th
+                    style={{
+                      color: '#7cb342',
+                      padding: '1rem',
+                      fontWeight: 600,
+                      borderBottom: '1px solid rgba(124, 179, 66, 0.35)',
+                    }}
+                  >
+                    Green
+                  </Table.Th>
+                  <Table.Th
+                    style={{
+                      color: '#ffa726',
+                      padding: '1rem',
+                      fontWeight: 600,
+                      borderBottom: '1px solid rgba(255, 167, 38, 0.35)',
+                    }}
+                  >
+                    Orange
+                  </Table.Th>
+                  <Table.Th
+                    style={{
+                      color: '#ef5350',
+                      padding: '1rem',
+                      fontWeight: 600,
+                      borderBottom: '1px solid rgba(239, 83, 80, 0.35)',
+                    }}
+                  >
+                    Red
+                  </Table.Th>
+                </>
+              )}
               <Table.Th
                 style={{
                   cursor: 'pointer',
@@ -159,6 +198,92 @@ export const HOTASTable = ({
               const isCapturingKeyboard = activeKeyboardCaptureBindingId === binding.id;
               const remainingSeconds = Math.max(0, Math.ceil(captureProgress * 3));
               const remainingKeyboardSeconds = Math.max(0, Math.ceil(keyboardCaptureProgress * 3));
+
+              const renderHotasCell = (modeKey = null) => {
+                const value = modeKey ? binding.modeHotasBindings?.[modeKey] : binding.hotasBinding;
+                const isCapturingModeCell = modeKey
+                  ? activeModeCaptureKey === `${binding.id}:${modeKey}`
+                  : isCapturingThis;
+
+                return (
+                  <Table.Td
+                    style={{
+                      padding: '0.65rem 1rem',
+                      position: 'relative',
+                      cursor: (modeKey ? onStartModeHotasCapture : onStartHotasCapture) ? 'context-menu' : 'default',
+                      userSelect: 'none',
+                      background: isCapturingModeCell ? 'rgba(106, 27, 154, 0.15)' : (modeKey ? 'rgba(233, 30, 99, 0.02)' : onStartHotasCapture ? 'rgba(233, 30, 99, 0.03)' : 'transparent'),
+                      border: isCapturingModeCell ? '2px solid #6a1b9a' : (modeKey || onStartHotasCapture) ? '1px solid rgba(233, 30, 99, 0.2)' : 'none',
+                      borderRadius: '4px',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!(modeKey ? onStartModeHotasCapture : onStartHotasCapture) || isCapturingModeCell) return;
+                      e.currentTarget.style.background = 'rgba(233, 30, 99, 0.08)';
+                      e.currentTarget.style.borderColor = 'rgba(233, 30, 99, 0.6)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!(modeKey ? onStartModeHotasCapture : onStartHotasCapture) || isCapturingModeCell) return;
+                      e.currentTarget.style.background = modeKey ? 'rgba(233, 30, 99, 0.02)' : 'rgba(233, 30, 99, 0.03)';
+                      e.currentTarget.style.borderColor = 'rgba(233, 30, 99, 0.2)';
+                    }}
+                    onContextMenu={(e) => {
+                      if (modeKey) {
+                        if (!onStartModeHotasCapture) return;
+                        e.preventDefault();
+                        onStartModeHotasCapture(binding.id, modeKey);
+                        return;
+                      }
+
+                      if (!onStartHotasCapture) return;
+                      e.preventDefault();
+                      onStartHotasCapture(binding.id);
+                    }}
+                    title={isCapturingModeCell ? 'Listening for HOTAS input...' : (modeKey ? `Right-click to assign HOTAS input for ${modeKey} mode` : 'Right-click to assign HOTAS input')}
+                  >
+                    {isCapturingModeCell && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: `${captureProgress * 100}%`,
+                          background: 'rgba(106, 27, 154, 0.3)',
+                          pointerEvents: 'none',
+                          transition: 'width 0.05s linear',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    )}
+                    <div style={{ position: 'relative', zIndex: 1, minHeight: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {isCapturingModeCell ? (
+                        <>
+                          <span style={{ fontSize: '1.2rem', animation: 'pulse 1.5s ease-in-out infinite' }}>●</span>
+                          <Text size="xs" fw={700} style={{ color: '#6a1b9a' }}>
+                            Listening... {remainingSeconds}s
+                          </Text>
+                        </>
+                      ) : value ? (
+                        <Badge
+                          style={{
+                            backgroundColor: 'rgba(233, 30, 99, 0.12)',
+                            color: '#f48fb1',
+                            border: '1px solid rgba(233, 30, 99, 0.3)',
+                          }}
+                          size="sm"
+                        >
+                          {value}
+                        </Badge>
+                      ) : (
+                        <Text size="xs" style={{ color: colors.emptyKeyColor }}>
+                          —
+                        </Text>
+                      )}
+                    </div>
+                  </Table.Td>
+                );
+              };
 
               return (
                 <Table.Tr
@@ -280,75 +405,10 @@ export const HOTASTable = ({
                     )}
                   </div>
                 </Table.Td>
-                <Table.Td
-                  style={{
-                    padding: '0.65rem 1rem',
-                    position: 'relative',
-                    cursor: onStartHotasCapture ? 'context-menu' : 'default',
-                    userSelect: 'none',
-                    background: isCapturingThis ? 'rgba(106, 27, 154, 0.15)' : onStartHotasCapture ? 'rgba(233, 30, 99, 0.03)' : 'transparent',
-                    border: isCapturingThis ? '2px solid #6a1b9a' : onStartHotasCapture ? '1px solid rgba(233, 30, 99, 0.2)' : 'none',
-                    borderRadius: '4px',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!onStartHotasCapture || isCapturingThis) return;
-                    e.currentTarget.style.background = 'rgba(233, 30, 99, 0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(233, 30, 99, 0.6)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!onStartHotasCapture || isCapturingThis) return;
-                    e.currentTarget.style.background = 'rgba(233, 30, 99, 0.03)';
-                    e.currentTarget.style.borderColor = 'rgba(233, 30, 99, 0.2)';
-                  }}
-                  onContextMenu={(e) => {
-                    if (!onStartHotasCapture) return;
-                    e.preventDefault();
-                    onStartHotasCapture(binding.id);
-                  }}
-                  title={isCapturingThis ? 'Listening for HOTAS input...' : 'Right-click to assign HOTAS input'}
-                >
-                  {isCapturingThis && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: `${captureProgress * 100}%`,
-                        background: 'rgba(106, 27, 154, 0.3)',
-                        pointerEvents: 'none',
-                        transition: 'width 0.05s linear',
-                        borderRadius: '2px',
-                      }}
-                    />
-                  )}
-                  <div style={{ position: 'relative', zIndex: 1, minHeight: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {isCapturingThis ? (
-                      <>
-                        <span style={{ fontSize: '1.2rem', animation: 'pulse 1.5s ease-in-out infinite' }}>●</span>
-                        <Text size="xs" fw={700} style={{ color: '#6a1b9a' }}>
-                          Listening... {remainingSeconds}s
-                        </Text>
-                      </>
-                    ) : binding.hotasBinding ? (
-                      <Badge
-                        style={{
-                          backgroundColor: 'rgba(233, 30, 99, 0.12)',
-                          color: '#f48fb1',
-                          border: '1px solid rgba(233, 30, 99, 0.3)',
-                        }}
-                        size="sm"
-                      >
-                        {binding.hotasBinding}
-                      </Badge>
-                    ) : (
-                      <Text size="xs" style={{ color: colors.emptyKeyColor }}>
-                        —
-                      </Text>
-                    )}
-                  </div>
-                </Table.Td>
+                {!showModeColumns && renderHotasCell()}
+                {showModeColumns && renderHotasCell('green')}
+                {showModeColumns && renderHotasCell('orange')}
+                {showModeColumns && renderHotasCell('red')}
                 <Table.Td style={{ padding: '1rem' }}>
                   <Text size="xs" style={{ color: colors.categoryText, textShadow: colors.categoryTextShadow }}>
                     {binding.category}

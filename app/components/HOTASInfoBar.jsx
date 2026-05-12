@@ -7,6 +7,9 @@ import { Group, Badge, Text } from '@mantine/core';
  * - selectedProfile
  * - xmlSaveStatus
  * - xmlSaveMessage
+ * - modeOverridesSaveStatus
+ * - modeOverridesSaveMessage
+ * - showModeOverridesStatus
  * - captureWarning
  * - sortedBindings (array)
  */
@@ -14,6 +17,9 @@ export default function HOTASInfoBar({
   selectedProfile,
   xmlSaveStatus,
   xmlSaveMessage,
+  modeOverridesSaveStatus,
+  modeOverridesSaveMessage,
+  showModeOverridesStatus = false,
   captureWarning,
   sortedBindings,
 }) {
@@ -30,6 +36,18 @@ export default function HOTASInfoBar({
             {xmlSaveStatus === 'saving'
               ? 'XML saving...'
               : (xmlSaveStatus === 'saved' ? 'XML saved' : 'XML save failed')}
+          </Badge>
+        )}
+        {selectedProfile && showModeOverridesStatus && modeOverridesSaveStatus !== 'idle' && (
+          <Badge
+            color={modeOverridesSaveStatus === 'saving' ? 'blue' : (modeOverridesSaveStatus === 'saved' ? 'green' : 'red')}
+            variant="light"
+            size="sm"
+            title={modeOverridesSaveMessage}
+          >
+            {modeOverridesSaveStatus === 'saving'
+              ? 'Mode overrides saving...'
+              : (modeOverridesSaveStatus === 'saved' ? 'Mode overrides saved' : 'Mode overrides failed')}
           </Badge>
         )}
         {captureWarning && (

@@ -714,6 +714,7 @@ app.post('/api/chat', async (req, res) => {
 
 // --- HOTAS Profile Endpoints ---
 const STAR_CITIZEN_MAPPINGS_PATH = 'C:\\Program Files\\Roberts Space Industries\\StarCitizen\\LIVE\\user\\client\\0\\controls\\mappings';
+const HOTAS_PROFILE_MODE_KEYS = ['green', 'orange', 'red'];
 
 // SECURITY: Validate profile name to prevent directory traversal
 function validateProfileName(name) {
@@ -748,6 +749,77 @@ function normalizeActionNames(actionNames) {
     .filter((name) => typeof name === 'string')
     .map((name) => name.trim())
     .filter((name) => /^[a-z0-9_]+$/i.test(name));
+}
+
+function normalizeModeOverrideValue(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().slice(0, 128);
+}
+
+function normalizeModeHotasOverrides(input) {
+  const result = {
+    green: {},
+    orange: {},
+    red: {},
+  };
+
+  if (!input || typeof input !== 'object') {
+    return result;
+  }
+
+  HOTAS_PROFILE_MODE_KEYS.forEach((modeKey) => {
+    const modeValue = input[modeKey];
+    if (!modeValue || typeof modeValue !== 'object') return;
+
+    Object.entries(modeValue).forEach(([featureId, token]) => {
+      const safeFeatureId = String(featureId || '').trim();
+      if (!/^[a-z0-9._:-]{1,120}$/i.test(safeFeatureId)) return;
+
+      const normalizedToken = normalizeModeOverrideValue(token);
+      if (!normalizedToken) return;
+
+      result[modeKey][safeFeatureId] = normalizedToken;
+    });
+  });
+
+  return result;
+}
+
+function getProfileModeOverridesPath(profileName) {
+  return join(STAR_CITIZEN_MAPPINGS_PATH, `${profileName}.omnicore.modes.json`);
+}
+
+function readProfileModeOverrides(profileName) {
+  const filePath = getProfileModeOverridesPath(profileName);
+
+  if (!filePath.startsWith(STAR_CITIZEN_MAPPINGS_PATH)) {
+    throw new Error('Access denied');
+  }
+
+  if (!existsSync(filePath)) {
+    return normalizeModeHotasOverrides({});
+  }
+
+  const raw = readFileSync(filePath, 'utf-8');
+  const parsed = JSON.parse(raw);
+  return normalizeModeHotasOverrides(parsed?.modeHotasOverrides);
+}
+
+function writeProfileModeOverrides(profileName, modeHotasOverrides) {
+  const filePath = getProfileModeOverridesPath(profileName);
+
+  if (!filePath.startsWith(STAR_CITIZEN_MAPPINGS_PATH)) {
+    throw new Error('Access denied');
+  }
+
+  const payload = {
+    profile: profileName,
+    updatedAt: new Date().toISOString(),
+    modeHotasOverrides: normalizeModeHotasOverrides(modeHotasOverrides),
+  };
+
+  writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8');
+  return payload.modeHotasOverrides;
 }
 
 function upsertDeviceRebind(xml, actionName, inputToken) {
@@ -848,6 +920,41 @@ app.post('/api/hotas/profile/:profileName/meta', (req, res) => {
   } catch (error) {
     log('HOTAS meta save error:', error.message);
     res.status(500).json({ error: 'Failed to save profile metadata' });
+  }
+});
+
+app.get('/api/hotas/profile/:profileName/mode-overrides', (req, res) => {
+  try {
+    const profileName = validateProfileName(req.params.profileName);
+    if (!profileName) return res.status(400).json({ error: 'Invalid profile name' });
+
+    const modeHotasOverrides = readProfileModeOverrides(profileName);
+    res.json({
+      profile: profileName,
+      modeHotasOverrides,
+    });
+  } catch (error) {
+    log('HOTAS mode-overrides read error:', error.message);
+    res.status(500).json({ error: 'Failed to load mode overrides' });
+  }
+});
+
+app.post('/api/hotas/profile/:profileName/mode-overrides', (req, res) => {
+  try {
+    const profileName = validateProfileName(req.params.profileName);
+    if (!profileName) return res.status(400).json({ error: 'Invalid profile name' });
+
+    const modeHotasOverrides = writeProfileModeOverrides(profileName, req.body?.modeHotasOverrides);
+    log(`HOTAS: Saved mode overrides for profile "${profileName}"`);
+
+    res.json({
+      success: true,
+      profile: profileName,
+      modeHotasOverrides,
+    });
+  } catch (error) {
+    log('HOTAS mode-overrides save error:', error.message);
+    res.status(500).json({ error: 'Failed to save mode overrides' });
   }
 });
 

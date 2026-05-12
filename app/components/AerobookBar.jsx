@@ -196,6 +196,24 @@ export default function AerobookBar() {
         </Button>
       </Tooltip>
 
+      <Tooltip label="Community HOTAS testing guide" position="bottom">
+        <Button
+          variant="subtle"
+          size="sm"
+          onClick={() => navigate('/hotas-testing-routine')}
+          style={{
+            color: '#8de3ff',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            padding: '0.5rem 0.75rem',
+          }}
+        >
+          🧪 HOTAS Test Guide
+        </Button>
+      </Tooltip>
+
       {/* Official Bookmarks Menu */}
       <Menu position="bottom-start" shadow="md">
         <Menu.Target>

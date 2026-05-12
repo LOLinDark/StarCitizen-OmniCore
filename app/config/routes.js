@@ -56,6 +56,12 @@ export const routeConfig = {
       category: 'Main App',
       color: 'cyan',
     },
+    {
+      label: '/hotas-testing-routine',
+      path: '/hotas-testing-routine',
+      category: 'Main App',
+      color: 'cyan',
+    },
   ],
 
   themeLab: [

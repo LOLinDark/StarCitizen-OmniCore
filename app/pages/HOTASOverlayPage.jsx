@@ -3,6 +3,7 @@ import { parse as parseJsonc } from 'jsonc-parser';
 import overlaysDataRaw from '../data/hotas/overlays/hotas-x52-overlay-positions.jsonc?raw';
 import { Box, Title, Text } from '@mantine/core';
 import Draggable from 'react-draggable';
+import DevTag from '../components/DevTag';
 import Moveable from 'react-moveable';
 
 // Path to the HOTAS image (place in public/assets or adjust as needed)
@@ -69,7 +70,7 @@ export default function HOTASOverlayPage() {
 
   return (
     <Box p="lg">
-      <Title order={2} mb="md">X52 HOTAS Overlay Demo</Title>
+      <Title order={2} mb="md"><DevTag tag="HC08" />X52 HOTAS Overlay Demo</Title>
       <Text mb="md">This demo uses your HOTAS photo as a background with clickable overlay regions. All overlays are now resizable circles.</Text>
       {isDevMode && (
         <Box mb="md">
