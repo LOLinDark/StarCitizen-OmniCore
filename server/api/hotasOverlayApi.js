@@ -43,9 +43,9 @@ export function registerHotasOverlayRoutes(app) {
       }
 
       const serialized = JSON.stringify(overlays, null, 2);
-      const tempPath = `${HOTAS_OVERLAY_PATH}.tmp`;
-      fs.writeFileSync(tempPath, serialized, 'utf8');
-      fs.renameSync(tempPath, HOTAS_OVERLAY_PATH);
+      // Write directly — backup above already protects against data loss.
+      // renameSync fails on Windows when destination is held open by editor.
+      fs.writeFileSync(HOTAS_OVERLAY_PATH, serialized, 'utf8');
 
       return res.json({
         success: true,

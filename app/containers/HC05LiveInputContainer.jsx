@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { Box, Title, Text, Tooltip } from '@mantine/core';
 import Moveable from 'react-moveable';
 import HOTASInputView from '../components/HOTASInputView.jsx';
@@ -33,6 +33,9 @@ const OVERLAY_BUTTON_ALIASES = {
   'fire-d': ['D', 'Fire D'], // Fire D is same as D button
   'button-e': ['Button E'],
   'mouse-button': ['Mouse Button'],
+  'mfd-function': ['Function', 'Button 27'],
+  'mfd-timer-toggle': ['Start/Stop Timer', 'Button 28'],
+  'mfd-timer-reset': ['Reset Timer', 'Button 29'],
   clutch: ['Information (i) / Clutch', 'Clutch', 'Button 30'],
   // HAT 1 (stick) — discrete buttons
   'pov-hat-1-n': ['HAT 1 North'],
@@ -206,6 +209,9 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
   // Convert percent to px for draggable default position
   const percentToPx = (percent, base) => (parseFloat(percent) / 100) * base;
   const pxToPercent = (px, base) => `${((px / base) * 100).toFixed(2)}%`;
+  const overlaySaveEndpoints = useMemo(() => [
+    '/api/hotas-overlay-positions',
+  ], []);
 
   const triggerOverlayBackupDownload = useCallback((overlaysSnapshot) => {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -222,18 +228,24 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
   }, []);
 
   const saveOverlaysToFile = useCallback(async (overlaysToSave, timeoutMs = 5000) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const saveErrors = [];
 
-    try {
-      const response = await fetch('/api/hotas-overlay-positions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(overlaysToSave),
-        signal: controller.signal,
-      });
+    for (const endpoint of overlaySaveEndpoints) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      if (!response.ok) {
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(overlaysToSave),
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          return;
+        }
+
         let detail = '';
         try {
           const payload = await response.json();
@@ -241,12 +253,22 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
         } catch {
           // Ignore parse failure and use generic fallback below.
         }
-        throw new Error(detail || `Failed to save overlay positions (${response.status})`);
+
+        const message = detail || `Failed to save overlay positions (${response.status})`;
+        saveErrors.push(`${endpoint}: ${message}`);
+
+        // Retry on route-not-found to handle conflicting local API on 3001.
+        // Also continue retry chain for other transient HTTP failures.
+        continue;
+      } catch (error) {
+        saveErrors.push(`${endpoint}: ${error?.message || 'Unknown request error'}`);
+      } finally {
+        clearTimeout(timeoutId);
       }
-    } finally {
-      clearTimeout(timeoutId);
     }
-  }, []);
+
+    throw new Error(saveErrors.join(' | '));
+  }, [overlaySaveEndpoints]);
 
 
   // Auto-save overlays to backend every minute in dev edit mode

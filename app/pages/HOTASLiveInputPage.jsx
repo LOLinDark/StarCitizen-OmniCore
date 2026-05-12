@@ -47,6 +47,9 @@ const initialOverlays = [
   { id: 'mode-m1', label: 'Mode Switch M1', style: { left: '80%', top: '20%', size: '6%' } },
   { id: 'mode-m2', label: 'Mode Switch M2', style: { left: '85%', top: '22%', size: '6%' } },
   { id: 'mode-m3', label: 'Mode Switch M3', style: { left: '90%', top: '24%', size: '6%' } },
+  { id: 'mfd-function', label: 'Function', style: { left: '34.29%', top: '47.14%', size: '4.29%' } },
+  { id: 'mfd-timer-toggle', label: 'Start/Stop Timer', style: { left: '37.14%', top: '45.71%', size: '4.29%' } },
+  { id: 'mfd-timer-reset', label: 'Reset Timer', style: { left: '40.14%', top: '48.14%', size: '4.29%' } },
   { id: 'clutch', label: 'Clutch', style: { left: '95%', top: '90%', size: '6%' } },
   { id: 'wheel-mouse-btn-2', label: 'Wheel Mouse Button 2', style: { left: '20%', top: '85%', size: '6%' } },
 ];

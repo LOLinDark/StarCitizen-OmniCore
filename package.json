@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "nodemon --watch server --ext js,mjs,cjs --ignore server/data/*.json server/index.js",
+    "server:3101": "set PORT=3101&& nodemon --watch server --ext js,mjs,cjs --ignore server/data/*.json server/index.js",
     "hotas:agent": "node server/peripherals/hotas/agent/HotasModeCompanionAgent.js",
     "hotas:agent:dry": "node server/peripherals/hotas/agent/HotasModeCompanionAgent.js --dry-run"
   },

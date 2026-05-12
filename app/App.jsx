@@ -38,6 +38,7 @@ const DeveloperContextIndexPage = lazy(() => import('./pages/DeveloperContextInd
 const DeveloperNavChartsLabPage = lazy(() => import('./pages/DeveloperNavChartsLabPage'));
 const HOTASDiagramPage = lazy(() => import('./pages/HOTASDiagramPage'));
 const HOTASOverlayPage = lazy(() => import('./pages/HOTASOverlayPage'));
+const HOTASOverlaySaveTestPage = lazy(() => import('./pages/HOTASOverlaySaveTestPage'));
 
 
 // Theme Lab Pages
@@ -138,6 +139,7 @@ function App() {
           <Route path="developer/hotas-profile-matrix-lab" element={<DeveloperHotasProfileMatrixLabPage />} />
           <Route path="developer/hotas-profile-matrix" element={<DeveloperHotasProfileMatrixLabPage />} />
           <Route path="developer/hotas-profile-lab" element={<DeveloperHotasProfileMatrixLabPage />} />
+          <Route path="developer/hotas-overlay-save-test" element={<Lazy Component={HOTASOverlaySaveTestPage} />} />
         </Route>
 
         {/* Fallback: Always allow access, guard at component level if needed */}
