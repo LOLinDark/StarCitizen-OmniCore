@@ -324,33 +324,6 @@
     }
   },
   {
-    "id": "mfd-function",
-    "label": "Function",
-    "style": {
-      "left": "37.15%",
-      "top": "79.28%",
-      "size": "4.29%"
-    }
-  },
-  {
-    "id": "mfd-timer-toggle",
-    "label": "Start/Stop Timer",
-    "style": {
-      "left": "41.85%",
-      "top": "78.14%",
-      "size": "4.29%"
-    }
-  },
-  {
-    "id": "mfd-timer-reset",
-    "label": "Reset Timer",
-    "style": {
-      "left": "47.14%",
-      "top": "77.00%",
-      "size": "4.29%"
-    }
-  },
-  {
     "id": "clutch",
     "label": "Information (i) / Clutch",
     "style": {

@@ -45,7 +45,8 @@ export default function HOTASConfigMainPage() {
       useEffect(() => {
         async function loadOverlays() {
           try {
-            const res = await fetch('/data/hotas/overlays/hotas-x52-overlay-positions.jsonc');
+            const overlayUrl = `/data/hotas/overlays/hotas-x52-overlay-positions.jsonc?t=${Date.now()}`;
+            const res = await fetch(overlayUrl, { cache: 'no-store' });
             const text = await res.text();
             const { parse } = await import('jsonc-parser');
             setOverlays(parse(text));
@@ -188,6 +189,11 @@ export default function HOTASConfigMainPage() {
     setCaptureKeyboardBindingId(bindingId);
     setCaptureKeyboardProgress(1);
   }, []);
+
+  const handleAssignHotasFeature = useCallback((bindingId, xmlToken) => {
+    setHotasOverrides((prev) => ({ ...prev, [bindingId]: xmlToken }));
+    void persistCapturedBindingToXml(bindingId, xmlToken);
+  }, [persistCapturedBindingToXml]);
 
   const getBindingConflictSummary = useCallback((bindingId, displayToken, bindingType) => {
     const normToken = String(displayToken || '').toLowerCase();
@@ -571,9 +577,9 @@ export default function HOTASConfigMainPage() {
     };
   }, [mergedBindings, selectedCategory, searchQuery, sortBy, sortOrder, hookResult]);
 
-  const effectiveBindings = useMemo(() => {
-    if (!unfilteredBindings?.length) return [];
-    return unfilteredBindings.map((binding) => {
+  const applyBindingOverrides = useCallback((bindings = []) => {
+    if (!Array.isArray(bindings) || bindings.length === 0) return [];
+    return bindings.map((binding) => {
       const hotasOverride = hotasOverrides[binding.id];
       const keyboardOverride = keyboardOverrides[binding.id];
       if (!hotasOverride && !keyboardOverride) return binding;
@@ -584,7 +590,16 @@ export default function HOTASConfigMainPage() {
         keyboardBinding: keyboardOverride || binding.keyboardBinding,
       };
     });
-  }, [unfilteredBindings, hotasOverrides, keyboardOverrides]);
+  }, [hotasOverrides, keyboardOverrides]);
+
+  const effectiveBindings = useMemo(() => applyBindingOverrides(unfilteredBindings), [unfilteredBindings, applyBindingOverrides]);
+
+  const allEffectiveBindings = useMemo(() => {
+    const allBaseBindings = Array.isArray(mergedBindings) && mergedBindings.length > 0
+      ? mergedBindings
+      : shipKeybindings;
+    return applyBindingOverrides(allBaseBindings);
+  }, [mergedBindings, applyBindingOverrides]);
 
   // Filter by bound/unbound status
   const sortedBindings = useMemo(() => {
@@ -933,8 +948,9 @@ export default function HOTASConfigMainPage() {
               <HC05LiveInputContainer
                 overlays={overlays}
                 onOverlayChange={setOverlays}
-                keybindings={effectiveBindings}
+                keybindings={allEffectiveBindings}
                 hotasOverrides={hotasOverrides}
+                onAssignFeature={handleAssignHotasFeature}
                 activeInputs={activeInputs}
                 axisValues={axisValues}
                 lastHotasInput={lastHotasInput}
@@ -992,10 +1008,7 @@ export default function HOTASConfigMainPage() {
             bindingFilter={profileFilter}
             deviceFilter={profileFilter}
             searchQuery={searchQuery}
-            onAssign={(bindingId, xmlToken) => {
-              setHotasOverrides((prev) => ({ ...prev, [bindingId]: xmlToken }));
-              void persistCapturedBindingToXml(bindingId, xmlToken);
-            }}
+            onAssign={handleAssignHotasFeature}
           />
         )}
 

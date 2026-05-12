@@ -84,6 +84,16 @@ export const starCitizenActionMapping = {
   'v_shield_reset': 'shields_reset_levels',
 
   // ===== WEAPONS & TARGETING =====
+  // Include multiple action-name variants used by different profile exports.
+  'v_fire_weapon_group1': 'weapons_fire_group_1',
+  'v_fire_weapon_group2': 'weapons_fire_group_2',
+  'v_fire_weapon_groups': 'weapons_fire_all_groups',
+  'v_weapon_group1': 'weapons_fire_group_1',
+  'v_weapon_group2': 'weapons_fire_group_2',
+  'v_weapon_fire_primary': 'weapons_fire_group_1',
+  'v_weapon_fire_secondary': 'weapons_fire_group_2',
+  'v_cycle_gimbal_mode': 'weapons_cycle_gimbal_mode',
+  'v_cycle_weapon_group': 'weapons_cycle_weapon_group',
   'v_weapon_preset_guns0': 'weapons_preset_0', // Placeholder - may not exist in our data
   'v_weapon_preset_guns1': 'weapons_preset_1',
   'v_weapon_preset_guns2': 'weapons_preset_2',

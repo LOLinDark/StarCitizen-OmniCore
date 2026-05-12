@@ -193,7 +193,7 @@ function isOverlayInputActive(overlay, activeInputs, axisValues, lastHotasInput)
   return false;
 }
 
-export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, hotasOverrides = {}, activeInputs, axisValues, lastHotasInput, currentMode, deviceMap, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
+export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, hotasOverrides = {}, activeInputs, axisValues, lastHotasInput, currentMode, deviceMap, onAssignFeature, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
   // Overlay refs for Moveable
   const overlayRefs = useRef([]);
   const latestOverlaysRef = useRef(overlays);
@@ -507,6 +507,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
           axisValues={axisValues}
           lastHotasInput={lastHotasInput}
           currentMode={currentMode}
+          onAssign={onAssignFeature}
         />
       </div>
     </div>
