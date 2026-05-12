@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>OMNI-CORE Redirect</title>
+    <script>
+      // GitHub Pages SPA redirect helper.
+      // Keeps deep links (e.g. /StarCitizen-OmniCore/hotas-config) working on refresh.
+      (function () {
+        var segmentCount = 1; // repository name segment: /StarCitizen-OmniCore
+        var l = window.location;
+        var basePath = l.pathname
+          .split('/')
+          .slice(0, 1 + segmentCount)
+          .join('/');
+
+        var routePath = l.pathname
+          .slice(1)
+          .split('/')
+          .slice(segmentCount)
+          .join('/');
+
+        var search = l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '';
+        var target =
+          l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          basePath +
+          '/?/' +
+          routePath.replace(/&/g, '~and~') +
+          search +
+          l.hash;
+
+        l.replace(target);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
