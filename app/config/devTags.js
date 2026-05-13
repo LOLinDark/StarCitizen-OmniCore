@@ -55,7 +55,7 @@ const devTags = {
   HC01:      { label: 'HOTAS Config (Light)',    path: '/theme/hotas-config',         file: 'pages/theme/HOTASConfigPage.jsx' },
   HC03:      { label: 'HOTAS Config (Dark)',     path: '/theme/hotas-config-dark',    file: 'pages/theme/HOTASConfigPageDark.jsx' },
   HC04:      { label: 'HOTAS Config (Toggle)',   path: '/theme/hotas-config-toggle',  file: 'pages/theme/HOTASConfigPageToggle.jsx' },
-  HC05:      { label: 'Technology Config',       path: '/hotas-config',               file: 'pages/HOTASConfigMainPage.jsx' },
+  HC05:      { label: 'Peripheral Configuration',       path: '/hotas-config',               file: 'pages/HOTASConfigMainPage.jsx' },
   HC06:      { label: 'HOTAS Modes Lab',         path: '/developer/hotas-modes-lab',  file: 'pages/HOTASConfigModesLabPage.jsx' },
   HC07:      { label: 'HOTAS Live Input Page',   path: '/hotas-live-input',           file: 'pages/HOTASLiveInputPage.jsx' },
   HC08:      { label: 'HOTAS Overlay Demo',      path: '/hotas-overlay',              file: 'pages/HOTASOverlayPage.jsx' },

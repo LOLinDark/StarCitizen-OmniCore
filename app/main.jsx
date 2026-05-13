@@ -30,17 +30,25 @@ function buildTheme(customTheme) {
     primaryColor: 'cyan',
     colors: {
       cyan: ['#e3fafc','#c5f6fa','#99e9f2','#66d9e8','#3bc9db','#22b8cf','#15aabf','#1098ad','#0c8599','#0b7285'],
+      dark: ['#c1d0e0','#a3b8cc','#6b7f96','#3a5060','#1a2a3e','#0f1b2e','#0a1428','#071020','#050c18','#030810'],
     },
     primaryShade: 5,
-    defaultRadius: customTheme?.radius || 'md',
-    fontFamily: customTheme?.fontFamily || 'system-ui, -apple-system, sans-serif',
+    defaultRadius: customTheme?.radius || 'sm',
+    fontFamily: customTheme?.fontFamily || '"Inter", system-ui, -apple-system, sans-serif',
+    headings: {
+      fontFamily: '"Orbitron", "Inter", system-ui, sans-serif',
+    },
     components: {
       Button: {
         defaultProps: {
-          color: customTheme?.primaryColor || 'cyan'
-        }
-      }
-    }
+          color: customTheme?.primaryColor || 'cyan',
+        },
+        styles: { root: { minHeight: '44px', minWidth: '44px' } },
+      },
+      ActionIcon: {
+        styles: { root: { minHeight: '44px', minWidth: '44px' } },
+      },
+    },
   })
 }
 

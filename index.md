@@ -34,7 +34,7 @@ url: /
   </div>
   <div class="card">
     <div class="card-icon">🎮</div>
-    <h3>HC05 Technology Config</h3>
+    <h3>HC05 Peripheral Configuration</h3>
     <p>Load your Star Citizen XML profile, visualize HOTAS/KBM bindings, reassign inputs, and export back to XML.</p>
     <a class="card-link" href="{{ '/user-guide/' | relative_url }}">Learn more →</a>
   </div>

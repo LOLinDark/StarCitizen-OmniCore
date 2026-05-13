@@ -198,10 +198,10 @@ const HybridPlaceholder = ({ tool }) => (
 const getToolsArray = () => [
   {
     id: 'hotas-config',
-    title: 'Technology Config',
+    title: 'Peripheral Configuration',
     desc: 'Configure your flight stick, mouse, and keyboard for precision control',
     image: null,
-    alt: 'Technology Config - Flight controls, HOTAS, mouse and keyboard setup',
+    alt: 'Peripheral Configuration - Flight controls, HOTAS, mouse and keyboard setup',
     color: '#ff6b00',
     path: '/hotas-config',
     enabled: true,
@@ -214,7 +214,7 @@ const getToolsArray = () => [
     alt: 'Ship Database - Star Citizen spacecraft database',
     color: '#00d9ff',
     path: '/ship-database',
-    enabled: true,
+    enabled: false,
   },
   {
     id: 'game-settings',
@@ -224,7 +224,7 @@ const getToolsArray = () => [
     alt: 'Game Settings - Star Citizen attributes and configuration',
     color: '#22d17b',
     path: '/game-settings',
-    enabled: true,
+    enabled: false,
   },
   {
     id: 'new-player-guide',
@@ -417,7 +417,7 @@ export default function MainDashboardPage() {
           <DevTag tag="APP01" />Verse Operations Hub
         </h1>
         <Text c="dimmed" size="sm" style={{ letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '0.5rem' }}>
-          Access your tools and resources
+          Select a tool to begin operations
         </Text>
       </div>
 

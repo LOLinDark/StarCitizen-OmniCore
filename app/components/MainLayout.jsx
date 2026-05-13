@@ -40,7 +40,7 @@ export default function MainLayout() {
       />
 
       {/* Main Content */}
-      <div style={{ padding: '2rem 3%', position: 'relative', zIndex: 1, maxWidth: '100%' }}>
+      <div className="oc-page-enter" style={{ padding: '2rem 3%', position: 'relative', zIndex: 1, maxWidth: '100%' }}>
         <Outlet />
       </div>
 

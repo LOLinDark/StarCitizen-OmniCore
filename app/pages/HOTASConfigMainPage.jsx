@@ -1106,7 +1106,7 @@ export default function HOTASConfigMainPage() {
           >
             <img
               src="/assets/tools/hotas-config.png"
-              alt="Technology Config themed HOTAS setup"
+              alt="Peripheral Configuration themed HOTAS setup"
               style={{
                 display: 'block',
                 width: '100%',

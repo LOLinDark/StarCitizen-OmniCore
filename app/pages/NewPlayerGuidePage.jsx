@@ -25,7 +25,7 @@ const ONBOARDING_MODULES = [
     description: "Learn the Star Citizen control scheme and customize your HOTAS.",
     sections: [
       { id: "defaults", title: "Default Keybinds", description: "Overview of Star Citizen's default keyboard and mouse bindings." },
-      { id: "hotas", title: "HOTAS Setup", description: "Configure joystick and throttle. See our Technology Config page for detailed setup." },
+      { id: "hotas", title: "HOTAS Setup", description: "Configure joystick and throttle. See our Peripheral Configuration page for detailed setup." },
       { id: "mouse", title: "Mouse Look & Aim", description: "Master mouse-aim dogfighting and precision targeting." },
       { id: "landing", title: "Landing & Docking", description: "Advanced controls for precision landing and port docking." },
     ],
@@ -255,7 +255,7 @@ export default function NewPlayerGuidePage() {
                     color="cyan"
                     onClick={() => handleNavigateTo("/technology-config")}
                   >
-                    → Technology Config (GT05)
+                    → Peripheral Configuration (GT05)
                   </Button>
                   <Button 
                     size="xs" 

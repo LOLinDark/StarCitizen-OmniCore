@@ -18,7 +18,7 @@ All notable changes to OmniCore will be documented in this file.
 - Admin panel access for LOLinDark via user menu
 - PWA manifest and service worker for installability
 
-**HC05 — Technology Config (HOTAS/KBM)**
+**HC05 — Peripheral Configuration (HOTAS/KBM)**
 - Load and parse Star Citizen XML profile files directly
 - Profile card scroller with colour-coded cards and game mode icons
 - Sidecar `.omnicore.json` metadata for profiles (label, description, colour, game mode)

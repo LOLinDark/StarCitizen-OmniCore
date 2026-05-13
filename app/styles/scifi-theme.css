@@ -45,8 +45,55 @@
 
 /* Sci-fi heading style */
 .scifi-heading {
+  font-family: 'Orbitron', 'Inter', system-ui, sans-serif;
   color: var(--oc-cyan);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   text-shadow: 0 0 10px var(--oc-cyan-dim);
+}
+
+/* Page content fade-in */
+@keyframes oc-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.oc-page-enter {
+  animation: oc-fade-in 0.3s ease-out;
+}
+
+/* Subtle pulse for live/active indicators */
+@keyframes oc-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.oc-pulse {
+  animation: oc-pulse 2s ease-in-out infinite;
+}
+
+/* Badge glow for status indicators */
+.oc-badge-glow {
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Table row hover — consistent across all data tables */
+.oc-table-row:hover {
+  background: rgba(0, 217, 255, 0.04) !important;
+}
+
+/* Mantine dark overrides for consistent panel backgrounds */
+.mantine-Paper-root {
+  background-color: var(--oc-space-mid) !important;
+  border-color: var(--oc-cyan-dim) !important;
+}
+
+.mantine-Modal-content {
+  background-color: var(--oc-space-mid) !important;
+  border: 1px solid var(--oc-cyan-dim) !important;
+}
+
+.mantine-Menu-dropdown {
+  background-color: rgba(11, 20, 40, 0.95) !important;
+  border: 1px solid var(--oc-cyan-dim) !important;
 }

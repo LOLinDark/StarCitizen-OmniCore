@@ -1384,7 +1384,7 @@ export default function HOTASConfigModesLabPage() {
         <Stack gap="xl">
           {/* Header */}
           <div>
-            <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="HC06" />Technology Config - Modes Lab</h1>
+            <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="HC06" />Peripheral Configuration - Modes Lab</h1>
             {profileName && (
               <Text size="lg" fw={600} style={{ marginBottom: '0.5rem', color: '#1e90ff' }}>
                 {profileName}
@@ -1402,7 +1402,7 @@ export default function HOTASConfigModesLabPage() {
             >
               <img
                 src="/assets/tools/hotas-config.png"
-                alt="Technology Config modes lab themed HOTAS setup"
+                alt="Peripheral Configuration modes lab themed HOTAS setup"
                 style={{
                   display: 'block',
                   width: '100%',

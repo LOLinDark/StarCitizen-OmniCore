@@ -1,2 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800&display=swap');
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--oc-space-deep, #0a1428);
+  color: var(--oc-text, #c1d0e0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth transitions on interactive elements */
+a, button, [role="button"], input, select, textarea {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, transform 0.15s ease;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--oc-space-deep, #0a1428);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--oc-cyan-dim, hsla(190, 100%, 50%, 0.3));
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--oc-cyan, #00d9ff);
+}
+
+/* Focus ring for accessibility */
+:focus-visible {
+  outline: 2px solid var(--oc-cyan, #00d9ff);
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(0, 217, 255, 0.25);
+  color: #fff;
+}

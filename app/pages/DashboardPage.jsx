@@ -31,10 +31,10 @@ const getToolsArray = () => [
   },
   {
     id: 'hotas-config',
-    title: 'Technology Config',
+    title: 'Peripheral Configuration',
     desc: 'Configure your flight stick, mouse, and keyboard for precision control',
     image: getAssetUrl('tools/hotas-config.png'),
-    alt: 'Technology Config - Flight controls, HOTAS, mouse and keyboard setup',
+    alt: 'Peripheral Configuration - Flight controls, HOTAS, mouse and keyboard setup',
     color: '#ff6b00',
   },
   {

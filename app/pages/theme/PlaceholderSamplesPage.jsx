@@ -552,7 +552,7 @@ export default function PlaceholderSamplesPage() {
           Placeholder Design Samples
         </h1>
         <Text c="dimmed" size="sm" style={{ letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-          Five approaches for TECHNOLOGY CONFIG & SHIP DATABASE cards
+          Five approaches for Peripheral Configuration & SHIP DATABASE cards
         </Text>
       </div>
 
