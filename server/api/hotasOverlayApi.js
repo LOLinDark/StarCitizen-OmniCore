@@ -40,6 +40,16 @@ export function registerHotasOverlayRoutes(app) {
         const latestBackupPath = path.join(HOTAS_OVERLAY_BACKUP_DIR, 'hotas-x52-overlay-positions.latest.jsonc');
         fs.writeFileSync(timestampedBackupPath, existingContents, 'utf8');
         fs.writeFileSync(latestBackupPath, existingContents, 'utf8');
+
+        // Prune old timestamped backups — keep only the 3 most recent
+        const MAX_BACKUPS = 3;
+        const backups = fs.readdirSync(HOTAS_OVERLAY_BACKUP_DIR)
+          .filter(f => f !== 'hotas-x52-overlay-positions.latest.jsonc' && f.endsWith('.jsonc'))
+          .sort()
+          .reverse();
+        backups.slice(MAX_BACKUPS).forEach(f => {
+          try { fs.unlinkSync(path.join(HOTAS_OVERLAY_BACKUP_DIR, f)); } catch { /* ignore */ }
+        });
       }
 
       const serialized = JSON.stringify(overlays, null, 2);

@@ -327,8 +327,8 @@
     "id": "mfd-function",
     "label": "Function",
     "style": {
-      "left": "34.29%",
-      "top": "47.14%",
+      "left": "37.15%",
+      "top": "79.28%",
       "size": "4.29%"
     }
   },
@@ -336,8 +336,8 @@
     "id": "mfd-timer-toggle",
     "label": "Start/Stop Timer",
     "style": {
-      "left": "37.14%",
-      "top": "45.71%",
+      "left": "41.85%",
+      "top": "78.14%",
       "size": "4.29%"
     }
   },
@@ -345,8 +345,8 @@
     "id": "mfd-timer-reset",
     "label": "Reset Timer",
     "style": {
-      "left": "40.14%",
-      "top": "48.14%",
+      "left": "47.14%",
+      "top": "77.00%",
       "size": "4.29%"
     }
   },

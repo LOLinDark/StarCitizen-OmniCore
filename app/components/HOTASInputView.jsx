@@ -1,6 +1,20 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { Badge, Group, Select, SegmentedControl, Text } from '@mantine/core';
+import { Badge, Group, Select, SegmentedControl, Switch, Text } from '@mantine/core';
 import { X52_BUTTONS, X52_AXES, X52_MODES, X52_POV_DIRECTIONS } from '../libraries/hotas';
+
+// Features that are typically stick-axis-only (yaw/pitch/roll).
+// These clutter the assignment menu for buttons and HATs.
+const STICK_AXIS_FEATURE_IDS = new Set([
+  'flight_pitch_up',
+  'flight_pitch_down',
+  'flight_pitch_axis',
+  'flight_yaw_left',
+  'flight_yaw_right',
+  'flight_yaw_axis',
+  'flight_roll_left',
+  'flight_roll_right',
+  'flight_lock_pitch_yaw',
+]);
 
 const MODE_INDEX_TO_KEY = {
   0: 'green',
@@ -57,8 +71,11 @@ function findAssignedFeature(input, bindings, hotasOverrides, { preferSingle = f
     const modeValue = (!preferSingle && modeKey)
       ? String(binding.modeHotasBindings?.[modeKey] || '')
       : '';
+    const greenFallbackValue = (!preferSingle && modeKey && modeKey !== 'green')
+      ? String(binding.modeHotasBindings?.green || '')
+      : '';
     const singleValue = String(hotasOverrides[binding.id] || binding.hotasBinding || '');
-    const hotasVal = String(modeValue || singleValue || '').toLowerCase();
+    const hotasVal = String(modeValue || greenFallbackValue || singleValue || '').toLowerCase();
     if (!hotasVal) continue;
     if (hotasVal === token) return binding;
     if (input.type === 'Button' && buttonNum !== null) {
@@ -195,8 +212,12 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
     return result;
   }, [rows, bindingFilter, deviceFilter, searchQuery]);
 
-  // Build feature options for the Select dropdown
-  const featureOptions = useMemo(() => {
+  const [hideStickFeatures, setHideStickFeatures] = useState(true);
+
+  // Build feature options for the Select dropdown.
+  // When hideStickFeatures is on, axis-only features (yaw/pitch/roll) are
+  // excluded for Button and POV rows but kept for Axis rows.
+  const featureOptionsAll = useMemo(() => {
     if (!bindings?.length) return [];
     const seen = new Set();
     return bindings
@@ -211,10 +232,15 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
       }));
   }, [bindings]);
 
+  const featureOptionsFiltered = useMemo(() => {
+    if (!hideStickFeatures) return featureOptionsAll;
+    return featureOptionsAll.filter((opt) => !STICK_AXIS_FEATURE_IDS.has(opt.value));
+  }, [featureOptionsAll, hideStickFeatures]);
+
   function handleFeatureSelect(row, bindingId) {
     setEditingRowId(null);
     if (!bindingId || !onAssign) return;
-    onAssign(bindingId, row.xmlToken);
+    onAssign(bindingId, row.xmlToken, MODE_INDEX_TO_KEY[row.modeIdx] || null);
   }
 
   const boundCount = filteredRows.filter((r) => r.assignedBinding).length;
@@ -237,6 +263,13 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
         <Badge color="cyan" variant="light" size="sm">
           {boundCount}/{filteredRows.length} assigned
         </Badge>
+        <Switch
+          label="Hide stick features"
+          checked={hideStickFeatures}
+          onChange={(e) => setHideStickFeatures(e.currentTarget.checked)}
+          size="xs"
+          title="Hide Yaw/Pitch/Roll from button and HAT assignment menus (they remain available for axis inputs)"
+        />
       </Group>
 
       <div
@@ -291,7 +324,7 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
                   <td style={{ ...tdStyle, textAlign: 'left', minWidth: 260 }}>
                     {editingRowId === row.id ? (
                       <Select
-                        data={featureOptions}
+                        data={row.type === 'Axis' ? featureOptionsAll : featureOptionsFiltered}
                         placeholder="Search features..."
                         searchable
                         clearable

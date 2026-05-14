@@ -125,8 +125,11 @@ function findAssignedFeature(input, bindings, hotasOverrides, modeKey = null) {
 
   for (const binding of bindings) {
     const modeValue = modeKey ? String(binding.modeHotasBindings?.[modeKey] || '') : '';
+    const greenFallbackValue = modeKey && modeKey !== 'green'
+      ? String(binding.modeHotasBindings?.green || '')
+      : '';
     const singleValue = String(hotasOverrides[binding.id] || binding.hotasBinding || '');
-    const hotasVal = String(modeValue || singleValue || '').toLowerCase();
+    const hotasVal = String(modeValue || greenFallbackValue || singleValue || '').toLowerCase();
     if (!hotasVal) continue;
     if (hotasVal === token) return binding;
     if (input.type === 'Button' && buttonNum !== null) {
@@ -509,6 +512,10 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
       </div>
       {/* Live Input Table/Mapping */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        <Title order={4} mb={4}>X52 Input Assignment Table</Title>
+        <Text size="sm" c="dimmed" mb="sm">
+          Physical X52 inputs mapped to assigned Star Citizen features for the selected mode view.
+        </Text>
         <HOTASInputView
           bindings={keybindings}
           hotasOverrides={hotasOverrides}

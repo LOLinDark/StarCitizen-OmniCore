@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { parse as parseJsonc } from 'jsonc-parser';
 import overlaysDataRaw from '../data/hotas/overlays/hotas-x52-overlay-positions.jsonc?raw';
-import { Box, Title, Text } from '@mantine/core';
+import { Box, Title, Text, Stack } from '@mantine/core';
 import Draggable from 'react-draggable';
 import DevTag from '../components/DevTag';
 import Moveable from 'react-moveable';
+import { KeyPressIndicator } from '../components/KeyPressIndicator';
+import { useHotasInput, LogitechX52Device } from '../libraries/hotas';
 
 // Path to the HOTAS image (place in public/assets or adjust as needed)
 const HOTAS_IMAGE = '/assets/hotas/x52-hotas-transparent-background-omnicore-starcitizen.png';
@@ -16,6 +18,13 @@ const initialOverlays = parseJsonc(overlaysDataRaw) ?? [];
 export default function HOTASOverlayPage() {
   // Detect dev mode from .env (Vite exposes import.meta.env)
   const isDevMode = import.meta.env.DEVELOPMENT_MODE === 'true' || import.meta.env.MODE === 'development' || import.meta.env.NODE_ENV === 'development';
+
+  // Load live HOTAS input
+  const { lastInput: lastHotasInput, gamepadConnected, activeInputs, axisValues, gamepadInfo } = useHotasInput({
+    enabled: true,
+    trackKeyboard: false,
+    device: LogitechX52Device,
+  });
 
   // Load overlays from JSON file (bundled)
   const [overlays, setOverlays] = useState(initialOverlays);
@@ -91,111 +100,124 @@ export default function HOTASOverlayPage() {
           </button>
         </Box>
       )}
-      <div
-        style={{
-          position: 'relative',
-          width: 500,
-          height: 500,
-          background: `url(${HOTAS_IMAGE}) center/contain no-repeat`,
-          margin: '0 auto',
-          borderRadius: 16,
-          boxShadow: '0 4px 32px #0004',
-          overflow: 'hidden',
-        }}
-      >
-        {overlays.map((overlay, idx) => {
-          // Convert percent to px for draggable
-          const leftPx = percentToPx(overlay.style.left, containerWidth);
-          const topPx = percentToPx(overlay.style.top, containerHeight);
-          const sizePx = percentToPx(overlay.style.size, containerWidth);
+      <Stack gap="lg">
+        <div
+          style={{
+            position: 'relative',
+            width: 500,
+            height: 500,
+            background: `url(${HOTAS_IMAGE}) center/contain no-repeat`,
+            margin: '0 auto',
+            borderRadius: 16,
+            boxShadow: '0 4px 32px #0004',
+            overflow: 'hidden',
+          }}
+        >
+          {overlays.map((overlay, idx) => {
+            // Convert percent to px for draggable
+            const leftPx = percentToPx(overlay.style.left, containerWidth);
+            const topPx = percentToPx(overlay.style.top, containerHeight);
+            const sizePx = percentToPx(overlay.style.size, containerWidth);
 
-          return (
-            <React.Fragment key={overlay.id}>
-              <div
-                ref={el => overlayRefs.current[idx] = el}
-                title={overlay.label}
-                onClick={() => handleOverlayClick(overlay.id)}
-                style={{
-                  position: 'absolute',
-                  left: leftPx,
-                  top: topPx,
-                  width: sizePx,
-                  height: sizePx,
-                  background: 'rgba(0,200,255,0.18)',
-                  border: '2px solid #00d9ff',
-                  cursor: isDevMode && devEditMode ? 'move' : 'pointer',
-                  transition: 'background 0.2s',
-                  borderRadius: '50%',
-                  zIndex: dragged === overlay.id ? 2 : 1,
-                  boxSizing: 'border-box',
-                }}
-              />
-              {isDevMode && devEditMode && (
-                <Moveable
-                  target={overlayRefs.current[idx]}
-                  draggable={true}
-                  resizable={true}
-                  keepRatio={true}
-                  throttleResize={1}
-                  onDrag={({ left, top }) => {
-                    // Convert px back to percent
-                    const newLeft = pxToPercent(left, containerWidth);
-                    const newTop = pxToPercent(top, containerHeight);
-                    setOverlays(prev => prev.map((o, i) => i === idx ? {
-                      ...o,
-                      style: {
-                        ...o.style,
-                        left: newLeft,
-                        top: newTop,
-                      },
-                    } : o));
+            return (
+              <React.Fragment key={overlay.id}>
+                <div
+                  ref={el => overlayRefs.current[idx] = el}
+                  title={overlay.label}
+                  onClick={() => handleOverlayClick(overlay.id)}
+                  style={{
+                    position: 'absolute',
+                    left: leftPx,
+                    top: topPx,
+                    width: sizePx,
+                    height: sizePx,
+                    background: 'rgba(0,200,255,0.18)',
+                    border: '2px solid #00d9ff',
+                    cursor: isDevMode && devEditMode ? 'move' : 'pointer',
+                    transition: 'background 0.2s',
+                    borderRadius: '50%',
+                    zIndex: dragged === overlay.id ? 2 : 1,
+                    boxSizing: 'border-box',
                   }}
-                  onResize={({ width, height, drag }) => {
-                    // Only use width (circle)
-                    const newSize = pxToPercent(width, containerWidth);
-                    const newLeft = pxToPercent(drag.left, containerWidth);
-                    const newTop = pxToPercent(drag.top, containerHeight);
-                    setOverlays(prev => prev.map((o, i) => i === idx ? {
-                      ...o,
-                      style: {
-                        ...o.style,
-                        left: newLeft,
-                        top: newTop,
-                        size: newSize,
-                      },
-                    } : o));
-                    // Log new size and position
-                    console.log(`Overlay '${overlay.id}' new: left: ${newLeft}, top: ${newTop}, size: ${newSize}`);
-                  }}
-                  renderDirections={["nw", "ne", "sw", "se"]}
-                  edge={false}
-                  origin={false}
-                  padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
                 />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
-      {isDevMode && devEditMode && (
-        <Box mt="md">
-          <button
-            style={{
-              padding: '6px 18px',
-              fontSize: 16,
-              borderRadius: 8,
-              border: '1px solid #00d9ff',
-              background: '#00d9ff',
-              color: '#222',
-              cursor: 'pointer',
-              marginBottom: 8,
-            }}
-            onClick={() => window.exportHotasOverlayPositions()}
-          >
-            Export Overlay Positions to JSON
-          </button>
-        </Box>
-      )}
+                {isDevMode && devEditMode && (
+                  <Moveable
+                    target={overlayRefs.current[idx]}
+                    draggable={true}
+                    resizable={true}
+                    keepRatio={true}
+                    throttleResize={1}
+                    onDrag={({ left, top }) => {
+                      // Convert px back to percent
+                      const newLeft = pxToPercent(left, containerWidth);
+                      const newTop = pxToPercent(top, containerHeight);
+                      setOverlays(prev => prev.map((o, i) => i === idx ? {
+                        ...o,
+                        style: {
+                          ...o.style,
+                          left: newLeft,
+                          top: newTop,
+                        },
+                      } : o));
+                    }}
+                    onResize={({ width, height, drag }) => {
+                      // Only use width (circle)
+                      const newSize = pxToPercent(width, containerWidth);
+                      const newLeft = pxToPercent(drag.left, containerWidth);
+                      const newTop = pxToPercent(drag.top, containerHeight);
+                      setOverlays(prev => prev.map((o, i) => i === idx ? {
+                        ...o,
+                        style: {
+                          ...o.style,
+                          left: newLeft,
+                          top: newTop,
+                          size: newSize,
+                        },
+                      } : o));
+                      // Log new size and position
+                      console.log(`Overlay '${overlay.id}' new: left: ${newLeft}, top: ${newTop}, size: ${newSize}`);
+                    }}
+                    renderDirections={["nw", "ne", "sw", "se"]}
+                    edge={false}
+                    origin={false}
+                    padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        {/* Live Input Display */}
+        <KeyPressIndicator
+          title="LIVE INPUTS"
+          connected={gamepadConnected}
+          rawInput={lastHotasInput}
+          activeInputs={activeInputs}
+          axisValues={axisValues}
+          gamepadInfo={gamepadInfo}
+        />
+
+        {isDevMode && devEditMode && (
+          <Box>
+            <button
+              style={{
+                padding: '6px 18px',
+                fontSize: 16,
+                borderRadius: 8,
+                border: '1px solid #00d9ff',
+                background: '#00d9ff',
+                color: '#222',
+                cursor: 'pointer',
+                marginBottom: 8,
+              }}
+              onClick={() => window.exportHotasOverlayPositions()}
+            >
+              Export Overlay Positions to JSON
+            </button>
+          </Box>
+        )}
+      </Stack>
     </Box>
   );
 }

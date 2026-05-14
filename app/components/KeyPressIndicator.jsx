@@ -308,6 +308,8 @@ export function KeyPressIndicator({
   if (!modeReady) return null;
 
   const sortedKeys = Array.from(pressedKeys).sort();
+  const hasAxisValues = axisValues && Object.keys(axisValues).length > 0;
+  const showInputDiagnostics = Boolean(gamepadInfo || activeInputs || hasAxisValues || rawInput);
 
   // ─── shared card content ──────────────────────────────────────────────────
   const cardContent = ({ pinned, onToggleDock, inWindow = false }) => (
@@ -450,8 +452,8 @@ export function KeyPressIndicator({
             </Group>
           )}
 
-          {/* ── Dev Mode extras ───────────────────────────────────────────────── */}
-          {devMode && (
+          {/* Live HOTAS diagnostics */}
+          {showInputDiagnostics && (
             <>
               <Box style={{ borderTop: '1px solid rgba(0, 217, 255, 0.2)', margin: '0.4rem 0', paddingTop: '0.4rem' }} />
 
@@ -603,7 +605,7 @@ export function KeyPressIndicator({
               )}
 
               {/* Axis value bars */}
-              {axisValues && Object.keys(axisValues).length > 0 && (
+              {hasAxisValues && (
                 <Box mb="xs">
                   <Text size="xs" fw={600} style={{ color: '#00d9ff', marginBottom: '0.4rem' }}>
                     Axis Values

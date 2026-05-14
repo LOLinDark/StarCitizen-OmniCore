@@ -9,6 +9,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   Stack,
   Group,
+  Title,
   Select,
   TextInput,
   Text,
@@ -215,12 +216,13 @@ export default function HOTASConfigMainPage() {
     setCaptureKeyboardProgress(1);
   }, []);
 
-  const handleAssignHotasFeature = useCallback((bindingId, xmlToken) => {
+  const handleAssignHotasFeature = useCallback((bindingId, xmlToken, modeKey = null) => {
     if (bindingLayout === 'modes') {
+      const targetMode = HOTAS_MODE_KEYS.includes(modeKey) ? modeKey : activeBindingMode;
       setModeHotasOverrides((prev) => ({
         ...prev,
-        [activeBindingMode]: {
-          ...(prev[activeBindingMode] || {}),
+        [targetMode]: {
+          ...(prev[targetMode] || {}),
           [bindingId]: xmlToken,
         },
       }));
@@ -746,14 +748,17 @@ export default function HOTASConfigMainPage() {
   const applyBindingOverrides = useCallback((bindings = []) => {
     if (!Array.isArray(bindings) || bindings.length === 0) return [];
     return bindings.map((binding) => {
-      const selectedModeBinding = modeHotasOverrides[activeBindingMode]?.[binding.id] || '';
-      const hotasOverride = (bindingLayout === 'modes' ? selectedModeBinding : hotasOverrides[binding.id]) || hotasOverrides[binding.id];
-      const keyboardOverride = keyboardOverrides[binding.id];
       const modeBindings = {
         green: modeHotasOverrides.green?.[binding.id] || '',
         orange: modeHotasOverrides.orange?.[binding.id] || '',
         red: modeHotasOverrides.red?.[binding.id] || '',
       };
+      const selectedModeBinding = modeBindings[activeBindingMode] || '';
+      const greenFallbackBinding = modeBindings.green || '';
+      const hotasOverride = bindingLayout === 'modes'
+        ? (selectedModeBinding || greenFallbackBinding || hotasOverrides[binding.id])
+        : hotasOverrides[binding.id];
+      const keyboardOverride = keyboardOverrides[binding.id];
 
       if (!hotasOverride && !keyboardOverride && !modeBindings.green && !modeBindings.orange && !modeBindings.red) return binding;
 
@@ -1157,52 +1162,77 @@ export default function HOTASConfigMainPage() {
           </KeyPressIndicator>
         </Box>
 
-        {/* Filters — above table, below live input */}
-        {filterControls}
+        <Box>
+          <Title order={3} mb={4}>Profile Bindings Table</Title>
+          <Text size="sm" c="dimmed">
+            Feature-to-input bindings from the selected Star Citizen profile, local edits, and OmniCore per-mode HOTAS overrides.
+          </Text>
+        </Box>
 
-        {/* Info Bar (extracted) */}
-        <HOTASInfoBar
-          selectedProfile={selectedProfile}
-          xmlSaveStatus={xmlSaveStatus}
-          xmlSaveMessage={xmlSaveMessage}
-          modeOverridesSaveStatus={modeOverridesSaveStatus}
-          modeOverridesSaveMessage={modeOverridesSaveMessage}
-          showModeOverridesStatus={bindingLayout === 'modes'}
-          captureWarning={captureWarning}
-          sortedBindings={sortedBindings}
-        />
-
-        <Group justify="space-between" align="end" wrap="wrap" mt="sm" mb="xs">
-          <Box>
-            <Text size="xs" c="dimmed" mb={4}>HOTAS Column Layout</Text>
-            <SegmentedControl
-              value={bindingLayout}
-              onChange={setBindingLayout}
-              data={[
-                { label: 'Single HOTAS', value: 'single' },
-                { label: 'Per-Mode HOTAS', value: 'modes' },
-              ]}
-            />
-          </Box>
-
-          {bindingLayout === 'modes' && (
-            <Box>
-              <Text size="xs" c="dimmed" mb={4}>Active Mode Column</Text>
+        {/* Consolidated toolbar: filters + controls + info */}
+        <Stack gap="xs">
+          {filterControls}
+          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+            <Group gap="sm" align="center" wrap="wrap">
               <SegmentedControl
-                value={activeBindingMode}
-                onChange={setActiveBindingMode}
+                value={bindingLayout}
+                onChange={setBindingLayout}
+                size="xs"
                 data={[
-                  { label: 'Green', value: 'green' },
-                  { label: 'Orange', value: 'orange' },
-                  { label: 'Red', value: 'red' },
+                  { label: 'Single HOTAS', value: 'single' },
+                  { label: 'Per-Mode', value: 'modes' },
                 ]}
               />
-            </Box>
-          )}
-        </Group>
-
-        {/* View Switcher (extracted) */}
-        <HOTASViewSwitcher tableView={tableView} setTableView={setTableView} />
+              {bindingLayout === 'modes' && (
+                <SegmentedControl
+                  value={activeBindingMode}
+                  onChange={setActiveBindingMode}
+                  size="xs"
+                  data={[
+                    { label: 'Green', value: 'green' },
+                    { label: 'Orange', value: 'orange' },
+                    { label: 'Red', value: 'red' },
+                  ]}
+                />
+              )}
+              <SegmentedControl
+                value={tableView}
+                onChange={setTableView}
+                size="xs"
+                data={[
+                  { value: 'features', label: 'Features \u2192 Inputs' },
+                  { value: 'inputs', label: 'Inputs \u2192 Features' },
+                ]}
+              />
+            </Group>
+            <Group gap="sm" align="center">
+              {selectedProfile && !selectedProfile.startsWith('__ai_') && xmlSaveStatus !== 'idle' && (
+                <Badge
+                  color={xmlSaveStatus === 'saving' ? 'blue' : (xmlSaveStatus === 'saved' ? 'green' : 'red')}
+                  variant="light"
+                  size="xs"
+                >
+                  {xmlSaveStatus === 'saving' ? 'Saving...' : (xmlSaveStatus === 'saved' ? 'Saved' : 'Save failed')}
+                </Badge>
+              )}
+              {selectedProfile && bindingLayout === 'modes' && modeOverridesSaveStatus !== 'idle' && (
+                <Badge
+                  color={modeOverridesSaveStatus === 'saving' ? 'blue' : (modeOverridesSaveStatus === 'saved' ? 'green' : 'red')}
+                  variant="light"
+                  size="xs"
+                >
+                  {modeOverridesSaveStatus === 'saving' ? 'Modes saving...' : (modeOverridesSaveStatus === 'saved' ? 'Modes saved' : 'Modes failed')}
+                </Badge>
+              )}
+              {captureWarning && (
+                <Badge color="orange" variant="light" size="xs">Conflict</Badge>
+              )}
+              <Text size="xs" c="dimmed" fw={600}>
+                {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
+              </Text>
+            </Group>
+          </Group>
+        </Stack>
 
         {/* Table */}
         {tableView === 'features' ? (

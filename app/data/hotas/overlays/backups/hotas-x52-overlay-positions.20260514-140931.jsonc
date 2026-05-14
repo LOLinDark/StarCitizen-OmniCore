@@ -66,8 +66,8 @@
     "id": "pov-hat-1-n",
     "label": "POV Hat 1 North",
     "style": {
-      "left": "48.57%",
-      "top": "1.57%",
+      "left": "41.43%",
+      "top": "0.86%",
       "size": "6%"
     }
   },
@@ -75,8 +75,8 @@
     "id": "pov-hat-1-e",
     "label": "POV Hat 1 East",
     "style": {
-      "left": "43.72%",
-      "top": "11.14%",
+      "left": "46.43%",
+      "top": "6.28%",
       "size": "6%"
     }
   },
@@ -84,8 +84,8 @@
     "id": "pov-hat-1-s",
     "label": "POV Hat 1 South",
     "style": {
-      "left": "39.14%",
-      "top": "15.57%",
+      "left": "41.00%",
+      "top": "11.43%",
       "size": "6%"
     }
   },
@@ -93,8 +93,8 @@
     "id": "pov-hat-1-w",
     "label": "POV Hat 1 West",
     "style": {
-      "left": "32.29%",
-      "top": "1.14%",
+      "left": "35.58%",
+      "top": "5.71%",
       "size": "6%"
     }
   },
@@ -138,9 +138,9 @@
     "id": "mini-stick",
     "label": "Mini Stick",
     "style": {
-      "left": "63.86%",
-      "top": "92.57%",
-      "size": "7%"
+      "left": "32.00%",
+      "top": "53.14%",
+      "size": "3.57%"
     }
   },
   {
@@ -320,6 +320,33 @@
     "style": {
       "left": "78.14%",
       "top": "10.43%",
+      "size": "4.29%"
+    }
+  },
+  {
+    "id": "mfd-function",
+    "label": "Function",
+    "style": {
+      "left": "37.15%",
+      "top": "79.28%",
+      "size": "4.29%"
+    }
+  },
+  {
+    "id": "mfd-timer-toggle",
+    "label": "Start/Stop Timer",
+    "style": {
+      "left": "41.85%",
+      "top": "78.14%",
+      "size": "4.29%"
+    }
+  },
+  {
+    "id": "mfd-timer-reset",
+    "label": "Reset Timer",
+    "style": {
+      "left": "47.14%",
+      "top": "77.00%",
       "size": "4.29%"
     }
   },
