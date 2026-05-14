@@ -16,6 +16,36 @@ const STICK_AXIS_FEATURE_IDS = new Set([
   'flight_lock_pitch_yaw',
 ]);
 
+// Features that make sense on a continuous axis (throttle, stick, rotary, slider).
+// Everything else is a toggle/button action and shouldn't appear for axis inputs.
+const AXIS_COMPATIBLE_FEATURE_IDS = new Set([
+  // Primary flight axes
+  'flight_pitch_axis',
+  'flight_pitch_up',
+  'flight_pitch_down',
+  'flight_yaw_axis',
+  'flight_yaw_left',
+  'flight_yaw_right',
+  'flight_roll_left',
+  'flight_roll_right',
+  // Throttle
+  'flight_throttle_up',
+  'flight_throttle_down',
+  // Strafe (can be axis-bound)
+  'flight_strafe_up',
+  'flight_strafe_down',
+  'flight_strafe_left',
+  'flight_strafe_right',
+  // Speed/accel limiters (rotary-friendly)
+  'flight_speed_limiter_step_up',
+  'flight_speed_limiter_step_down',
+  'flight_accel_limiter_step_up',
+  'flight_accel_limiter_step_down',
+  // View axes (look around)
+  'view_look_lr_axis',
+  'view_look_ud_axis',
+]);
+
 const MODE_INDEX_TO_KEY = {
   0: 'green',
   1: 'orange',
@@ -237,6 +267,11 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
     return featureOptionsAll.filter((opt) => !STICK_AXIS_FEATURE_IDS.has(opt.value));
   }, [featureOptionsAll, hideStickFeatures]);
 
+  // For axis inputs: only show features that are continuous/axis-appropriate
+  const featureOptionsAxis = useMemo(() => {
+    return featureOptionsAll.filter((opt) => AXIS_COMPATIBLE_FEATURE_IDS.has(opt.value));
+  }, [featureOptionsAll]);
+
   function handleFeatureSelect(row, bindingId) {
     setEditingRowId(null);
     if (!bindingId || !onAssign) return;
@@ -324,7 +359,7 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
                   <td style={{ ...tdStyle, textAlign: 'left', minWidth: 260 }}>
                     {editingRowId === row.id ? (
                       <Select
-                        data={row.type === 'Axis' ? featureOptionsAll : featureOptionsFiltered}
+                        data={row.type === 'Axis' ? featureOptionsAxis : featureOptionsFiltered}
                         placeholder="Search features..."
                         searchable
                         clearable
