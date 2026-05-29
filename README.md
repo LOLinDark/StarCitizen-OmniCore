@@ -1,8 +1,11 @@
 # OMNI-CORE: Citizen Operations & Intelligence Network
 
+![Status](https://img.shields.io/badge/status-alpha%200.1.0-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 > "Take the helm. Own your success."
 
-OmniCore is a Star Citizen companion hub — a PWA combining ship intelligence, peripheral configuration, and in-game tooling in one MobiGlass-inspired interface.
+OmniCore is a Star Citizen companion hub — a PWA combining ship intelligence, HOTAS keybind editing, peripheral configuration, and in-game tooling in one MobiGlass-inspired interface.
 
 ---
 
@@ -51,7 +54,7 @@ OmniCore runs in your browser and installs as a PWA. No account required for mos
 
 ### Hosted Access
 
-- **Dev site**: `omnicore.evolvewp.dev` *(when live)*
+- **Live site**: [lolindark.github.io/StarCitizen-OmniCore](https://lolindark.github.io/StarCitizen-OmniCore/)
 - **Domain target**: `omnicore.space` *(future)*
 
 ---
@@ -183,3 +186,16 @@ OmniCore/
 ## Disclaimer
 
 OmniCore is a fan-made project. Star Citizen® is a registered trademark of Cloud Imperium Rights LLC.
+
+---
+
+## Support
+
+If you find OmniCore useful, consider supporting development:
+
+- ☕ [Buy Me a Coffee](https://buymeacoffee.com/ryanbayne)
+- 💜 [GitHub Sponsors](https://github.com/sponsors/LOLinDark)
+
+---
+
+Built by [LOLinDark](https://github.com/LOLinDark)

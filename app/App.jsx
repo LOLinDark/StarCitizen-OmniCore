@@ -41,6 +41,7 @@ const HOTASOverlayPage = lazy(() => import('./pages/HOTASOverlayPage'));
 const HOTASOverlaySaveTestPage = lazy(() => import('./pages/HOTASOverlaySaveTestPage'));
 const HOTASCommunityTestingPage = lazy(() => import('./pages/HOTASCommunityTestingPage'));
 const DeveloperHotasDataFlowPage = lazy(() => import('./pages/DeveloperHotasDataFlowPage'));
+const DeveloperHotasCoverageReportPage = lazy(() => import('./pages/DeveloperHotasCoverageReportPage'));
 
 
 // Theme Lab Pages
@@ -144,6 +145,7 @@ function App() {
           <Route path="developer/hotas-profile-lab" element={<DeveloperHotasProfileMatrixLabPage />} />
           <Route path="developer/hotas-overlay-save-test" element={<Lazy Component={HOTASOverlaySaveTestPage} />} />
           <Route path="developer/hotas-data-flow" element={<Lazy Component={DeveloperHotasDataFlowPage} />} />
+          <Route path="developer/hotas-coverage-report" element={<Lazy Component={DeveloperHotasCoverageReportPage} />} />
         </Route>
 
         {/* Fallback: Always allow access, guard at component level if needed */}

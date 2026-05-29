@@ -30,6 +30,7 @@ import { registerVersemailRoutes } from './api/versemail/index.js';
 import { registerHotasModeRoutes } from './peripherals/hotas/index.js';
 import { registerDownloadRoutes } from './api/dev/download/index.js';
 import { registerHotasOverlayRoutes } from './api/hotasOverlayApi.js';
+import { upsertDeviceRebind } from './peripherals/hotas/xmlRebind.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -724,10 +725,6 @@ function validateProfileName(name) {
   return name.substring(0, 100);
 }
 
-function escapeRegExp(str) {
-  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function validateInputToken(input) {
   if (!input || typeof input !== 'string') return null;
 
@@ -800,9 +797,14 @@ function readProfileModeOverrides(profileName) {
     return normalizeModeHotasOverrides({});
   }
 
-  const raw = readFileSync(filePath, 'utf-8');
-  const parsed = JSON.parse(raw);
-  return normalizeModeHotasOverrides(parsed?.modeHotasOverrides);
+  try {
+    const raw = readFileSync(filePath, 'utf-8');
+    const parsed = JSON.parse(raw);
+    return normalizeModeHotasOverrides(parsed?.modeHotasOverrides);
+  } catch (error) {
+    log(`HOTAS: Invalid mode overrides JSON at ${filePath}: ${error.message}`);
+    return normalizeModeHotasOverrides({});
+  }
 }
 
 function writeProfileModeOverrides(profileName, modeHotasOverrides) {
@@ -822,45 +824,9 @@ function writeProfileModeOverrides(profileName, modeHotasOverrides) {
   return payload.modeHotasOverrides;
 }
 
-function upsertDeviceRebind(xml, actionName, inputToken) {
-  const actionPattern = new RegExp(
-    `(<action\\s+name="${escapeRegExp(actionName)}"\\s*>)([\\s\\S]*?)(</action>)`,
-    'i'
-  );
-
-  if (!actionPattern.test(xml)) {
-    return { xml, updated: false, found: false };
-  }
-
-  let deviceRebindPattern;
-  if (/^js\d+_/i.test(inputToken)) {
-    deviceRebindPattern = /<rebind\s+input="js\d+_[^"]*"\s*\/>/i;
-  } else if (/^kb\d+_/i.test(inputToken)) {
-    deviceRebindPattern = /<rebind\s+input="kb\d+_[^"]*"\s*\/>/i;
-  } else if (/^mouse\d+/i.test(inputToken)) {
-    deviceRebindPattern = /<rebind\s+input="mouse\d+[^"]*"\s*\/>/i;
-  } else {
-    return { xml, updated: false, found: false };
-  }
-
-  const updatedXml = xml.replace(actionPattern, (full, openTag, actionBody, closeTag) => {
-    if (deviceRebindPattern.test(actionBody)) {
-      const replacedBody = actionBody.replace(deviceRebindPattern, `<rebind input="${inputToken}"/>`);
-      return `${openTag}${replacedBody}${closeTag}`;
-    }
-
-    // Preserve existing action content and append device-specific rebind.
-    const separator = actionBody.endsWith('\n') ? '' : '\n';
-    const appendedBody = `${actionBody}${separator}   <rebind input="${inputToken}"/>\n`;
-    return `${openTag}${appendedBody}${closeTag}`;
-  });
-
-  return { xml: updatedXml, updated: true, found: true };
-}
-
 app.get('/api/hotas/profiles', (req, res) => {
   try {
-    if (!statSync(STAR_CITIZEN_MAPPINGS_PATH)) {
+    if (!existsSync(STAR_CITIZEN_MAPPINGS_PATH) || !statSync(STAR_CITIZEN_MAPPINGS_PATH).isDirectory()) {
       return res.status(404).json({ error: 'Star Citizen mappings folder not found' });
     }
 
@@ -1045,7 +1011,7 @@ app.post('/api/hotas/profile/:profileName/bindings', (req, res) => {
 
 app.post('/api/hotas/open-folder', (req, res) => {
   try {
-    if (!statSync(STAR_CITIZEN_MAPPINGS_PATH)) {
+    if (!existsSync(STAR_CITIZEN_MAPPINGS_PATH) || !statSync(STAR_CITIZEN_MAPPINGS_PATH).isDirectory()) {
       return res.status(404).json({ error: 'Star Citizen mappings folder not found' });
     }
     

@@ -56,6 +56,8 @@ export const starCitizenActionMapping = {
   'v_boost': 'flight_boost',
   'v_space_brake': 'flight_spacebrake',
   'v_cruise_mode': 'flight_cruise_mode_toggle',
+  'v_ifcs_speed_limiter_up': 'flight_speed_limiter_step_up',
+  'v_ifcs_speed_limiter_down': 'flight_speed_limiter_step_down',
 
   // ===== POWER DISTRIBUTION =====
   'v_power_toggle': 'power_toggle_all',
@@ -108,7 +110,7 @@ export const starCitizenActionMapping = {
   // ===== SCANNING & RADAR =====
   'v_invoke_ping': 'radar_activate_ping',
   'v_activate_scanning': 'seats_toggle_scanning_mode',
-  'v_scan_toggle': 'scanning_activate',
+  'v_scan_toggle': 'scan_activate',
   'v_scan_increase_angle': 'scan_increase_angle',
   'v_scan_decrease_angle': 'scan_decrease_angle',
 

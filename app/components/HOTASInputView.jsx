@@ -91,6 +91,24 @@ function buildInputList(modes) {
   return inputs;
 }
 
+function extractPovDirection(hotasVal) {
+  const value = String(hotasVal || '').toLowerCase();
+  if (!value) return null;
+
+  const xmlMatch = value.match(/\bjs\d+_pov_([nsew])\b/);
+  if (xmlMatch?.[1]) return xmlMatch[1];
+
+  const shortPovMatch = value.match(/\bpov[_\s-]?([nsew])\b/);
+  if (shortPovMatch?.[1]) return shortPovMatch[1];
+
+  if (/\b(hat|pov)[_\s-]?(up|north)\b/.test(value)) return 'n';
+  if (/\b(hat|pov)[_\s-]?(down|south)\b/.test(value)) return 's';
+  if (/\b(hat|pov)[_\s-]?(left|west)\b/.test(value)) return 'w';
+  if (/\b(hat|pov)[_\s-]?(right|east)\b/.test(value)) return 'e';
+
+  return null;
+}
+
 function findAssignedFeature(input, bindings, hotasOverrides, { preferSingle = false } = {}) {
   if (!bindings?.length) return null;
   const token = input.xmlToken.toLowerCase();
@@ -117,8 +135,8 @@ function findAssignedFeature(input, bindings, hotasOverrides, { preferSingle = f
       if (axisName && hotasVal.includes(axisName.split('(')[0].trim())) return binding;
     }
     if (input.type === 'POV') {
-      if (hotasVal.includes('hat') && hotasVal.includes(input.index)) return binding;
-      if (hotasVal.includes('pov') && hotasVal.includes(input.index)) return binding;
+      const povDirection = extractPovDirection(hotasVal);
+      if (povDirection === input.index) return binding;
     }
   }
   return null;

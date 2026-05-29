@@ -1,5 +1,5 @@
 title: "OmniCore"
-description: "Citizen Operations & Intelligence Network — Star Citizen companion hub"
+description: "Star Citizen companion app — HOTAS keybind editor, ship database, and peripheral configuration tool"
 baseurl: "/StarCitizen-OmniCore"
 url: "https://lolindark.github.io"
 
@@ -18,6 +18,8 @@ navigation:
     url: /about
   - title: Support
     url: /support
+  - title: GitHub
+    url: https://github.com/LOLinDark/StarCitizen-OmniCore
 
 exclude:
   - node_modules

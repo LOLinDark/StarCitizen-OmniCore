@@ -168,6 +168,12 @@ export const routeConfig = {
       color: 'teal',
     },
     {
+      label: '[HC11] /developer/hotas-coverage-report',
+      path: '/developer/hotas-coverage-report',
+      category: 'Test Pages',
+      color: 'teal',
+    },
+    {
       label: '[HC-TEST] /settings/hotas',
       path: '/settings/hotas',
       category: 'Test Pages',

@@ -5,7 +5,7 @@ url: /
 ---
 
 <div class="hero-section">
-  <h1>OmniCore</h1>
+  <h1>OmniCore — Star Citizen Companion App</h1>
   <p class="tagline">Citizen Operations & Intelligence Network</p>
   <p class="subtitle">A Star Citizen companion hub — ship intelligence, peripheral configuration, and in-game tooling in one MobiGlass-inspired interface.</p>
 </div>

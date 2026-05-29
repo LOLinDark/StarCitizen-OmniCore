@@ -61,6 +61,7 @@ const devTags = {
   HC08:      { label: 'HOTAS Overlay Demo',      path: '/hotas-overlay',              file: 'pages/HOTASOverlayPage.jsx' },
   HC09:      { label: 'Overlay Save Test',       path: '/hotas-overlay-save-test',    file: 'pages/HOTASOverlaySaveTestPage.jsx' },
   HC10:      { label: 'HOTAS Community Testing', path: '/hotas-testing-routine',      file: 'pages/HOTASCommunityTestingPage.jsx' },
+  HC11:      { label: 'HOTAS Coverage Report',   path: '/developer/hotas-coverage-report', file: 'pages/DeveloperHotasCoverageReportPage.jsx' },
   'HC-TEST': { label: 'HOTAS Input Test Lab',    path: '/settings/hotas',             file: 'pages/settings/HOTASTestPage.jsx' },
   TL01:      { label: 'Theme Lab Landing',       path: '/theme',                      file: 'pages/ThemePage.jsx' },
 };

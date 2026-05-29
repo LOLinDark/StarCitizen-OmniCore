@@ -1,0 +1,36 @@
+name: HOTAS Quality Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: hotas-quality-gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hotas-checks:
+    name: HOTAS Integrity and Regression Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run HOTAS mapping integrity (strict)
+        run: npm run check:hotas:mapping:strict
+
+      - name: Run HOTAS XML rebind regression checks
+        run: npm run check:hotas:xml-rebind

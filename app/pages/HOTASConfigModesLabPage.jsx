@@ -12,12 +12,18 @@ import {
   Box,
   Badge,
   Switch,
+  MultiSelect,
 } from '@mantine/core';
 import { IconSearch, IconFolderOpen } from '@tabler/icons-react';
 import { HOTASTable } from '../components/HOTASTable';
 import { KeyPressIndicator } from '../components/KeyPressIndicator';
 import { useHOTASFiltering } from '../hooks/useHOTASFiltering';
 import { shipKeybindings, shipControlsCategories } from '../data/starcitizen-keybindings';
+import {
+  DEFAULT_MODE_PLAY_GROUP_VALUES,
+  getModePlayGroupOptions,
+  getModePlayGroupsForBinding,
+} from '../data/hotas-mode-groups';
 import { logitechX52ProOptimal } from '../utils/defaultProfiles';
 import { StarCitizenProfileParser } from '../utils/starCitizenProfileParser';
 import { featureToStarCitizenAction, parseInputString, formatInputForDisplay } from '../utils/starCitizenActionMap';
@@ -64,6 +70,7 @@ export default function HOTASConfigModesLabPage() {
   const [profilesError, setProfilesError] = useState(null);
   const [showUnboundOnly, setShowUnboundOnly] = useState(false);
   const [searchByLiveInput, setSearchByLiveInput] = useState(false);
+  const [selectedModeGroups, setSelectedModeGroups] = useState([...DEFAULT_MODE_PLAY_GROUP_VALUES]);
   const [profileName, setProfileName] = useState('');
   const [mergedBindings, setMergedBindings] = useState(null);
   const [hotasOverrides, setHotasOverrides] = useState({});
@@ -95,6 +102,7 @@ export default function HOTASConfigModesLabPage() {
   const [xmlSaveStatus, setXmlSaveStatus] = useState('idle');
   const [xmlSaveMessage, setXmlSaveMessage] = useState('');
   const [captureWarning, setCaptureWarning] = useState('');
+  const modeGroupOptions = useMemo(() => getModePlayGroupOptions(), []);
   const captureStartedAtRef = useRef(0);
   const keyboardCaptureStartedAtRef = useRef(0);
   const captureInitialSignatureRef = useRef('');
@@ -707,6 +715,7 @@ export default function HOTASConfigModesLabPage() {
       const {
         selectedProfile: savedProfile,
         selectedCategory: savedCategory,
+        selectedModeGroups: savedModeGroups,
         hotasOverrides: savedHotasOverrides,
         keyboardOverrides: savedKeyboardOverrides,
         enableModesLab: savedEnableModesLab,
@@ -717,6 +726,10 @@ export default function HOTASConfigModesLabPage() {
       
       if (savedCategory) {
         setSelectedCategory(savedCategory);
+      }
+
+      if (Array.isArray(savedModeGroups)) {
+        setSelectedModeGroups(savedModeGroups);
       }
 
       // Store overrides in ref to be restored after profile loads
@@ -793,6 +806,7 @@ export default function HOTASConfigModesLabPage() {
       const stateToSave = {
         selectedProfile,
         selectedCategory,
+        selectedModeGroups,
         hotasOverrides,
         keyboardOverrides,
         enableModesLab,
@@ -808,6 +822,7 @@ export default function HOTASConfigModesLabPage() {
   }, [
     selectedProfile,
     selectedCategory,
+    selectedModeGroups,
     hotasOverrides,
     keyboardOverrides,
     enableModesLab,
@@ -1107,25 +1122,32 @@ export default function HOTASConfigModesLabPage() {
     keyboardOverrides,
   ]);
 
+  const modeGroupFilteredBindings = useMemo(() => {
+    return effectiveBindings.filter((binding) => {
+      const bindingGroups = getModePlayGroupsForBinding(binding);
+      return bindingGroups.some((group) => selectedModeGroups.includes(group));
+    });
+  }, [effectiveBindings, selectedModeGroups]);
+
   // Filter by bound/unbound status
   const sortedBindings = useMemo(() => {
-    let results = effectiveBindings;
+    let results = modeGroupFilteredBindings;
 
     if (searchByLiveInput) {
       results = lastHotasInput ? results.filter((binding) => isBindingLive(binding)) : [];
     }
 
     if (showUnboundOnly) {
-      results = results.filter(binding => !binding.primaryKey && !binding.secondaryKey);
+      results = results.filter((binding) => !binding.hotasBinding && !binding.keyboardBinding);
     }
 
     return results;
-  }, [effectiveBindings, showUnboundOnly, searchByLiveInput, lastHotasInput, isBindingLive]);
+  }, [modeGroupFilteredBindings, showUnboundOnly, searchByLiveInput, lastHotasInput, isBindingLive]);
 
   const liveMatchedBindings = useMemo(() => {
     if (!lastHotasInput) return [];
-    return effectiveBindings.filter((binding) => isBindingLive(binding));
-  }, [lastHotasInput, effectiveBindings, isBindingLive]);
+    return modeGroupFilteredBindings.filter((binding) => isBindingLive(binding));
+  }, [lastHotasInput, modeGroupFilteredBindings, isBindingLive]);
 
   const inputAssignmentLabel = useMemo(() => {
     if (!lastHotasInput) return 'Unassigned';
@@ -1711,6 +1733,24 @@ export default function HOTASConfigModesLabPage() {
             onChange={(e) => setSearchByLiveInput(e.currentTarget.checked)}
             size="sm"
           />
+        </Group>
+        <Group mt="sm" gap="md" align="flex-end" wrap="wrap">
+          <MultiSelect
+            label="Play Mode Groups"
+            placeholder="Show gameplay-specific groups"
+            data={modeGroupOptions}
+            value={selectedModeGroups}
+            onChange={setSelectedModeGroups}
+            searchable
+            clearable
+            style={{ minWidth: 320, flex: 1 }}
+          />
+          <Button variant="subtle" size="xs" onClick={() => setSelectedModeGroups(modeGroupOptions.map((option) => option.value))}>
+            Select all
+          </Button>
+          <Button variant="subtle" size="xs" onClick={() => setSelectedModeGroups([])}>
+            Hide all
+          </Button>
         </Group>
 
         {/* Live Input Panel – dockable */}

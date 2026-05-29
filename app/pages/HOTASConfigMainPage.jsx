@@ -17,6 +17,8 @@ import {
   Badge,
   Switch,
   SegmentedControl,
+  MultiSelect,
+  Button,
 } from '@mantine/core';
 import { IconSearch } from '@tabler/icons-react';
 
@@ -26,6 +28,11 @@ import ProfileCardScroller from '../components/ProfileCardScroller';
 import { KeyPressIndicator } from '../components/KeyPressIndicator';
 import { useHOTASFiltering } from '../hooks/useHOTASFiltering';
 import { shipKeybindings, shipControlsCategories } from '../data/starcitizen-keybindings';
+import {
+  DEFAULT_MODE_PLAY_GROUP_VALUES,
+  getModePlayGroupOptions,
+  getModePlayGroupsForBinding,
+} from '../data/hotas-mode-groups';
 import { logitechX52ProOptimal } from '../utils/defaultProfiles';
 import { StarCitizenProfileParser } from '../utils/starCitizenProfileParser';
 
@@ -87,6 +94,7 @@ export default function HOTASConfigMainPage() {
       const [profilesError, setProfilesError] = useState(null);
       const [profileFilter, setProfileFilter] = useState('all');
       const [searchByLiveInput, setSearchByLiveInput] = useState(false);
+      const [selectedModeGroups, setSelectedModeGroups] = useState([...DEFAULT_MODE_PLAY_GROUP_VALUES]);
       const [profileName, setProfileName] = useState('');
       const [mergedBindings, setMergedBindings] = useState(null);
       const [hotasOverrides, setHotasOverrides] = useState({});
@@ -102,6 +110,7 @@ export default function HOTASConfigMainPage() {
       const [modeOverridesSaveStatus, setModeOverridesSaveStatus] = useState('idle');
       const [modeOverridesSaveMessage, setModeOverridesSaveMessage] = useState('');
       const [captureWarning, setCaptureWarning] = useState('');
+      const modeGroupOptions = useMemo(() => getModePlayGroupOptions(), []);
       const captureStartedAtRef = useRef(0);
       const keyboardCaptureStartedAtRef = useRef(0);
       const captureInitialSignatureRef = useRef('');
@@ -536,6 +545,7 @@ export default function HOTASConfigMainPage() {
       const {
         selectedProfile: savedProfile,
         selectedCategory: savedCategory,
+        selectedModeGroups: savedModeGroups,
         bindingLayout: savedBindingLayout,
         activeBindingMode: savedActiveBindingMode,
         hotasOverrides: savedHotasOverrides,
@@ -553,6 +563,10 @@ export default function HOTASConfigMainPage() {
       
       if (savedCategory) {
         setSelectedCategory(savedCategory);
+      }
+
+      if (Array.isArray(savedModeGroups)) {
+        setSelectedModeGroups(savedModeGroups);
       }
 
       // Store overrides in ref to be restored after profile loads
@@ -601,6 +615,7 @@ export default function HOTASConfigMainPage() {
       const stateToSave = {
         selectedProfile,
         selectedCategory,
+        selectedModeGroups,
         bindingLayout,
         activeBindingMode,
         hotasOverrides,
@@ -612,7 +627,7 @@ export default function HOTASConfigMainPage() {
     } catch (error) {
       console.error('[HC05] Error saving state to localStorage:', error);
     }
-  }, [selectedProfile, selectedCategory, bindingLayout, activeBindingMode, hotasOverrides, modeHotasOverrides, keyboardOverrides]);
+  }, [selectedProfile, selectedCategory, selectedModeGroups, bindingLayout, activeBindingMode, hotasOverrides, modeHotasOverrides, keyboardOverrides]);
 
   useEffect(() => {
     const previousLayout = previousBindingLayoutRef.current;
@@ -780,9 +795,23 @@ export default function HOTASConfigMainPage() {
     return applyBindingOverrides(allBaseBindings);
   }, [mergedBindings, applyBindingOverrides]);
 
+  const modeGroupFilteredAllBindings = useMemo(() => {
+    return allEffectiveBindings.filter((binding) => {
+      const bindingGroups = getModePlayGroupsForBinding(binding);
+      return bindingGroups.some((group) => selectedModeGroups.includes(group));
+    });
+  }, [allEffectiveBindings, selectedModeGroups]);
+
+  const modeGroupFilteredEffectiveBindings = useMemo(() => {
+    return effectiveBindings.filter((binding) => {
+      const bindingGroups = getModePlayGroupsForBinding(binding);
+      return bindingGroups.some((group) => selectedModeGroups.includes(group));
+    });
+  }, [effectiveBindings, selectedModeGroups]);
+
   // Filter by bound/unbound status
   const sortedBindings = useMemo(() => {
-    let results = effectiveBindings;
+    let results = modeGroupFilteredEffectiveBindings;
 
     if (searchByLiveInput) {
       results = lastHotasInput ? results.filter((binding) => isBindingLive(binding)) : [];
@@ -801,12 +830,12 @@ export default function HOTASConfigMainPage() {
     }
 
     return results;
-  }, [effectiveBindings, profileFilter, searchByLiveInput, lastHotasInput, isBindingLive]);
+  }, [modeGroupFilteredEffectiveBindings, profileFilter, searchByLiveInput, lastHotasInput, isBindingLive]);
 
   const liveMatchedBindings = useMemo(() => {
     if (!lastHotasInput) return [];
-    return effectiveBindings.filter((binding) => isBindingLive(binding));
-  }, [lastHotasInput, effectiveBindings, isBindingLive]);
+    return modeGroupFilteredEffectiveBindings.filter((binding) => isBindingLive(binding));
+  }, [lastHotasInput, modeGroupFilteredEffectiveBindings, isBindingLive]);
 
   const inputAssignmentLabel = useMemo(() => {
     if (!lastHotasInput) return 'Unassigned';
@@ -1125,6 +1154,46 @@ export default function HOTASConfigMainPage() {
         {/* Error Display (extracted) */}
         <HOTASErrorDisplay error={profilesError} />
 
+        <Box
+          p="sm"
+          style={{
+            borderRadius: 8,
+            border: '1px solid rgba(0, 217, 255, 0.2)',
+            background: 'rgba(0, 217, 255, 0.04)',
+          }}
+        >
+          <Group align="flex-end" gap="sm" wrap="wrap">
+            <MultiSelect
+              label="Play Mode Groups"
+              description="Global filter applied to feature table, input table, and HOTAS overlay assignment menu"
+              placeholder="Show gameplay-specific groups"
+              data={modeGroupOptions}
+              value={selectedModeGroups}
+              onChange={setSelectedModeGroups}
+              searchable
+              clearable
+              style={{ minWidth: 360, flex: 1 }}
+            />
+            <Button
+              variant="light"
+              size="xs"
+              onClick={() => setSelectedModeGroups(modeGroupOptions.map((option) => option.value))}
+            >
+              Select all
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => setSelectedModeGroups([])}
+            >
+              Hide all
+            </Button>
+            <Badge color="cyan" variant="light" size="sm">
+              {modeGroupFilteredAllBindings.length} visible bindings
+            </Badge>
+          </Group>
+        </Box>
+
 
         {/* Live Input Panel (restored) */}
         <Box mb="xl">
@@ -1142,7 +1211,7 @@ export default function HOTASConfigMainPage() {
               <HC05LiveInputContainer
                 overlays={overlays}
                 onOverlayChange={setOverlays}
-                keybindings={allEffectiveBindings}
+                keybindings={modeGroupFilteredAllBindings}
                 hotasOverrides={hotasOverrides}
                 bindingLayout={bindingLayout}
                 onAssignFeature={handleAssignHotasFeature}
@@ -1258,7 +1327,7 @@ export default function HOTASConfigMainPage() {
           />
         ) : (
           <HOTASInputView
-            bindings={effectiveBindings}
+            bindings={modeGroupFilteredEffectiveBindings}
             hotasOverrides={hotasOverrides}
             bindingFilter={profileFilter}
             deviceFilter={profileFilter}
