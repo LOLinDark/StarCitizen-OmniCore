@@ -371,6 +371,7 @@ To improve the HOTAS Config system:
 - [Star Citizen Controls Guide](https://starcitizen.tools/Guide:Controls)
 - [Gamepad API Spec](https://w3c.github.io/gamepad/)
 - [Logitech X52 Pro Documentation](https://www.logitechg.com/en-us/products/flight/x52-pro-flight-control-system.943-000058.html)
+- [HOTAS Advanced User Mode Scope](HOTAS-ADVANCED-USER-MODE.md)
 - [OmniCore DEVELOPER-REFERENCE.md](docs/DEVELOPER-REFERENCE.md)
 
 ---

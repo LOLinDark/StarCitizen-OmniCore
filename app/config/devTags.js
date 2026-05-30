@@ -28,7 +28,6 @@ const devTags = {
   // ── Admin & Tools ─────────────────────────────
   ADM01:     { label: 'Settings',                path: '/settings',              file: 'pages/SettingsPage.jsx' },
   ADM02:     { label: 'Gemini Chat',             path: '/admin/chat/gemini',     file: 'pages/GeminiPage.jsx' },
-  ADM03:     { label: 'AI Rules',                path: '/admin/ai-rules',        file: 'pages/AIRulesPage.jsx' },
   ADM04:     { label: 'Analytics Dashboard',     path: '/admin/analytics',       file: 'pages/AnalyticsPage.jsx' },
   ADM05:     { label: 'About',                   path: '/about',                 file: 'pages/AboutPage.jsx' },
 
@@ -52,16 +51,12 @@ const devTags = {
   ADM08:     { label: 'Field History',            path: '/admin/history',              file: 'pages/HistoryPage.jsx' },
 
   // ── HOTAS / Theme Lab ─────────────────────────
-  HC01:      { label: 'HOTAS Config (Light)',    path: '/theme/hotas-config',         file: 'pages/theme/HOTASConfigPage.jsx' },
-  HC03:      { label: 'HOTAS Config (Dark)',     path: '/theme/hotas-config-dark',    file: 'pages/theme/HOTASConfigPageDark.jsx' },
-  HC04:      { label: 'HOTAS Config (Toggle)',   path: '/theme/hotas-config-toggle',  file: 'pages/theme/HOTASConfigPageToggle.jsx' },
   HC05:      { label: 'Peripheral Configuration',       path: '/hotas-config',               file: 'pages/HOTASConfigMainPage.jsx' },
-  HC06:      { label: 'HOTAS Modes Lab',         path: '/developer/hotas-modes-lab',  file: 'pages/HOTASConfigModesLabPage.jsx' },
+  HC06:      { label: 'HOTAS Modes Lab',         path: '/hotas-config-modes-lab',     file: 'pages/HOTASConfigModesLabPage.jsx' },
   HC07:      { label: 'HOTAS Live Input Page',   path: '/hotas-live-input',           file: 'pages/HOTASLiveInputPage.jsx' },
   HC08:      { label: 'HOTAS Overlay Demo',      path: '/hotas-overlay',              file: 'pages/HOTASOverlayPage.jsx' },
   HC09:      { label: 'Overlay Save Test',       path: '/hotas-overlay-save-test',    file: 'pages/HOTASOverlaySaveTestPage.jsx' },
   HC10:      { label: 'HOTAS Community Testing', path: '/hotas-testing-routine',      file: 'pages/HOTASCommunityTestingPage.jsx' },
-  HC11:      { label: 'HOTAS Coverage Report',   path: '/developer/hotas-coverage-report', file: 'pages/DeveloperHotasCoverageReportPage.jsx' },
   'HC-TEST': { label: 'HOTAS Input Test Lab',    path: '/settings/hotas',             file: 'pages/settings/HOTASTestPage.jsx' },
   TL01:      { label: 'Theme Lab Landing',       path: '/theme',                      file: 'pages/ThemePage.jsx' },
 };

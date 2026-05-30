@@ -170,22 +170,50 @@ function findAssignedFeature(input, bindings, hotasOverrides, modeKey = null) {
 function buildOverlayTooltip(overlay, bindings, hotasOverrides, modeKey = null) {
   const inputMeta = buildOverlayInputMeta(overlay);
   const assignedBinding = findAssignedFeature(inputMeta, bindings, hotasOverrides, modeKey);
-  const featureLine = assignedBinding?.feature ? `Assigned: ${assignedBinding.feature}` : 'Assigned: Unassigned';
+  const featureLine = assignedBinding?.feature ? `Assigned Feature: ${assignedBinding.feature}` : 'Assigned Feature: Unassigned';
 
   if (!inputMeta) {
     return `${overlay.label}\nInput: Unknown\n${featureLine}`;
   }
 
   if (inputMeta.type === 'Button') {
-    return `${overlay.label}\nInput: Windows Button ${inputMeta.windowsIndex} (${inputMeta.xmlToken})\n${featureLine}`;
+    const buttonMeta = X52_BUTTONS[inputMeta.index] || {};
+    const buttonName = buttonMeta.name || overlay.label || `Button ${inputMeta.windowsIndex}`;
+    const lines = [
+      overlay.label,
+      `Physical Label: ${buttonName}`,
+      `Windows Input: Button ${inputMeta.windowsIndex}`,
+      `XML Token: ${inputMeta.xmlToken}`,
+      `Gamepad Index: ${inputMeta.index}`,
+    ];
+
+    if (inputMeta.windowsIndex >= 9 && inputMeta.windowsIndex <= 14) {
+      lines.push(`Toggle Alias: T${inputMeta.windowsIndex - 8} (physical T-toggle)`);
+    } else if (inputMeta.windowsIndex >= 15 && inputMeta.windowsIndex <= 20) {
+      lines.push(`Legacy Alias: T${inputMeta.windowsIndex - 8} (TARGET-style naming; not a physical T-toggle)`);
+    }
+
+    lines.push(featureLine);
+    return lines.join('\n');
   }
 
   if (inputMeta.type === 'Axis') {
     const axisName = X52_AXES[inputMeta.index]?.name || `Axis ${inputMeta.index}`;
-    return `${overlay.label}\nInput: ${axisName} (${inputMeta.xmlToken})\n${featureLine}`;
+    return [
+      overlay.label,
+      `Axis: ${axisName}`,
+      `XML Token: ${inputMeta.xmlToken}`,
+      `Gamepad Index: ${inputMeta.index}`,
+      featureLine,
+    ].join('\n');
   }
 
-  return `${overlay.label}\nInput: POV ${String(inputMeta.index).toUpperCase()} (${inputMeta.xmlToken})\n${featureLine}`;
+  return [
+    overlay.label,
+    `POV Direction: ${String(inputMeta.index).toUpperCase()}`,
+    `XML Token: ${inputMeta.xmlToken}`,
+    featureLine,
+  ].join('\n');
 }
 
 function readAxisValue(axisValues, axisIndex) {
@@ -222,7 +250,7 @@ function isOverlayInputActive(overlay, activeInputs, axisValues, lastHotasInput)
   return false;
 }
 
-export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, hotasOverrides = {}, bindingLayout = 'single', activeInputs, axisValues, lastHotasInput, currentMode, deviceMap, onAssignFeature, onClearFeature, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
+export default function HC05LiveInputContainer({ overlays, onOverlayChange, keybindings, allKeybindings = [], hotasOverrides = {}, bindingLayout = 'single', activeInputs, axisValues, lastHotasInput, currentMode, deviceMap, onAssignFeature, onClearFeature, devEditMode = true, setDevEditMode, isDevMode = true, dragged, setDragged }) {
   // Overlay refs for Moveable
   const overlayRefs = useRef([]);
   const latestOverlaysRef = useRef(overlays);
@@ -536,6 +564,7 @@ export default function HC05LiveInputContainer({ overlays, onOverlayChange, keyb
         </Text>
         <HOTASInputView
           bindings={keybindings}
+          allBindings={allKeybindings}
           hotasOverrides={hotasOverrides}
           activeInputs={activeInputs}
           axisValues={axisValues}

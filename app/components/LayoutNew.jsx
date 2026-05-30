@@ -114,7 +114,6 @@ export default function Layout() {
               <Menu.Dropdown>
                 <Menu.Item component={Link} to="/admin/chat/claude">Claude Chat</Menu.Item>
                 <Menu.Item component={Link} to="/admin/chat/gemini">Gemini Chat</Menu.Item>
-                <Menu.Item component={Link} to="/admin/ai-rules">AI Rules</Menu.Item>
                 <Menu.Divider />
                 <Menu.Item component={Link} to="/admin/analytics">Analytics</Menu.Item>
                 <Menu.Item component={Link} to="/admin/rate-limits">Rate Limits</Menu.Item>
@@ -137,7 +136,6 @@ export default function Layout() {
           <Divider my="xs" label="Admin Tools" labelPosition="center" />
           <NavLink label="Claude Chat" active={isActive('/admin/chat/claude')} component={Link} to="/admin/chat/claude" />
           <NavLink label="Gemini Chat" active={isActive('/admin/chat/gemini')} component={Link} to="/admin/chat/gemini" />
-          <NavLink label="AI Rules" active={isActive('/admin/ai-rules')} component={Link} to="/admin/ai-rules" />
           <NavLink label="Analytics" active={isActive('/admin/analytics')} component={Link} to="/admin/analytics" />
           <NavLink label="Rate Limits" active={isActive('/admin/rate-limits')} component={Link} to="/admin/rate-limits" />
           <NavLink label="Field History" active={isActive('/admin/history')} component={Link} to="/admin/history" />

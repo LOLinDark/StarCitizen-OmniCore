@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
-import { Accordion, Badge, Breadcrumbs, Button, Container, Grid, Group, ScrollArea, Stack, Text, Title } from "@mantine/core";
+import { useEffect, useMemo, useState } from "react";
+import { Accordion, Anchor, Badge, Breadcrumbs, Button, Container, Grid, Group, ScrollArea, Select, Stack, Switch, Table, Text, TextInput, Title } from "@mantine/core";
 import { IconArrowRight, IconCheck, IconChevronLeft } from "@tabler/icons-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import DevTag from "../components/DevTag";
+import { shipControlsCategories, shipKeybindings } from "../data/starcitizen-keybindings";
+import { academyShipBranches, combatFocusCategories, featureTrainingNotes, gameplayAcademyTracks } from "../data/trainingAcademyFeatureNotes";
 
 // Mock data: Onboarding modules
 const ONBOARDING_MODULES = [
@@ -84,14 +86,82 @@ const ONBOARDING_MODULES = [
 
 export default function NewPlayerGuidePage() {
   const navigate = useNavigate();
+  const { track, shipId } = useParams();
   const [userProgress, setUserProgress] = useState(() => {
     const stored = localStorage.getItem("npg-progress");
     return stored ? JSON.parse(stored) : {};
   });
   const [selectedModule, setSelectedModule] = useState(ONBOARDING_MODULES[0].id);
+  const [academySearch, setAcademySearch] = useState("");
+  const [academyCategory, setAcademyCategory] = useState("all");
+  const [combatFocusOnly, setCombatFocusOnly] = useState(true);
+
+  const activeTrack = track && gameplayAcademyTracks[track] ? gameplayAcademyTracks[track] : null;
+  const activeShipBranch = shipId && academyShipBranches[shipId] ? academyShipBranches[shipId] : null;
+
+  useEffect(() => {
+    if (!activeTrack) return;
+
+    setCombatFocusOnly(false);
+    setAcademyCategory("all");
+
+    const seededSearch = [activeTrack.defaultSearch, activeShipBranch?.suggestedSearch]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    setAcademySearch(seededSearch);
+  }, [activeTrack, activeShipBranch]);
 
   const currentModule = ONBOARDING_MODULES.find((m) => m.id === selectedModule) || ONBOARDING_MODULES[0];
   const progressPercent = Math.round((Object.keys(userProgress).filter((k) => userProgress[k]).length / ONBOARDING_MODULES.length) * 100);
+
+  const academyRows = useMemo(() => {
+    const term = academySearch.trim().toLowerCase();
+
+    return shipKeybindings
+      .filter((binding) => {
+        if (activeTrack && !activeTrack.categories.includes(binding.category)) return false;
+        if (combatFocusOnly && !combatFocusCategories.includes(binding.category)) return false;
+        if (academyCategory !== "all" && binding.category !== academyCategory) return false;
+        if (!term) return true;
+
+        const note = featureTrainingNotes[binding.id];
+        const searchable = [
+          binding.feature,
+          binding.description,
+          binding.id,
+          shipControlsCategories[binding.category]?.label,
+          note?.summary,
+          note?.whenToUse,
+          note?.bestPractice,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return searchable.includes(term);
+      })
+      .map((binding) => {
+        const note = featureTrainingNotes[binding.id] || {};
+        return {
+          ...binding,
+          categoryLabel: shipControlsCategories[binding.category]?.label || binding.category,
+          note,
+        };
+      })
+      .sort((a, b) => a.feature.localeCompare(b.feature));
+  }, [academySearch, academyCategory, combatFocusOnly, activeTrack]);
+
+  const academyCategoryOptions = useMemo(() => {
+    const options = Object.values(shipControlsCategories)
+      .map((category) => ({
+        value: category.id,
+        label: category.label,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    return [{ value: "all", label: "All categories" }, ...options];
+  }, []);
 
   const handleToggleProgress = (moduleId) => {
     const newProgress = { ...userProgress, [moduleId]: !userProgress[moduleId] };
@@ -123,7 +193,9 @@ export default function NewPlayerGuidePage() {
               <DevTag tag="GT01" /> New Player Guide
             </Title>
             <Text c="dimmed" size="sm">
-              Your first steps as a Star Citizen. {progressPercent}% complete.
+              {activeTrack
+                ? `${activeTrack.label}${activeShipBranch ? ` - ${activeShipBranch.label}` : ""}.`
+                : `Your first steps as a Star Citizen. ${progressPercent}% complete.`}
             </Text>
           </div>
           <Button leftSection={<IconChevronLeft size={16} />} variant="subtle" color="gray" onClick={() => navigate("/")}>
@@ -274,6 +346,140 @@ export default function NewPlayerGuidePage() {
                     → Economy Tracker (GT03)
                   </Button>
                 </Group>
+              </Stack>
+
+              {/* Feature Knowledge Base */}
+              <Stack gap="sm" style={{ marginTop: "1rem", padding: "1rem", background: "rgba(0, 20, 35, 0.45)", border: "1px solid rgba(0, 217, 255, 0.18)", borderRadius: 8 }}>
+                <Group justify="space-between" align="flex-start" wrap="wrap">
+                  <div>
+                    <Title order={4}>Feature Knowledge Base</Title>
+                    <Text size="sm" c="dimmed">
+                      Powered by the same feature list used in HC05 HOTAS configuration. Add tutorials and dev discussions as you discover them.
+                    </Text>
+                  </div>
+                  <Badge color="cyan" variant="light">
+                    {academyRows.length} features
+                  </Badge>
+                </Group>
+
+                <Group gap="xs" wrap="wrap">
+                  {Object.entries(gameplayAcademyTracks).map(([trackKey, meta]) => (
+                    <Button
+                      key={trackKey}
+                      size="xs"
+                      variant={trackKey === track ? "filled" : "light"}
+                      color={trackKey === track ? "cyan" : "gray"}
+                      onClick={() => navigate(`/academy/${trackKey}`)}
+                    >
+                      {meta.label}
+                    </Button>
+                  ))}
+                  <Button size="xs" variant="outline" color="gray" onClick={() => navigate("/new-player-guide")}>General Academy</Button>
+                </Group>
+
+                {activeTrack && (
+                  <Group gap="xs" wrap="wrap">
+                    {Object.entries(academyShipBranches).map(([shipKey, shipMeta]) => (
+                      <Button
+                        key={shipKey}
+                        size="xs"
+                        variant={shipKey === shipId ? "filled" : "light"}
+                        color={shipKey === shipId ? "orange" : "gray"}
+                        onClick={() => navigate(`/academy/${track}/${shipKey}`)}
+                      >
+                        {shipMeta.label}
+                      </Button>
+                    ))}
+                  </Group>
+                )}
+
+                <Group align="flex-end" gap="sm" wrap="wrap">
+                  <TextInput
+                    label="Search features"
+                    placeholder="Decoy, Noise, IFCS, shields..."
+                    value={academySearch}
+                    onChange={(event) => setAcademySearch(event.currentTarget.value)}
+                    style={{ minWidth: 260, flex: 1 }}
+                  />
+                  <Select
+                    label="Category"
+                    data={academyCategoryOptions}
+                    value={academyCategory}
+                    onChange={(value) => setAcademyCategory(value || "all")}
+                    style={{ minWidth: 280 }}
+                  />
+                  <Switch
+                    label="Combat focus only"
+                    checked={combatFocusOnly}
+                    onChange={(event) => setCombatFocusOnly(event.currentTarget.checked)}
+                  />
+                </Group>
+
+                <ScrollArea style={{ maxHeight: 520 }}>
+                  <Table striped highlightOnHover withTableBorder withColumnBorders horizontalSpacing="sm" verticalSpacing="xs" style={{ minWidth: 1100 }}>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Feature</Table.Th>
+                        <Table.Th>Category</Table.Th>
+                        <Table.Th>Default Key</Table.Th>
+                        <Table.Th>Gameplay Notes</Table.Th>
+                        <Table.Th>Tutorials</Table.Th>
+                        <Table.Th>Dev/Discussion</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {academyRows.map((row) => {
+                        const tutorials = row.note.tutorialVideos || [];
+                        const discussions = [
+                          ...(row.note.devDiscussionVideos || []),
+                          ...(row.note.readingLinks || []),
+                        ];
+
+                        return (
+                          <Table.Tr key={row.id}>
+                            <Table.Td>
+                              <Text fw={600}>{row.feature}</Text>
+                              <Text size="xs" c="dimmed">{row.id}</Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Text size="sm">{row.categoryLabel}</Text>
+                            </Table.Td>
+                            <Table.Td>
+                              <Badge color="blue" variant="light">{row.primaryKey || "-"}</Badge>
+                            </Table.Td>
+                            <Table.Td>
+                              <Stack gap={4}>
+                                <Text size="sm">{row.note.summary || row.description || "No academy notes yet."}</Text>
+                                {row.note.whenToUse && <Text size="xs" c="dimmed">When: {row.note.whenToUse}</Text>}
+                                {row.note.bestPractice && <Text size="xs" c="dimmed">Best practice: {row.note.bestPractice}</Text>}
+                              </Stack>
+                            </Table.Td>
+                            <Table.Td>
+                              <Stack gap={4}>
+                                {tutorials.length === 0 && <Text size="xs" c="dimmed">No tutorial links yet</Text>}
+                                {tutorials.map((item) => (
+                                  <Anchor key={`${row.id}-${item.url}`} href={item.url} target="_blank" rel="noreferrer" size="xs">
+                                    {item.title}
+                                  </Anchor>
+                                ))}
+                              </Stack>
+                            </Table.Td>
+                            <Table.Td>
+                              <Stack gap={4}>
+                                {discussions.length === 0 && <Text size="xs" c="dimmed">No dev/discussion links yet</Text>}
+                                {discussions.map((item) => (
+                                  <Anchor key={`${row.id}-${item.url}`} href={item.url} target="_blank" rel="noreferrer" size="xs">
+                                    {item.title}
+                                  </Anchor>
+                                ))}
+                              </Stack>
+                            </Table.Td>
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+                </ScrollArea>
               </Stack>
             </Stack>
           </Grid.Col>

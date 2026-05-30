@@ -31,6 +31,14 @@ export default function HOTASNotesSection() {
         <Text size="xs">
           • <strong>Binding capture</strong>: Right-click the Keyboard/Mouse or HOTAS column for any row, then press the desired input.
         </Text>
+        <Text size="xs">
+          • <strong>Short vs Long</strong>: Button rows marked Short or Long are guidance based on feature wording.
+          Star Citizen usually decides hold behavior at runtime per feature.
+        </Text>
+        <Text size="xs">
+          • <strong>Advanced mode plan</strong>: Universal custom "force long press" for any feature is not enabled in
+          standard mode to avoid confusing behavior.
+        </Text>
       </Stack>
     </Box>
   );

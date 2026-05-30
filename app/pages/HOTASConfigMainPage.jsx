@@ -35,6 +35,7 @@ import {
 } from '../data/hotas-mode-groups';
 import { logitechX52ProOptimal } from '../utils/defaultProfiles';
 import { StarCitizenProfileParser } from '../utils/starCitizenProfileParser';
+import { featureTrainingNotes } from '../data/trainingAcademyFeatureNotes';
 
 import { featureToStarCitizenAction, parseInputString, formatInputForDisplay } from '../utils/starCitizenActionMap';
 import { useHotasInput, LogitechX52Device } from '../libraries/hotas';
@@ -829,15 +830,22 @@ export default function HOTASConfigMainPage() {
   const applyBindingOverrides = useCallback((bindings = []) => {
     if (!Array.isArray(bindings) || bindings.length === 0) return [];
     return bindings.map((binding) => {
+      const singleHotasValue = String(hotasOverrides[binding.id] || binding.hotasBinding || '').trim();
+      const savedGreen = String(modeHotasOverrides.green?.[binding.id] || '').trim();
+      const savedOrange = String(modeHotasOverrides.orange?.[binding.id] || '').trim();
+      const savedRed = String(modeHotasOverrides.red?.[binding.id] || '').trim();
+
+      // In per-mode layout, keep Green usable even when mode override maps are empty
+      // by falling back to the profile's single HOTAS binding.
       const modeBindings = {
-        green: modeHotasOverrides.green?.[binding.id] || '',
-        orange: modeHotasOverrides.orange?.[binding.id] || '',
-        red: modeHotasOverrides.red?.[binding.id] || '',
+        green: savedGreen || (bindingLayout === 'modes' ? singleHotasValue : ''),
+        orange: savedOrange,
+        red: savedRed,
       };
       const selectedModeBinding = modeBindings[activeBindingMode] || '';
       const greenFallbackBinding = modeBindings.green || '';
       const hotasOverride = bindingLayout === 'modes'
-        ? (selectedModeBinding || greenFallbackBinding || hotasOverrides[binding.id])
+        ? (selectedModeBinding || greenFallbackBinding || singleHotasValue)
         : hotasOverrides[binding.id];
       const keyboardOverride = keyboardOverrides[binding.id];
 
@@ -861,19 +869,34 @@ export default function HOTASConfigMainPage() {
     return applyBindingOverrides(allBaseBindings);
   }, [mergedBindings, applyBindingOverrides]);
 
+  const hasVisibleBindingValue = useCallback((binding) => {
+    if (!binding) return false;
+
+    const hotasValue = String(binding.hotasBinding || '').trim();
+    const keyboardValue = String(binding.keyboardBinding || '').trim();
+    const modeBindings = binding.modeHotasBindings || {};
+    const modeValues = [modeBindings.green, modeBindings.orange, modeBindings.red]
+      .map((value) => String(value || '').trim())
+      .filter(Boolean);
+
+    return Boolean(hotasValue || keyboardValue || modeValues.length > 0);
+  }, []);
+
   const modeGroupFilteredAllBindings = useMemo(() => {
     return allEffectiveBindings.filter((binding) => {
       const bindingGroups = getModePlayGroupsForBinding(binding);
-      return bindingGroups.some((group) => selectedModeGroups.includes(group));
+      const inSelectedGroup = bindingGroups.some((group) => selectedModeGroups.includes(group));
+      return inSelectedGroup || hasVisibleBindingValue(binding);
     });
-  }, [allEffectiveBindings, selectedModeGroups]);
+  }, [allEffectiveBindings, selectedModeGroups, hasVisibleBindingValue]);
 
   const modeGroupFilteredEffectiveBindings = useMemo(() => {
     return effectiveBindings.filter((binding) => {
       const bindingGroups = getModePlayGroupsForBinding(binding);
-      return bindingGroups.some((group) => selectedModeGroups.includes(group));
+      const inSelectedGroup = bindingGroups.some((group) => selectedModeGroups.includes(group));
+      return inSelectedGroup || hasVisibleBindingValue(binding);
     });
-  }, [effectiveBindings, selectedModeGroups]);
+  }, [effectiveBindings, selectedModeGroups, hasVisibleBindingValue]);
 
   // Filter by bound/unbound status
   const sortedBindings = useMemo(() => {
@@ -1309,6 +1332,7 @@ export default function HOTASConfigMainPage() {
                 overlays={overlays}
                 onOverlayChange={setOverlays}
                 keybindings={modeGroupFilteredAllBindings}
+                allKeybindings={allEffectiveBindings}
                 hotasOverrides={hotasOverrides}
                 bindingLayout={bindingLayout}
                 onAssignFeature={handleAssignHotasFeature}
@@ -1422,10 +1446,12 @@ export default function HOTASConfigMainPage() {
             onStartModeHotasCapture={startHotasCapture}
             activeKeyboardCaptureBindingId={captureKeyboardBindingId}
             keyboardCaptureProgress={captureKeyboardProgress}
+            trainingNotes={featureTrainingNotes}
           />
         ) : (
           <HOTASInputView
             bindings={modeGroupFilteredEffectiveBindings}
+            allBindings={allEffectiveBindings}
             hotasOverrides={hotasOverrides}
             bindingFilter={profileFilter}
             deviceFilter={profileFilter}

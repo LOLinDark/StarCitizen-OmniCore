@@ -13,5 +13,5 @@ export {
 export { analytics, trackApiCall, trackAppView, trackUiAction } from '../analytics';
 export { appendErrorLog, clearErrorLog, getErrorLog, installGlobalErrorHandlers } from '../errors/storage';
 export { getPerformanceSnapshot, startPerformanceMonitoring } from '../performance/monitor';
-export { DEFAULT_AI_CONFIG, useAIConfigStore, useAppStore, usePromptStore, useSettingsStore } from '../stores';
+export { DEFAULT_AI_CONFIG, useAIConfigStore, useAppStore, useSettingsStore } from '../stores';
 export { assessRuntimeReadiness, buildRuntimeReport, buildSupportBundle, copyRuntimeReport, downloadRuntimeReport } from './runtimeReport';

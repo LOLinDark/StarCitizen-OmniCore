@@ -25,11 +25,13 @@ Technical reference for developers and architects:
 - [Developer Map](developers/DEVELOPER-MAP.md) — Codebase visual guide
 - [Security Guide](developers/SECURITY.md) — Security policies and best practices
 - [API Integration Guide](developers/API-INTEGRATION.md) — Backend API reference and integration patterns
+- [HOTAS Advanced User Mode Scope](developers/HOTAS-ADVANCED-USER-MODE.md) — Press-duration constraints, UX boundaries, and advanced-mode planning
 
 #### **Feature Planning** (`/guides/`)
 Feature-specific implementation guides:
 - [Aerobook Guide](developers/AEROBOOK-GUIDE.md) — Aerobook feature design and usage
 - [HOTAS Configuration Guide](developers/HOTAS-CONFIG-GUIDE.md) — HOTAS setup and calibration
+- [HOTAS Advanced User Mode Scope](developers/HOTAS-ADVANCED-USER-MODE.md) — Scope boundaries for short/long press behavior and advanced workflows
 - [Media Library Guide](developers/MEDIA-LIBRARY-GUIDE.md) — Managing and organizing media assets
 - [Content Markers Guide](developers/CONTENT-MARKERS-GUIDE.md) — Using content markers in documentation
 

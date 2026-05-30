@@ -14,18 +14,14 @@ import EconomyTrackerPage from './pages/EconomyTrackerPage';
 import LocationGuidePage from './pages/LocationGuidePage';
 import HOTASConfigMainPage from './pages/HOTASConfigMainPage';
 import HOTASConfigModesLabPage from './pages/HOTASConfigModesLabPage';
-import DeveloperHotasProfileMatrixLabPage from './pages/DeveloperHotasProfileMatrixLabPage';
 import ShipDatabasePage from './pages/ShipDatabasePage';
 import GameSettingsPage from './pages/GameSettingsPage';
 import { trackAppView, installGlobalErrorHandlers, startPerformanceMonitoring, useAppStore } from './platform-core';
 import { Loader, Center } from '@mantine/core';
 
-const AmazonQPage = lazy(() => import('./pages/AmazonQPage'));
-const GeminiPage = lazy(() => import('./pages/GeminiPage'));
-const AIRulesPage = lazy(() => import('./pages/AIRulesPage'));
+
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
-const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
-const RateLimitPage = lazy(() => import('./pages/RateLimitPage'));
+
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const ThemePage = lazy(() => import('./pages/ThemePage'));
 const DeveloperPage = lazy(() => import('./pages/DeveloperPage'));
@@ -41,7 +37,6 @@ const HOTASOverlayPage = lazy(() => import('./pages/HOTASOverlayPage'));
 const HOTASOverlaySaveTestPage = lazy(() => import('./pages/HOTASOverlaySaveTestPage'));
 const HOTASCommunityTestingPage = lazy(() => import('./pages/HOTASCommunityTestingPage'));
 const DeveloperHotasDataFlowPage = lazy(() => import('./pages/DeveloperHotasDataFlowPage'));
-const DeveloperHotasCoverageReportPage = lazy(() => import('./pages/DeveloperHotasCoverageReportPage'));
 
 
 // Theme Lab Pages
@@ -49,9 +44,6 @@ const WelcomeOnline = lazy(() => import('./pages/theme/WelcomeOnline'));
 const StarCitizenDetail = lazy(() => import('./pages/theme/StarCitizenDetail'));
 const Squadron42Detail = lazy(() => import('./pages/theme/Squadron42Detail'));
 const PlaceholderSamplesPage = lazy(() => import('./pages/theme/PlaceholderSamplesPage'));
-const HOTASConfigPage = lazy(() => import('./pages/theme/HOTASConfigPage'));
-const HOTASConfigPageDark = lazy(() => import('./pages/theme/HOTASConfigPageDark'));
-const HOTASConfigPageToggle = lazy(() => import('./pages/theme/HOTASConfigPageToggle'));
 const HOTASTestPage = lazy(() => import('./pages/settings/HOTASTestPage'));
 
 function LazyFallback() {
@@ -94,9 +86,6 @@ function App() {
         <Route path="/theme/star-citizen" element={<Lazy Component={StarCitizenDetail} />} />
         <Route path="/theme/squadron-42" element={<Lazy Component={Squadron42Detail} />} />
         <Route path="/theme/placeholder-samples" element={<Lazy Component={PlaceholderSamplesPage} />} />
-        <Route path="/theme/hotas-config" element={<Lazy Component={HOTASConfigPage} />} />
-        <Route path="/theme/hotas-config-dark" element={<Lazy Component={HOTASConfigPageDark} />} />
-        <Route path="/theme/hotas-config-toggle" element={<Lazy Component={HOTASConfigPageToggle} />} />
         <Route path="/theme/hotas-test" element={<Navigate to="/settings/hotas" replace />} />
 
         {/* Login Route */}
@@ -107,6 +96,8 @@ function App() {
           <Route index element={<MainDashboardPage />} />
           <Route path="aerobook" element={<AerobookPage />} />
           <Route path="new-player-guide" element={<NewPlayerGuidePage />} />
+          <Route path="academy/:track" element={<NewPlayerGuidePage />} />
+          <Route path="academy/:track/:shipId" element={<NewPlayerGuidePage />} />
           <Route path="loadout-builder" element={<LoadoutBuilderPage />} />
           <Route path="economy-tracker" element={<EconomyTrackerPage />} />
           <Route path="location-guide" element={<LocationGuidePage />} />
@@ -127,11 +118,7 @@ function App() {
         <Route element={<AdminLayout />}>
           <Route path="dashboard-old" element={<DashboardPage />} />
           <Route path="onboarding" element={<OnboardingChecklistPage />} />
-          <Route path="admin/chat/claude" element={<Lazy Component={AmazonQPage} />} />
-          <Route path="admin/chat/gemini" element={<Lazy Component={GeminiPage} />} />
-          <Route path="admin/ai-rules" element={<Lazy Component={AIRulesPage} />} />
-          <Route path="admin/analytics" element={<Lazy Component={AnalyticsPage} />} />
-          <Route path="admin/rate-limits" element={<Lazy Component={RateLimitPage} />} />
+
           <Route path="admin/history" element={<Lazy Component={HistoryPage} />} />
           <Route path="developer" element={<Lazy Component={DeveloperPage} />} />
           <Route path="developer/context" element={<Lazy Component={DeveloperContextIndexPage} />} />
@@ -139,13 +126,8 @@ function App() {
           <Route path="developer/changes" element={<Lazy Component={ChangesPage} />} />
           <Route path="developer/api-test" element={<Lazy Component={APITestPage} />} />
           <Route path="developer/nav-charts-lab" element={<Lazy Component={DeveloperNavChartsLabPage} />} />
-          <Route path="developer/hotas-modes-lab" element={<HOTASConfigModesLabPage />} />
-          <Route path="developer/hotas-profile-matrix-lab" element={<DeveloperHotasProfileMatrixLabPage />} />
-          <Route path="developer/hotas-profile-matrix" element={<DeveloperHotasProfileMatrixLabPage />} />
-          <Route path="developer/hotas-profile-lab" element={<DeveloperHotasProfileMatrixLabPage />} />
           <Route path="developer/hotas-overlay-save-test" element={<Lazy Component={HOTASOverlaySaveTestPage} />} />
           <Route path="developer/hotas-data-flow" element={<Lazy Component={DeveloperHotasDataFlowPage} />} />
-          <Route path="developer/hotas-coverage-report" element={<Lazy Component={DeveloperHotasCoverageReportPage} />} />
         </Route>
 
         {/* Fallback: Always allow access, guard at component level if needed */}

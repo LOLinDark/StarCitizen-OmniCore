@@ -196,19 +196,39 @@ export default function AppHeader() {
           </Menu.Dropdown>
         </Menu>
 
-        <Group gap="xs">
-          <div>
-            <Text size="sm" fw={500}>{rsiHandle}</Text>
-            <Text size="xs" c="dimmed">Pilot</Text>
-          </div>
-          <Avatar
-            size="md"
-            radius="xl"
-            style={{ backgroundColor: '#00d9ff', cursor: 'pointer' }}
+        {rsiHandle && rsiHandle !== 'Citizen' ? (
+          <Group gap="xs">
+            <div>
+              <Text size="sm" fw={500}>{rsiHandle}</Text>
+              <Text size="xs" c="dimmed">Pilot</Text>
+            </div>
+            <Avatar
+              size="md"
+              radius="xl"
+              style={{ backgroundColor: '#00d9ff', cursor: 'pointer' }}
+            >
+              {rsiHandle.substring(0, 2).toUpperCase()}
+            </Avatar>
+          </Group>
+        ) : (
+          <Button
+            variant="light"
+            size="sm"
+            onClick={() => window.open('https://robertsspaceindustries.com/en/star-citizen?referral=STAR-TBYK-XVFK', '_blank', 'noopener,noreferrer')}
+            style={{
+              color: '#0b1428',
+              background: 'linear-gradient(135deg, #22d17b 0%, #00d9ff 100%)',
+              border: '1px solid rgba(255, 255, 255, 0.35)',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              boxShadow: '0 0 12px rgba(0, 217, 255, 0.35)',
+            }}
           >
-            {rsiHandle.substring(0, 2).toUpperCase()}
-          </Avatar>
-        </Group>
+            ENLIST - STAR-TBYK-XVFK
+          </Button>
+        )}
       </Group>
     </div>
   );

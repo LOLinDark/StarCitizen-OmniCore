@@ -60,12 +60,25 @@ function buildInputList(modes) {
 
   for (const [modeIdx, mode] of modeList) {
     for (const [idx, meta] of Object.entries(X52_BUTTONS)) {
+      const baseIndex = Number(idx);
+      const xmlToken = `js1_button${meta.windowsIndex ?? baseIndex + 1}`;
+
       inputs.push({
-        id: `m${modeIdx}-btn-${idx}`,
+        id: `m${modeIdx}-btn-${idx}-short`,
         mode, modeIdx: Number(modeIdx),
         type: 'Button', index: Number(idx),
-        name: meta.name, group: meta.group,
-        xmlToken: `js1_button${meta.windowsIndex ?? Number(idx) + 1}`,
+        name: `${meta.name} (Short)`, group: meta.group,
+        pressType: 'short',
+        xmlToken,
+      });
+
+      inputs.push({
+        id: `m${modeIdx}-btn-${idx}-long`,
+        mode, modeIdx: Number(modeIdx),
+        type: 'Button', index: Number(idx),
+        name: `${meta.name} (Long)`, group: meta.group,
+        pressType: 'long',
+        xmlToken,
       });
     }
     for (const [idx, meta] of Object.entries(X52_AXES)) {
@@ -91,6 +104,26 @@ function buildInputList(modes) {
   return inputs;
 }
 
+function inferBindingPressIntent(binding) {
+  const text = `${binding?.feature || ''} ${binding?.description || ''}`.toLowerCase();
+  const hasLong = /(long\s*press|hold|maximum\s+zoom|set\s+to\s+max\s*\(hold\)|set\s+to\s+min\s*\(hold\))/.test(text);
+  const hasShort = /(short\s*press|tap|toggle|press\)|press\b)/.test(text);
+
+  if (hasLong && hasShort) return 'both';
+  if (hasLong) return 'long';
+  if (hasShort) return 'short';
+  return 'neutral';
+}
+
+function bindingMatchesPressType(binding, pressType) {
+  if (!pressType) return true;
+
+  const intent = inferBindingPressIntent(binding);
+  if (pressType === 'long') return intent === 'long' || intent === 'both';
+  if (pressType === 'short') return intent === 'short' || intent === 'both' || intent === 'neutral';
+  return true;
+}
+
 function extractPovDirection(hotasVal) {
   const value = String(hotasVal || '').toLowerCase();
   if (!value) return null;
@@ -109,13 +142,18 @@ function extractPovDirection(hotasVal) {
   return null;
 }
 
-function findAssignedFeature(input, bindings, hotasOverrides, { preferSingle = false } = {}) {
-  if (!bindings?.length) return null;
+function findAssignedFeatures(input, bindings, hotasOverrides, { preferSingle = false } = {}) {
+  if (!bindings?.length) return [];
   const token = input.xmlToken.toLowerCase();
+  const buttonMeta = input.type === 'Button' ? X52_BUTTONS[input.index] : null;
+  const buttonName = String(buttonMeta?.name || '').toLowerCase();
   const buttonNum = input.type === 'Button' ? (X52_BUTTONS[input.index]?.windowsIndex ?? input.index + 1) : null;
   const modeKey = MODE_INDEX_TO_KEY[input.modeIdx];
+  const matches = [];
 
   for (const binding of bindings) {
+    if (input.type === 'Button' && !bindingMatchesPressType(binding, input.pressType)) continue;
+
     const modeValue = (!preferSingle && modeKey)
       ? String(binding.modeHotasBindings?.[modeKey] || '')
       : '';
@@ -125,21 +163,46 @@ function findAssignedFeature(input, bindings, hotasOverrides, { preferSingle = f
     const singleValue = String(hotasOverrides[binding.id] || binding.hotasBinding || '');
     const hotasVal = String(modeValue || greenFallbackValue || singleValue || '').toLowerCase();
     if (!hotasVal) continue;
-    if (hotasVal === token) return binding;
+    if (hotasVal === token) {
+      matches.push(binding);
+      continue;
+    }
     if (input.type === 'Button' && buttonNum !== null) {
-      if (hotasVal === `button ${buttonNum}`) return binding;
-      if (hotasVal.includes(`button ${buttonNum}`) && !hotasVal.includes(`button ${buttonNum}0`)) return binding;
+      if (hotasVal === `button ${buttonNum}`) {
+        matches.push(binding);
+        continue;
+      }
+      if (hotasVal.includes(`button ${buttonNum}`) && !hotasVal.includes(`button ${buttonNum}0`)) {
+        matches.push(binding);
+        continue;
+      }
+      if (hotasVal.includes(`js1_button${buttonNum}`)) {
+        matches.push(binding);
+        continue;
+      }
+      // Some profiles/store views use X52 display labels instead of XML tokens.
+      // Match those labels so existing assignments don't appear empty.
+      if (buttonName && hotasVal.includes(buttonName)) {
+        matches.push(binding);
+        continue;
+      }
     }
     if (input.type === 'Axis') {
       const axisName = (X52_AXES[input.index]?.name || '').toLowerCase();
-      if (axisName && hotasVal.includes(axisName.split('(')[0].trim())) return binding;
+      if (axisName && hotasVal.includes(axisName.split('(')[0].trim())) {
+        matches.push(binding);
+        continue;
+      }
     }
     if (input.type === 'POV') {
       const povDirection = extractPovDirection(hotasVal);
-      if (povDirection === input.index) return binding;
+      if (povDirection === input.index) {
+        matches.push(binding);
+      }
     }
   }
-  return null;
+
+  return matches;
 }
 
 function readAxisValue(axisValues, axisIndex) {
@@ -191,7 +254,7 @@ const MODE_SEGMENTS = [
   { value: 'all', label: 'All Modes' },
 ];
 
-export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, onClear, activeInputs, axisValues, lastHotasInput, currentMode }) {
+export default function HOTASInputView({ bindings, allBindings = [], hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, onClear, activeInputs, axisValues, lastHotasInput, currentMode }) {
   const [modeFilter, setModeFilter] = useState('none');
   const [modeOverride, setModeOverride] = useState(false);
   const [editingRowId, setEditingRowId] = useState(null);
@@ -224,16 +287,22 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
   };
 
   const inputList = useMemo(() => buildInputList(visibleModes), [visibleModes]);
+  const assignmentBindings = useMemo(() => (allBindings.length > 0 ? allBindings : bindings), [allBindings, bindings]);
 
   const rows = useMemo(() => {
     return inputList.map((input) => ({
       ...input,
-      assignedBinding: findAssignedFeature(input, bindings, hotasOverrides, {
+      assignedBindings: findAssignedFeatures(input, assignmentBindings, hotasOverrides, {
         preferSingle: modeFilter === 'none',
       }),
       isActive: isInputActive(input, activeInputs, axisValues, lastHotasInput),
+    })).map((row) => ({
+      ...row,
+      assignedBinding: row.assignedBindings[0] || null,
+      hasConflict: row.assignedBindings.length > 1,
+      conflictCount: Math.max(0, row.assignedBindings.length - 1),
     }));
-  }, [inputList, bindings, hotasOverrides, activeInputs, axisValues, lastHotasInput, modeFilter]);
+  }, [inputList, assignmentBindings, hotasOverrides, activeInputs, axisValues, lastHotasInput, modeFilter]);
 
   const filteredRows = useMemo(() => {
     let result = rows;
@@ -289,6 +358,53 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
   const featureOptionsAxis = useMemo(() => {
     return featureOptionsAll.filter((opt) => AXIS_COMPATIBLE_FEATURE_IDS.has(opt.value));
   }, [featureOptionsAll]);
+
+  const featureOptionsButtonShort = useMemo(() => {
+    return featureOptionsFiltered.filter((opt) => {
+      const binding = bindings?.find((b) => b.id === opt.value);
+      return bindingMatchesPressType(binding, 'short');
+    });
+  }, [featureOptionsFiltered, bindings]);
+
+  const featureOptionsButtonLong = useMemo(() => {
+    return featureOptionsFiltered.filter((opt) => {
+      const binding = bindings?.find((b) => b.id === opt.value);
+      return bindingMatchesPressType(binding, 'long');
+    });
+  }, [featureOptionsFiltered, bindings]);
+
+  const featureOptionsByType = useMemo(() => {
+    return {
+      axis: featureOptionsAxis,
+      buttonShort: featureOptionsButtonShort,
+      buttonLong: featureOptionsButtonLong,
+      other: featureOptionsFiltered,
+    };
+  }, [featureOptionsAxis, featureOptionsButtonShort, featureOptionsButtonLong, featureOptionsFiltered]);
+
+  const getFeatureOptionsForRow = (row) => {
+    let baseOptions = featureOptionsByType.other;
+    if (row.type === 'Axis') {
+      baseOptions = featureOptionsByType.axis;
+    } else if (row.type === 'Button' && row.pressType === 'short') {
+      baseOptions = featureOptionsByType.buttonShort;
+    } else if (row.type === 'Button' && row.pressType === 'long') {
+      baseOptions = featureOptionsByType.buttonLong;
+    }
+
+    const assignedBinding = row.assignedBinding;
+
+    if (!assignedBinding) return baseOptions;
+    if (baseOptions.some((opt) => opt.value === assignedBinding.id)) return baseOptions;
+
+    return [
+      {
+        value: assignedBinding.id,
+        label: `${assignedBinding.feature}${assignedBinding.category ? ` (${assignedBinding.category})` : ''} [Currently Assigned]`,
+      },
+      ...baseOptions,
+    ];
+  };
 
   function handleFeatureSelect(row, bindingId) {
     setEditingRowId(null);
@@ -378,13 +494,15 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
                   <td style={{ ...tdStyle, color: '#6a8898' }}>{row.group}</td>
                   <td style={tdStyle}>
                     <Badge size="xs" variant="light" color={row.type === 'Button' ? 'cyan' : row.type === 'Axis' ? 'orange' : 'green'}>
-                      {row.type}
+                      {row.type === 'Button'
+                        ? `Button ${X52_BUTTONS[row.index]?.windowsIndex ?? row.index + 1}`
+                        : row.type}
                     </Badge>
                   </td>
                   <td style={{ ...tdStyle, textAlign: 'left', minWidth: 260 }}>
                     {editingRowId === row.id ? (
                       <Select
-                        data={row.type === 'Axis' ? featureOptionsAxis : featureOptionsFiltered}
+                        data={getFeatureOptionsForRow(row)}
                         placeholder="Search features..."
                         searchable
                         clearable
@@ -405,9 +523,16 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
                           onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                         >
                           {row.assignedBinding ? (
-                            <Text size="sm" fw={500} style={{ color: '#81c784' }}>
-                              {row.assignedBinding.feature}
-                            </Text>
+                            <Group gap="xs" wrap="nowrap" align="center">
+                              <Text size="sm" fw={500} style={{ color: '#81c784' }}>
+                                {row.assignedBinding.feature}
+                              </Text>
+                              {row.hasConflict && (
+                                <Badge size="xs" color="orange" variant="light">
+                                  Conflict (+{row.conflictCount})
+                                </Badge>
+                              )}
+                            </Group>
                           ) : (
                             <Text size="sm" style={{ color: '#555', fontStyle: 'italic' }}>Click to assign Star Citizen feature...</Text>
                           )}

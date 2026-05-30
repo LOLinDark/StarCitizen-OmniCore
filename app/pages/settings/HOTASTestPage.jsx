@@ -319,6 +319,60 @@ export default function HOTASTestPage() {
                 >
                   {lastInput ? (
                     <Stack gap="md">
+                      {Object.keys(axisValues || {}).filter((index) => index !== '9').length > 0 && (
+                        <Box
+                          p="md"
+                          style={{
+                            background: 'rgba(0, 217, 255, 0.08)',
+                            border: '1px solid rgba(0, 217, 255, 0.25)',
+                            borderRadius: '8px',
+                          }}
+                        >
+                          <Text size="sm" fw={600} style={{ color: '#00d9ff', marginBottom: '0.5rem' }}>
+                            Live Axis Bars
+                          </Text>
+                          <Stack gap="xs">
+                            {Object.entries(axisValues)
+                              .filter(([index]) => index !== '9')
+                              .sort((a, b) => Number(a[0]) - Number(b[0]))
+                              .map(([index, value]) => {
+                                const numericValue = Number(value);
+                                const percent = Number.isFinite(numericValue)
+                                  ? Math.max(0, Math.min(100, ((numericValue + 1) / 2) * 100))
+                                  : 50;
+
+                                return (
+                                  <Box key={`live-axis-${index}`}>
+                                    <Group justify="space-between" mb={4}>
+                                      <Text size="xs" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                        {X52_LOOKUP[`${index}-axis`]?.name || `Axis ${index}`}
+                                      </Text>
+                                      <Code style={{ fontSize: '0.7rem' }}>{Number.isFinite(numericValue) ? numericValue.toFixed(3) : String(value)}</Code>
+                                    </Group>
+                                    <div
+                                      style={{
+                                        background: 'rgba(0, 0, 0, 0.25)',
+                                        height: '7px',
+                                        borderRadius: '4px',
+                                        overflow: 'hidden',
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          width: `${percent}%`,
+                                          height: '100%',
+                                          background: '#00d9ff',
+                                          transition: 'width 0.06s linear',
+                                        }}
+                                      />
+                                    </div>
+                                  </Box>
+                                );
+                              })}
+                          </Stack>
+                        </Box>
+                      )}
+
                       <Box
                         p="md"
                         style={{

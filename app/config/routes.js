@@ -62,6 +62,24 @@ export const routeConfig = {
       category: 'Main App',
       color: 'cyan',
     },
+    {
+      label: '/academy/combat',
+      path: '/academy/combat',
+      category: 'Main App',
+      color: 'cyan',
+    },
+    {
+      label: '/academy/mining',
+      path: '/academy/mining',
+      category: 'Main App',
+      color: 'cyan',
+    },
+    {
+      label: '/academy/trading',
+      path: '/academy/trading',
+      category: 'Main App',
+      color: 'cyan',
+    },
   ],
 
   themeLab: [
@@ -90,24 +108,6 @@ export const routeConfig = {
       color: 'orange',
     },
     {
-      label: '[HC01] /theme/hotas-config',
-      path: '/theme/hotas-config',
-      category: 'Theme Lab',
-      color: 'orange',
-    },
-    {
-      label: '[HC03] /theme/hotas-config-dark',
-      path: '/theme/hotas-config-dark',
-      category: 'Theme Lab',
-      color: 'orange',
-    },
-    {
-      label: '[HC04] /theme/hotas-config-toggle',
-      path: '/theme/hotas-config-toggle',
-      category: 'Theme Lab',
-      color: 'orange',
-    },
-    {
       label: '[LEGACY] /theme/hotas-test -> /settings/hotas',
       path: '/theme/hotas-test',
       category: 'Theme Lab',
@@ -116,24 +116,6 @@ export const routeConfig = {
   ],
 
   admin: [
-    {
-      label: '/admin/chat/gemini',
-      path: '/admin/chat/gemini',
-      category: 'Admin & Tools',
-      color: 'grape',
-    },
-    {
-      label: '/admin/ai-rules',
-      path: '/admin/ai-rules',
-      category: 'Admin & Tools',
-      color: 'grape',
-    },
-    {
-      label: '/admin/analytics',
-      path: '/admin/analytics',
-      category: 'Admin & Tools',
-      color: 'grape',
-    },
     {
       label: '/developer',
       path: '/developer',
@@ -152,24 +134,6 @@ export const routeConfig = {
     {
       label: '[DEV06] /developer/nav-charts-lab',
       path: '/developer/nav-charts-lab',
-      category: 'Test Pages',
-      color: 'teal',
-    },
-    {
-      label: '[HC06] /developer/hotas-modes-lab',
-      path: '/developer/hotas-modes-lab',
-      category: 'Test Pages',
-      color: 'teal',
-    },
-    {
-      label: '[HC07] /developer/hotas-profile-matrix-lab',
-      path: '/developer/hotas-profile-matrix-lab',
-      category: 'Test Pages',
-      color: 'teal',
-    },
-    {
-      label: '[HC11] /developer/hotas-coverage-report',
-      path: '/developer/hotas-coverage-report',
       category: 'Test Pages',
       color: 'teal',
     },

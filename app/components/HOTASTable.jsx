@@ -41,6 +41,7 @@ export const HOTASTable = ({
   onStartKeyboardCapture,
   activeKeyboardCaptureBindingId = null,
   keyboardCaptureProgress = 0,
+  trainingNotes = {},
 }) => {
   const handleHeaderClick = (column) => {
     if (sortBy === column) {
@@ -198,6 +199,26 @@ export const HOTASTable = ({
               const isCapturingKeyboard = activeKeyboardCaptureBindingId === binding.id;
               const remainingSeconds = Math.max(0, Math.ceil(captureProgress * 3));
               const remainingKeyboardSeconds = Math.max(0, Math.ceil(keyboardCaptureProgress * 3));
+              const note = trainingNotes?.[binding.id] || null;
+              const tutorialCount = note?.tutorialVideos?.length || 0;
+              const discussionCount = (note?.devDiscussionVideos?.length || 0) + (note?.readingLinks?.length || 0);
+              const tooltipContent = (
+                <div style={{ maxWidth: 420 }}>
+                  <Text size="xs" fw={700} c="cyan">{binding.feature}</Text>
+                  <Text size="xs" c="gray.3" mt={4}>{note?.summary || binding.description || 'No training notes yet.'}</Text>
+                  {note?.whenToUse && (
+                    <Text size="xs" c="orange.2" mt={4}>When: {note.whenToUse}</Text>
+                  )}
+                  {note?.bestPractice && (
+                    <Text size="xs" c="teal.1" mt={2}>Best Practice: {note.bestPractice}</Text>
+                  )}
+                  {(tutorialCount > 0 || discussionCount > 0) && (
+                    <Text size="xs" c="dimmed" mt={4}>
+                      {tutorialCount} tutorial link{tutorialCount === 1 ? '' : 's'} | {discussionCount} reference link{discussionCount === 1 ? '' : 's'}
+                    </Text>
+                  )}
+                </div>
+              );
 
               const renderHotasCell = (modeKey = null) => {
                 const value = modeKey ? binding.modeHotasBindings?.[modeKey] : binding.hotasBinding;
@@ -298,7 +319,7 @@ export const HOTASTable = ({
                 >
                 <Table.Td style={{ padding: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Tooltip label={binding.description}>
+                    <Tooltip label={tooltipContent} multiline>
                       <Text
                         size="sm"
                         fw={rowIsLive ? 700 : 500}

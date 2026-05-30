@@ -258,6 +258,8 @@ export default function AerobookBar() {
         </Menu.Dropdown>
       </Menu>
 
+      <div style={{ marginLeft: 'auto' }} />
+
       {/* VerseMail modal */}
       <VerseMail opened={verseMailOpen} onClose={() => setVerseMailOpen(false)} />
     </Group>
