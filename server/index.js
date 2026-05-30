@@ -30,7 +30,7 @@ import { registerVersemailRoutes } from './api/versemail/index.js';
 import { registerHotasModeRoutes } from './peripherals/hotas/index.js';
 import { registerDownloadRoutes } from './api/dev/download/index.js';
 import { registerHotasOverlayRoutes } from './api/hotasOverlayApi.js';
-import { upsertDeviceRebind } from './peripherals/hotas/xmlRebind.js';
+import { upsertDeviceRebind, removeDeviceRebind } from './peripherals/hotas/xmlRebind.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -957,13 +957,14 @@ app.post('/api/hotas/profile/:profileName/bindings', (req, res) => {
 
     const actionNames = normalizeActionNames(req.body?.actionNames);
     const inputToken = validateInputToken(req.body?.inputToken ?? req.body?.joystickInput);
-
-    if (actionNames.length === 0) {
-      return res.status(400).json({ error: 'No valid action names provided' });
-    }
+    const clearBinding = req.body?.clearBinding === true;
 
     if (!inputToken) {
       return res.status(400).json({ error: 'Invalid input token' });
+    }
+
+    if (!clearBinding && actionNames.length === 0) {
+      return res.status(400).json({ error: 'No valid action names provided' });
     }
 
     const filePath = join(STAR_CITIZEN_MAPPINGS_PATH, `${profileName}.xml`);
@@ -978,16 +979,23 @@ app.post('/api/hotas/profile/:profileName/bindings', (req, res) => {
     let updatedCount = 0;
     let foundCount = 0;
 
-    actionNames.forEach((actionName) => {
-      const result = upsertDeviceRebind(updatedXml, actionName, inputToken);
+    if (clearBinding) {
+      const result = removeDeviceRebind(updatedXml, inputToken);
       updatedXml = result.xml;
-      if (result.found) foundCount += 1;
-      if (result.updated) updatedCount += 1;
-    });
+      if (result.found) foundCount = 1;
+      if (result.updated) updatedCount = 1;
+    } else {
+      actionNames.forEach((actionName) => {
+        const result = upsertDeviceRebind(updatedXml, actionName, inputToken);
+        updatedXml = result.xml;
+        if (result.found) foundCount += 1;
+        if (result.updated) updatedCount += 1;
+      });
+    }
 
     if (updatedCount === 0) {
       return res.status(404).json({
-        error: 'No matching actions found in profile XML',
+        error: clearBinding ? 'No matching rebind found in profile XML' : 'No matching actions found in profile XML',
         actionNames,
       });
     }
@@ -1000,6 +1008,7 @@ app.post('/api/hotas/profile/:profileName/bindings', (req, res) => {
       profile: profileName,
       inputToken,
       actionNames,
+      clearBinding,
       matchedActions: foundCount,
       updatedActions: updatedCount,
     });

@@ -1,6 +1,6 @@
-import { useRef } from 'react';
-import { ActionIcon, Badge, Group, Text, Tooltip } from '@mantine/core';
-import { IconChevronLeft, IconChevronRight, IconRocket, IconSword, IconDiamond, IconSettings, IconSteeringWheel } from '@tabler/icons-react';
+import { useState } from 'react';
+import { Badge, Group, Text, Tooltip } from '@mantine/core';
+import { IconRocket, IconSword, IconDiamond, IconSettings, IconSteeringWheel, IconChevronDown } from '@tabler/icons-react';
 
 const MODE_ICONS = {
   combat: IconSword,
@@ -15,6 +15,8 @@ const DEFAULT_COLORS = [
   '#00bcd4', '#ff9800', '#8bc34a', '#e91e63', '#607d8b',
 ];
 
+const MIN_PROFILE_CARD_WIDTH = 320;
+
 function getProfileColor(meta, index) {
   return meta?.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length];
 }
@@ -24,13 +26,20 @@ function getProfileIcon(meta) {
   return <Icon size={20} />;
 }
 
-export default function ProfileCardScroller({ profiles, selectedProfile, onSelect, aiProfiles = [] }) {
-  const scrollRef = useRef(null);
+function normalizeProfileLabel(rawName) {
+  const text = String(rawName || '').trim();
+  if (!text) return '';
 
-  const scroll = (dir) => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({ left: dir * 260, behavior: 'smooth' });
-  };
+  return text
+    .replace(/^layout_/i, '')
+    .replace(/_exported$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export default function ProfileCardScroller({ profiles, selectedProfile, onSelect, aiProfiles = [] }) {
+  const [showChoices, setShowChoices] = useState(false);
 
   const allCards = [
     ...aiProfiles.map((p, i) => ({ ...p, isAI: true, index: i })),
@@ -45,117 +54,146 @@ export default function ProfileCardScroller({ profiles, selectedProfile, onSelec
     );
   }
 
+  const activeCard = allCards.find((card) => selectedProfile === card.name || selectedProfile === card.value) || allCards[0];
+  const meta = activeCard.meta || {};
+  const color = getProfileColor(meta, activeCard.index);
+  const label = meta.label || activeCard.label || normalizeProfileLabel(activeCard.name) || activeCard.name;
+  const description = meta.description || '';
+  const gameMode = meta.gameMode || (activeCard.isAI ? 'default' : '');
+  const activeKey = activeCard.value || activeCard.name;
+  const alternativeCards = allCards.filter((card) => (card.value || card.name) !== activeKey);
+
+  const handleSelect = (card) => {
+    onSelect(card.value || card.name);
+    setShowChoices(false);
+  };
+
   return (
-    <div style={{ position: 'relative' }}>
-      {/* Scroll buttons */}
-      <ActionIcon
-        variant="filled"
-        size="sm"
-        onClick={() => scroll(-1)}
-        style={{ position: 'absolute', left: -12, top: '50%', transform: 'translateY(-50%)', zIndex: 2, background: 'rgba(0,0,0,0.7)' }}
-      >
-        <IconChevronLeft size={14} />
-      </ActionIcon>
-      <ActionIcon
-        variant="filled"
-        size="sm"
-        onClick={() => scroll(1)}
-        style={{ position: 'absolute', right: -12, top: '50%', transform: 'translateY(-50%)', zIndex: 2, background: 'rgba(0,0,0,0.7)' }}
-      >
-        <IconChevronRight size={14} />
-      </ActionIcon>
+    <div style={{ position: 'relative', width: '100%', minWidth: MIN_PROFILE_CARD_WIDTH, maxWidth: 640 }}>
+      <Tooltip label={description || label} position="bottom" disabled={!description}>
+        <div
+          onClick={() => setShowChoices((current) => !current)}
+          style={{
+            width: '100%',
+            minHeight: 92,
+            borderRadius: 10,
+            padding: '0.75rem',
+            cursor: 'pointer',
+            position: 'relative',
+            overflow: 'hidden',
+            border: `2px solid ${color}`,
+            background: `linear-gradient(135deg, ${color}22 0%, rgba(0,0,0,0.6) 100%)`,
+            boxShadow: `0 0 16px ${color}44`,
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+          }}
+        >
+          {meta.shipImage && (
+            <img
+              src={meta.shipImage}
+              alt=""
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                opacity: 0.15,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
 
-      {/* Scrollable row */}
-      <div
-        ref={scrollRef}
-        style={{
-          display: 'flex',
-          gap: '0.75rem',
-          overflowX: 'auto',
-          padding: '0.5rem 1rem',
-          scrollbarWidth: 'thin',
-          scrollBehavior: 'smooth',
-        }}
-      >
-        {allCards.map((card) => {
-          const meta = card.meta || {};
-          const color = getProfileColor(meta, card.index);
-          const isActive = selectedProfile === card.name || selectedProfile === card.value;
-          const label = meta.label || card.label || card.name;
-          const description = meta.description || '';
-          const gameMode = meta.gameMode || (card.isAI ? 'default' : '');
+          <Group gap="xs" wrap="nowrap" justify="space-between" style={{ position: 'relative' }}>
+            <Group gap="xs" wrap="nowrap">
+              <div style={{ color, flexShrink: 0 }}>
+                {getProfileIcon(meta)}
+              </div>
+              <Text size="sm" fw={700} lineClamp={1} style={{ color: '#e0eaf4' }}>
+                {label}
+              </Text>
+            </Group>
+            <IconChevronDown size={16} color="#e0eaf4" />
+          </Group>
 
-          return (
-            <Tooltip key={card.value || card.name} label={description || label} position="bottom" disabled={!description}>
+          <Group gap={4} style={{ position: 'relative' }}>
+            {activeCard.isAI && (
+              <Badge size="xs" color="grape" variant="filled">AI</Badge>
+            )}
+            {gameMode && gameMode !== 'default' && (
+              <Badge size="xs" color={color} variant="light" style={{ textTransform: 'capitalize' }}>
+                {gameMode}
+              </Badge>
+            )}
+            <Badge size="xs" color="green" variant="filled">Active</Badge>
+          </Group>
+        </div>
+      </Tooltip>
+
+      {showChoices && alternativeCards.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 0.5rem)',
+            left: 0,
+            width: '100%',
+            zIndex: 20,
+            borderRadius: 10,
+            border: '1px solid rgba(0, 217, 255, 0.3)',
+            background: 'rgba(9, 12, 20, 0.97)',
+            boxShadow: '0 14px 28px rgba(0, 0, 0, 0.35)',
+            padding: '0.4rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.4rem',
+          }}
+        >
+          {alternativeCards.map((card) => {
+            const optionMeta = card.meta || {};
+            const optionColor = getProfileColor(optionMeta, card.index);
+            const optionLabel = optionMeta.label || card.label || normalizeProfileLabel(card.name) || card.name;
+            const optionMode = optionMeta.gameMode || (card.isAI ? 'default' : '');
+
+            return (
               <div
-                onClick={() => onSelect(card.value || card.name)}
+                key={card.value || card.name}
+                onClick={() => handleSelect(card)}
                 style={{
-                  flex: '0 0 180px',
-                  height: 90,
-                  borderRadius: 10,
-                  padding: '0.75rem',
+                  border: `1px solid ${optionColor}55`,
+                  borderRadius: 8,
+                  padding: '0.55rem 0.6rem',
                   cursor: 'pointer',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  border: isActive ? `2px solid ${color}` : '1px solid rgba(255,255,255,0.08)',
-                  background: isActive
-                    ? `linear-gradient(135deg, ${color}22 0%, rgba(0,0,0,0.6) 100%)`
-                    : 'rgba(0,0,0,0.4)',
-                  boxShadow: isActive ? `0 0 16px ${color}44` : 'none',
-                  transition: 'all 0.2s ease',
+                  background: `${optionColor}16`,
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'space-between',
+                  gap: '0.35rem',
                 }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.borderColor = `${color}66`; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
               >
-                {/* Ship background image (future) */}
-                {meta.shipImage && (
-                  <img
-                    src={meta.shipImage}
-                    alt=""
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      opacity: 0.15,
-                      pointerEvents: 'none',
-                    }}
-                  />
-                )}
-
-                {/* Top row: icon + name */}
-                <Group gap="xs" wrap="nowrap" style={{ position: 'relative' }}>
-                  <div style={{ color, flexShrink: 0 }}>
-                    {getProfileIcon(meta)}
+                <Group gap="xs" wrap="nowrap">
+                  <div style={{ color: optionColor, flexShrink: 0 }}>
+                    {getProfileIcon(optionMeta)}
                   </div>
-                  <Text size="xs" fw={700} lineClamp={1} style={{ color: '#e0eaf4' }}>
-                    {label}
+                  <Text size="xs" fw={700} lineClamp={1} style={{ color: '#dce7f3' }}>
+                    {optionLabel}
                   </Text>
                 </Group>
-
-                {/* Bottom row: badges */}
-                <Group gap={4} style={{ position: 'relative' }}>
+                <Group gap={4}>
                   {card.isAI && (
                     <Badge size="xs" color="grape" variant="filled">AI</Badge>
                   )}
-                  {gameMode && gameMode !== 'default' && (
-                    <Badge size="xs" color={color} variant="light" style={{ textTransform: 'capitalize' }}>
-                      {gameMode}
+                  {optionMode && optionMode !== 'default' && (
+                    <Badge size="xs" color={optionColor} variant="light" style={{ textTransform: 'capitalize' }}>
+                      {optionMode}
                     </Badge>
-                  )}
-                  {isActive && (
-                    <Badge size="xs" color="green" variant="filled">Active</Badge>
                   )}
                 </Group>
               </div>
-            </Tooltip>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

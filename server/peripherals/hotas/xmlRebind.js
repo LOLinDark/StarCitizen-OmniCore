@@ -40,3 +40,29 @@ export function upsertDeviceRebind(xml, actionName, inputToken) {
 
   return { xml: updatedXml, updated: true, found: true };
 }
+
+export function removeDeviceRebind(xml, inputToken) {
+  const normalizedToken = String(inputToken || '').trim();
+  if (!normalizedToken) return { xml, updated: false, found: false };
+
+  const rebindPattern = new RegExp(
+    `<rebind\\s+input="${escapeRegExp(normalizedToken)}"\\s*\\/>`,
+    'ig'
+  );
+
+  let found = false;
+  const updatedXml = xml.replace(rebindPattern, () => {
+    found = true;
+    return '';
+  });
+
+  if (!found) {
+    return { xml, updated: false, found: false };
+  }
+
+  const cleanedXml = updatedXml
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n');
+
+  return { xml: cleanedXml, updated: true, found: true };
+}

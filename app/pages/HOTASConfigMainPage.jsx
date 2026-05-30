@@ -20,7 +20,7 @@ import {
   MultiSelect,
   Button,
 } from '@mantine/core';
-import { IconSearch } from '@tabler/icons-react';
+import { IconRefresh, IconSearch } from '@tabler/icons-react';
 
 import { HOTASTable } from '../components/HOTASTable';
 import HOTASInputView from '../components/HOTASInputView';
@@ -241,6 +241,71 @@ export default function HOTASConfigMainPage() {
     setHotasOverrides((prev) => ({ ...prev, [bindingId]: xmlToken }));
     void persistCapturedBindingToXml(bindingId, xmlToken);
   }, [activeBindingMode, bindingLayout, persistCapturedBindingToXml]);
+
+  const persistClearedBindingFromXml = useCallback(async (inputToken) => {
+    if (!selectedProfile || selectedProfile.startsWith('__ai_')) return;
+
+    if (!inputToken) {
+      setXmlSaveStatus('error');
+      setXmlSaveMessage('Clear requested without a valid XML token');
+      return;
+    }
+
+    try {
+      setXmlSaveStatus('saving');
+      setXmlSaveMessage('Removing binding from XML...');
+
+      const response = await fetch(`/api/hotas/profile/${encodeURIComponent(selectedProfile)}/bindings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputToken,
+          clearBinding: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || `Failed to clear XML (${response.status})`);
+      }
+
+      setXmlSaveStatus('saved');
+      setXmlSaveMessage(`Cleared from XML: ${inputToken}`);
+    } catch (error) {
+      setXmlSaveStatus('error');
+      setXmlSaveMessage(error.message || 'Failed to clear profile XML binding');
+    }
+  }, [selectedProfile]);
+
+  const handleClearHotasFeature = useCallback((bindingId, xmlToken, modeKey = null) => {
+    if (bindingLayout === 'modes') {
+      const targetMode = HOTAS_MODE_KEYS.includes(modeKey) ? modeKey : activeBindingMode;
+      setModeHotasOverrides((prev) => {
+        const currentModeBindings = prev[targetMode] || {};
+        if (!currentModeBindings[bindingId]) return prev;
+
+        const nextModeBindings = { ...currentModeBindings };
+        delete nextModeBindings[bindingId];
+
+        return {
+          ...prev,
+          [targetMode]: nextModeBindings,
+        };
+      });
+      return;
+    }
+
+    setHotasOverrides((prev) => {
+      if (!prev[bindingId]) return prev;
+      const next = { ...prev };
+      delete next[bindingId];
+      return next;
+    });
+
+    void persistClearedBindingFromXml(xmlToken);
+  }, [activeBindingMode, bindingLayout, persistClearedBindingFromXml]);
 
   const getBindingConflictSummary = useCallback((bindingId, displayToken, bindingType) => {
     const normToken = String(displayToken || '').toLowerCase();
@@ -505,33 +570,34 @@ export default function HOTASConfigMainPage() {
     return lastHotasInput.name || 'Input detected';
   }, [getInputKind, lastHotasInput]);
 
+  const loadProfiles = useCallback(async () => {
+    try {
+      setProfilesLoading(true);
+      console.log('[HC01] Attempting to load profiles from /api/hotas/profiles');
+      const response = await fetch('/api/hotas/profiles');
+      console.log('[HC01] Response status:', response.status);
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('[HC01] Response error:', error);
+        throw new Error(`Failed to load profiles (${response.status})`);
+      }
+      const data = await response.json();
+      console.log('[HC01] Profiles loaded:', data.profiles?.length);
+      setProfiles(data.profiles || []);
+      setProfilesError(null);
+    } catch (error) {
+      console.error('[HC01] Error loading profiles:', error);
+      setProfilesError(`Could not load profiles: ${error.message}`);
+      setProfiles([]);
+    } finally {
+      setProfilesLoading(false);
+    }
+  }, []);
+
   // Load profiles from backend
   useEffect(() => {
-    const loadProfiles = async () => {
-      try {
-        setProfilesLoading(true);
-        console.log('[HC01] Attempting to load profiles from /api/hotas/profiles');
-        const response = await fetch('/api/hotas/profiles');
-        console.log('[HC01] Response status:', response.status);
-        if (!response.ok) {
-          const error = await response.text();
-          console.error('[HC01] Response error:', error);
-          throw new Error(`Failed to load profiles (${response.status})`);
-        }
-        const data = await response.json();
-        console.log('[HC01] Profiles loaded:', data.profiles?.length);
-        setProfiles(data.profiles || []);
-        setProfilesError(null);
-      } catch (error) {
-        console.error('[HC01] Error loading profiles:', error);
-        setProfilesError(`Could not load profiles: ${error.message}`);
-        setProfiles([]);
-      } finally {
-        setProfilesLoading(false);
-      }
-    };
-    loadProfiles();
-  }, []);
+    void loadProfiles();
+  }, [loadProfiles]);
 
   // Restore persisted state from localStorage on mount
   useEffect(() => {
@@ -1111,22 +1177,53 @@ export default function HOTASConfigMainPage() {
         {/* Header + Profiles + Banner */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', alignItems: 'center' }}>
           <div>
-            <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}><DevTag tag="HC05" />Peripheral Config</h1>
-            {profileName && (
-              <Text size="lg" fw={600} style={{ marginBottom: '0.5rem', color: '#1e90ff' }}>
-                {profileName}
-              </Text>
-            )}
+            <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>
+              <DevTag tag="HC05" />
+              Peripheral Config{profileName ? ` - ${profileName}` : ''}
+            </h1>
             <Text c="dimmed" mb="md">Configure your flight stick, mouse, and keyboard for precision control</Text>
-            {/* Profile Card Scroller — between header and banner */}
-            <ProfileCardScroller
-              profiles={profiles}
-              selectedProfile={selectedProfile}
-              onSelect={handleLoadProfile}
-              aiProfiles={[
-                { value: '__ai_x52_optimal', name: '__ai_x52_optimal', label: logitechX52ProOptimal.profileName, meta: { color: '#b300ff', gameMode: 'default', description: 'AI-generated optimal X52 layout' } },
-              ]}
-            />
+            <Group mb="xs" gap="sm" align="stretch" wrap="wrap">
+              {/* Step 1: Active profile card with click-to-select menu */}
+              <div>
+                <Text size="xs" c="dimmed" mb={4}>Step 1: Active profile</Text>
+                <ProfileCardScroller
+                  profiles={profiles}
+                  selectedProfile={selectedProfile}
+                  onSelect={handleLoadProfile}
+                  aiProfiles={[
+                    { value: '__ai_x52_optimal', name: '__ai_x52_optimal', label: logitechX52ProOptimal.profileName, meta: { color: '#b300ff', gameMode: 'default', description: 'AI-generated optimal X52 layout' } },
+                  ]}
+                />
+              </div>
+
+              {/* Step 2: Reload card-sized action */}
+              <div>
+                <Text size="xs" c="dimmed" mb={4}>Step 2: Reload profiles from game files</Text>
+                <Button
+                  variant="filled"
+                  leftSection={<IconRefresh size={16} />}
+                  onClick={() => void loadProfiles()}
+                  loading={profilesLoading}
+                  style={{
+                    width: 320,
+                    maxWidth: '100%',
+                    minHeight: 92,
+                    borderRadius: 10,
+                    background: 'linear-gradient(135deg, rgba(255,107,0,0.85) 0%, rgba(185,76,0,0.9) 100%)',
+                    border: '2px solid rgba(255, 163, 102, 0.7)',
+                    boxShadow: '0 0 16px rgba(255, 107, 0, 0.35)',
+                    color: '#fff4e6',
+                    justifyContent: 'flex-start',
+                    paddingLeft: '0.85rem',
+                  }}
+                >
+                  Reload profiles
+                </Button>
+              </div>
+            </Group>
+            <Text size="xs" c="dimmed">
+              {profiles.length} profile{profiles.length === 1 ? '' : 's'} detected
+            </Text>
           </div>
           <Box
             style={{
@@ -1215,6 +1312,7 @@ export default function HOTASConfigMainPage() {
                 hotasOverrides={hotasOverrides}
                 bindingLayout={bindingLayout}
                 onAssignFeature={handleAssignHotasFeature}
+                onClearFeature={handleClearHotasFeature}
                 activeInputs={activeInputs}
                 axisValues={axisValues}
                 lastHotasInput={lastHotasInput}
@@ -1333,6 +1431,7 @@ export default function HOTASConfigMainPage() {
             deviceFilter={profileFilter}
             searchQuery={searchQuery}
             onAssign={handleAssignHotasFeature}
+            onClear={handleClearHotasFeature}
           />
         )}
 

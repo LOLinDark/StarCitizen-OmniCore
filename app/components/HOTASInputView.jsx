@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef } from 'react';
-import { Badge, Group, Select, SegmentedControl, Switch, Text } from '@mantine/core';
+import { Badge, Button, Group, Select, SegmentedControl, Switch, Text } from '@mantine/core';
 import { X52_BUTTONS, X52_AXES, X52_MODES, X52_POV_DIRECTIONS } from '../libraries/hotas';
 
 // Features that are typically stick-axis-only (yaw/pitch/roll).
@@ -191,7 +191,7 @@ const MODE_SEGMENTS = [
   { value: 'all', label: 'All Modes' },
 ];
 
-export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, activeInputs, axisValues, lastHotasInput, currentMode }) {
+export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, onClear, activeInputs, axisValues, lastHotasInput, currentMode }) {
   const [modeFilter, setModeFilter] = useState('none');
   const [modeOverride, setModeOverride] = useState(false);
   const [editingRowId, setEditingRowId] = useState(null);
@@ -292,7 +292,14 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
 
   function handleFeatureSelect(row, bindingId) {
     setEditingRowId(null);
-    if (!bindingId || !onAssign) return;
+    if (!bindingId) {
+      if (row.assignedBinding && onClear) {
+        onClear(row.assignedBinding.id, row.xmlToken, MODE_INDEX_TO_KEY[row.modeIdx] || null);
+      }
+      return;
+    }
+
+    if (!onAssign) return;
     onAssign(bindingId, row.xmlToken, MODE_INDEX_TO_KEY[row.modeIdx] || null);
   }
 
@@ -390,20 +397,32 @@ export default function HOTASInputView({ bindings, hotasOverrides, bindingFilter
                         maxDropdownHeight={200}
                       />
                     ) : (
-                      <div
-                        onClick={() => setEditingRowId(row.id)}
-                        style={{ cursor: 'pointer', padding: '2px 4px', borderRadius: 4, transition: 'background 0.15s' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,217,255,0.08)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                      >
-                        {row.assignedBinding ? (
-                          <Text size="sm" fw={500} style={{ color: '#81c784' }}>
-                            {row.assignedBinding.feature}
-                          </Text>
-                        ) : (
-                          <Text size="sm" style={{ color: '#555', fontStyle: 'italic' }}>Click to assign Star Citizen feature...</Text>
+                      <Group gap="xs" wrap="nowrap" align="center">
+                        <div
+                          onClick={() => setEditingRowId(row.id)}
+                          style={{ cursor: 'pointer', padding: '2px 4px', borderRadius: 4, transition: 'background 0.15s', flex: 1 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,217,255,0.08)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                          {row.assignedBinding ? (
+                            <Text size="sm" fw={500} style={{ color: '#81c784' }}>
+                              {row.assignedBinding.feature}
+                            </Text>
+                          ) : (
+                            <Text size="sm" style={{ color: '#555', fontStyle: 'italic' }}>Click to assign Star Citizen feature...</Text>
+                          )}
+                        </div>
+                        {row.assignedBinding && onClear && (
+                          <Button
+                            size="xs"
+                            variant="light"
+                            color="red"
+                            onClick={() => onClear(row.assignedBinding.id, row.xmlToken, MODE_INDEX_TO_KEY[row.modeIdx] || null)}
+                          >
+                            Clear
+                          </Button>
                         )}
-                      </div>
+                      </Group>
                     )}
                   </td>
                   <td style={{ ...tdStyle, color: '#6a8898' }}>
