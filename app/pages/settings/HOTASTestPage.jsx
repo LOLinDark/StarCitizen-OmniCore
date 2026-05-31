@@ -11,6 +11,7 @@ import {
   Alert,
   Table,
   Tabs,
+  Tooltip,
 } from '@mantine/core';
 import { SciFiFrame } from '../../components/ui';
 import {
@@ -200,32 +201,51 @@ export default function HOTASTestPage() {
                     const isActive = activeInputs.has(`button-${btnIndex}`);
                     const btnInfo = X52_LOOKUP[btnIndex];
                     const displayNumber = getDisplayButtonNumber(btnIndex);
+                    const buttonLabel = btnInfo?.name || `Button ${displayNumber}`;
+                    const aliasList = (btnInfo?.aliases || []).filter((alias) => alias !== buttonLabel);
+                    const aliasLine = aliasList.length ? `Aliases: ${aliasList.join(', ')}` : null;
+                    const buttonTooltip = [
+                      buttonLabel,
+                      `UI badge: B${displayNumber}`,
+                      `Gamepad index: ${btnIndex}`,
+                      `Windows input: Button ${displayNumber}`,
+                      aliasLine,
+                      `Token: js1_button${displayNumber}`,
+                      `Active key: button-${btnIndex}`,
+                    ].filter(Boolean).join('\n');
+
                     return (
-                      <div
+                      <Tooltip
                         key={`btn-${btnIndex}`}
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '4px',
-                          background: isActive ? '#00d9ff' : 'rgba(0, 217, 255, 0.1)',
-                          border: isActive
-                            ? '2px solid #00d9ff'
-                            : '1px solid rgba(0, 217, 255, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.1s ease',
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          color: isActive ? '#000000' : 'rgba(0, 217, 255, 0.6)',
-                          textShadow: isActive ? 'none' : 'none',
-                          title: btnInfo?.name || `Button ${displayNumber}`,
-                        }}
-                        title={btnInfo?.name || `Button ${displayNumber}`}
+                        label={buttonTooltip}
+                        multiline
+                        withArrow
+                        openDelay={120}
+                        styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                       >
-                        B{displayNumber}
-                      </div>
+                        <div
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '4px',
+                            background: isActive ? '#00d9ff' : 'rgba(0, 217, 255, 0.1)',
+                            border: isActive
+                              ? '2px solid #00d9ff'
+                              : '1px solid rgba(0, 217, 255, 0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.1s ease',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            color: isActive ? '#000000' : 'rgba(0, 217, 255, 0.6)',
+                            textShadow: isActive ? 'none' : 'none',
+                          }}
+                        >
+                          B{displayNumber}
+                        </div>
+                      </Tooltip>
                     );
                   })}
 
@@ -233,31 +253,44 @@ export default function HOTASTestPage() {
                   {Array.from({ length: 9 }, (_, i) => i).map((axisIndex) => {
                     const isActive = activeInputs.has(`axis-${axisIndex}`);
                     const axisInfo = X52_LOOKUP[`${axisIndex}-axis`];
+                    const axisTooltip = [
+                      axisInfo?.name || `Axis ${axisIndex}`,
+                      `Axis index: ${axisIndex}`,
+                      `Token: js1_axis${axisIndex}`,
+                      `Active key: axis-${axisIndex}`,
+                    ].join('\n');
+
                     return (
-                      <div
+                      <Tooltip
                         key={`axis-${axisIndex}`}
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '4px',
-                          background: isActive ? '#00d9ff' : 'rgba(0, 217, 255, 0.1)',
-                          border: isActive
-                            ? '2px solid #00d9ff'
-                            : '1px solid rgba(0, 217, 255, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.1s ease',
-                          fontSize: '10px',
-                          fontWeight: 600,
-                          color: isActive ? '#000000' : 'rgba(0, 217, 255, 0.6)',
-                          title: axisInfo?.name || `Axis ${axisIndex}`,
-                        }}
-                        title={axisInfo?.name || `Axis ${axisIndex}`}
+                        label={axisTooltip}
+                        multiline
+                        withArrow
+                        openDelay={120}
+                        styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                       >
-                        A{axisIndex}
-                      </div>
+                        <div
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '4px',
+                            background: isActive ? '#00d9ff' : 'rgba(0, 217, 255, 0.1)',
+                            border: isActive
+                              ? '2px solid #00d9ff'
+                              : '1px solid rgba(0, 217, 255, 0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.1s ease',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            color: isActive ? '#000000' : 'rgba(0, 217, 255, 0.6)',
+                          }}
+                        >
+                          A{axisIndex}
+                        </div>
+                      </Tooltip>
                     );
                   })}
 
@@ -266,31 +299,44 @@ export default function HOTASTestPage() {
                     const isActive = activeInputs.has(`button-${hatDir}`);
                     const dirLabel = hatDir.split('-').pop().toUpperCase();
                     const shortDir = dirLabel === 'N' ? '↑' : dirLabel === 'NE' ? '↗' : dirLabel === 'E' ? '→' : dirLabel === 'SE' ? '↘' : dirLabel === 'S' ? '↓' : dirLabel === 'SW' ? '↙' : dirLabel === 'W' ? '←' : '↖';
+                    const direction = hatDir.split('-').pop();
+                    const hatTooltip = [
+                      `POV HAT ${dirLabel}`,
+                      `Token: js1_pov_${direction}`,
+                      `Active key: button-${hatDir}`,
+                    ].join('\n');
+
                     return (
-                      <div
+                      <Tooltip
                         key={`hat-${hatDir}`}
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          borderRadius: '4px',
-                          background: isActive ? '#00d9ff' : 'rgba(0, 217, 255, 0.1)',
-                          border: isActive
-                            ? '2px solid #00d9ff'
-                            : '1px solid rgba(0, 217, 255, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          transition: 'all 0.1s ease',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: isActive ? '#000000' : 'rgba(0, 217, 255, 0.6)',
-                          title: `POV HAT ${dirLabel}`,
-                        }}
-                        title={`POV HAT ${dirLabel}`}
+                        label={hatTooltip}
+                        multiline
+                        withArrow
+                        openDelay={120}
+                        styles={{ tooltip: { whiteSpace: 'pre-line', maxWidth: 260 } }}
                       >
-                        {shortDir}
-                      </div>
+                        <div
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '4px',
+                            background: isActive ? '#00d9ff' : 'rgba(0, 217, 255, 0.1)',
+                            border: isActive
+                              ? '2px solid #00d9ff'
+                              : '1px solid rgba(0, 217, 255, 0.3)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'all 0.1s ease',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            color: isActive ? '#000000' : 'rgba(0, 217, 255, 0.6)',
+                          }}
+                        >
+                          {shortDir}
+                        </div>
+                      </Tooltip>
                     );
                   })}
                 </div>

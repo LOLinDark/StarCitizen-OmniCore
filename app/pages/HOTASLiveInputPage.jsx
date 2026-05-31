@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Title, Text } from '@mantine/core';
 import HC05LiveInputContainer from '../containers/HC05LiveInputContainer.jsx';
 import { X52_BUTTONS, X52_AXES, X52_MODES, X52_POV_DIRECTIONS } from '../libraries/hotas/devices/LogitechX52.js';
+import DevTag from '../components/DevTag';
 
 // Example: import keybindings and deviceMap from your data sources
 // import keybindings from '../data/starcitizen-keybindings.js';
@@ -55,6 +56,7 @@ const initialOverlays = [
 ];
 const keybindings = [];
 const deviceMap = { X52_BUTTONS, X52_AXES, X52_MODES, X52_POV_DIRECTIONS };
+const PAGE_DEV_TAG = 'HC07';
 
 export default function HOTASLiveInputPage() {
   // Overlay state (initialize with initialOverlays, fallback to localStorage)
@@ -74,7 +76,7 @@ export default function HOTASLiveInputPage() {
 
   return (
     <Box p="lg">
-      <Title order={2} mb="md">HOTAS Live Input (HC05)</Title>
+      <Title order={2} mb="md"><DevTag tag={PAGE_DEV_TAG} />HOTAS Live Input</Title>
       <Text mb="md">All HOTAS mapping, overlays, and live input are unified here for easy access and editing.</Text>
       <HC05LiveInputContainer
         overlays={overlays}

@@ -38,13 +38,10 @@ function normalizeProfileLabel(rawName) {
     .trim();
 }
 
-export default function ProfileCardScroller({ profiles, selectedProfile, onSelect, aiProfiles = [] }) {
+export default function ProfileCardScroller({ profiles, selectedProfile, onSelect }) {
   const [showChoices, setShowChoices] = useState(false);
 
-  const allCards = [
-    ...aiProfiles.map((p, i) => ({ ...p, isAI: true, index: i })),
-    ...profiles.map((p, i) => ({ ...p, isAI: false, index: i + aiProfiles.length })),
-  ];
+  const allCards = profiles.map((p, i) => ({ ...p, index: i }));
 
   if (allCards.length === 0) {
     return (
@@ -54,14 +51,18 @@ export default function ProfileCardScroller({ profiles, selectedProfile, onSelec
     );
   }
 
-  const activeCard = allCards.find((card) => selectedProfile === card.name || selectedProfile === card.value) || allCards[0];
-  const meta = activeCard.meta || {};
-  const color = getProfileColor(meta, activeCard.index);
-  const label = meta.label || activeCard.label || normalizeProfileLabel(activeCard.name) || activeCard.name;
-  const description = meta.description || '';
-  const gameMode = meta.gameMode || (activeCard.isAI ? 'default' : '');
-  const activeKey = activeCard.value || activeCard.name;
-  const alternativeCards = allCards.filter((card) => (card.value || card.name) !== activeKey);
+  const activeCard = allCards.find((card) => selectedProfile === card.name || selectedProfile === card.value) || null;
+  const meta = activeCard?.meta || {};
+  const color = activeCard ? getProfileColor(meta, activeCard.index) : '#00bcd4';
+  const label = activeCard
+    ? (meta.label || activeCard.label || normalizeProfileLabel(activeCard.name) || activeCard.name)
+    : 'Select a profile';
+  const description = activeCard ? (meta.description || '') : 'Choose an imported HOTAS profile to begin editing.';
+  const gameMode = activeCard ? (meta.gameMode || '') : '';
+  const activeKey = activeCard ? (activeCard.value || activeCard.name) : null;
+  const alternativeCards = activeKey
+    ? allCards.filter((card) => (card.value || card.name) !== activeKey)
+    : allCards;
 
   const handleSelect = (card) => {
     onSelect(card.value || card.name);
@@ -82,7 +83,9 @@ export default function ProfileCardScroller({ profiles, selectedProfile, onSelec
             position: 'relative',
             overflow: 'hidden',
             border: `2px solid ${color}`,
-            background: `linear-gradient(135deg, ${color}22 0%, rgba(0,0,0,0.6) 100%)`,
+            background: activeCard
+              ? `linear-gradient(135deg, ${color}22 0%, rgba(0,0,0,0.6) 100%)`
+              : 'linear-gradient(135deg, rgba(0,188,212,0.14) 0%, rgba(0,0,0,0.6) 100%)',
             boxShadow: `0 0 16px ${color}44`,
             transition: 'all 0.2s ease',
             display: 'flex',
@@ -90,7 +93,7 @@ export default function ProfileCardScroller({ profiles, selectedProfile, onSelec
             justifyContent: 'space-between',
           }}
         >
-          {meta.shipImage && (
+          {activeCard && meta.shipImage && (
             <img
               src={meta.shipImage}
               alt=""
@@ -119,15 +122,16 @@ export default function ProfileCardScroller({ profiles, selectedProfile, onSelec
           </Group>
 
           <Group gap={4} style={{ position: 'relative' }}>
-            {activeCard.isAI && (
-              <Badge size="xs" color="grape" variant="filled">AI</Badge>
-            )}
             {gameMode && gameMode !== 'default' && (
               <Badge size="xs" color={color} variant="light" style={{ textTransform: 'capitalize' }}>
                 {gameMode}
               </Badge>
             )}
-            <Badge size="xs" color="green" variant="filled">Active</Badge>
+            {activeCard ? (
+              <Badge size="xs" color="green" variant="filled">Active</Badge>
+            ) : (
+              <Badge size="xs" color="cyan" variant="light">Not selected</Badge>
+            )}
           </Group>
         </div>
       </Tooltip>
@@ -154,7 +158,7 @@ export default function ProfileCardScroller({ profiles, selectedProfile, onSelec
             const optionMeta = card.meta || {};
             const optionColor = getProfileColor(optionMeta, card.index);
             const optionLabel = optionMeta.label || card.label || normalizeProfileLabel(card.name) || card.name;
-            const optionMode = optionMeta.gameMode || (card.isAI ? 'default' : '');
+            const optionMode = optionMeta.gameMode || '';
 
             return (
               <div
@@ -180,9 +184,6 @@ export default function ProfileCardScroller({ profiles, selectedProfile, onSelec
                   </Text>
                 </Group>
                 <Group gap={4}>
-                  {card.isAI && (
-                    <Badge size="xs" color="grape" variant="filled">AI</Badge>
-                  )}
                   {optionMode && optionMode !== 'default' && (
                     <Badge size="xs" color={optionColor} variant="light" style={{ textTransform: 'capitalize' }}>
                       {optionMode}

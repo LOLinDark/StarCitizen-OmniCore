@@ -33,7 +33,6 @@ import {
   getModePlayGroupOptions,
   getModePlayGroupsForBinding,
 } from '../data/hotas-mode-groups';
-import { logitechX52ProOptimal } from '../utils/defaultProfiles';
 import { StarCitizenProfileParser } from '../utils/starCitizenProfileParser';
 import { featureTrainingNotes } from '../data/trainingAcademyFeatureNotes';
 
@@ -46,6 +45,10 @@ import { normalizeText, getInputKind, getInputAction } from '../utils/hotasUtils
 import { formatHotasBindingFromInput, formatHotasInputForXml } from '../utils/hotasInputFormatters';
 
 const HOTAS_MODE_KEYS = ['green', 'orange', 'red'];
+const HOTAS_BAR_EVENT = 'omnicore:hotas-bookmark-status';
+const PAGE_DEV_TAG = 'HC05';
+const PAGE_LOG_SCOPE = `[${PAGE_DEV_TAG}]`;
+const PAGE_STORAGE_KEY = 'omnicore.hc05.state';
 
 const createEmptyModeMap = () => ({
   green: {},
@@ -239,9 +242,37 @@ export default function HOTASConfigMainPage() {
       return;
     }
 
-    setHotasOverrides((prev) => ({ ...prev, [bindingId]: xmlToken }));
+    const baseBindings = (Array.isArray(mergedBindings) && mergedBindings.length > 0)
+      ? mergedBindings
+      : shipKeybindings;
+
+    setHotasOverrides((prev) => {
+      const next = { ...prev };
+      // When assigning a button to a new feature, explicitly suppress any other
+      // feature whose XML binding resolves to the same button token.  Without
+      // this, stale XML bindings shadow the new assignment until the XML file
+      // itself is updated.
+      const normNew = String(xmlToken || '').toLowerCase();
+      const btnMatchNew = normNew.match(/^js\d+_button(\d+)$/);
+      baseBindings.forEach((b) => {
+        if (b.id === bindingId) return;
+        // Only suppress features that have no explicit override already set.
+        if (next[b.id] !== undefined) return;
+        const xmlVal = String(b.hotasBinding || '').toLowerCase();
+        if (!xmlVal) return;
+        const isConflict = xmlVal === normNew
+          || (btnMatchNew && xmlVal === `button ${btnMatchNew[1]}`)
+          || (btnMatchNew && xmlVal.includes(`js1_button${btnMatchNew[1]}`));
+        if (isConflict) {
+          // Setting to '' explicitly clears the XML fallback for this feature.
+          next[b.id] = '';
+        }
+      });
+      next[bindingId] = xmlToken;
+      return next;
+    });
     void persistCapturedBindingToXml(bindingId, xmlToken);
-  }, [activeBindingMode, bindingLayout, persistCapturedBindingToXml]);
+  }, [activeBindingMode, bindingLayout, mergedBindings, persistCapturedBindingToXml]);
 
   const persistClearedBindingFromXml = useCallback(async (inputToken) => {
     if (!selectedProfile || selectedProfile.startsWith('__ai_')) return;
@@ -351,7 +382,7 @@ export default function HOTASConfigMainPage() {
       const payload = await fetchProfileModeOverrides(profileName);
       applyHydratedModeOverrides(payload?.modeHotasOverrides || createEmptyModeMap());
     } catch (error) {
-      console.error('[HC05] Failed to load mode overrides:', error);
+      console.error(`${PAGE_LOG_SCOPE} Failed to load mode overrides:`, error);
       applyHydratedModeOverrides(createEmptyModeMap());
     }
   }, [applyHydratedModeOverrides]);
@@ -606,7 +637,7 @@ export default function HOTASConfigMainPage() {
     isInitializedRef.current = true;
 
     try {
-      const savedState = localStorage.getItem('omnicore.hc05.state');
+      const savedState = localStorage.getItem(PAGE_STORAGE_KEY);
       if (!savedState) return;
 
       const {
@@ -651,11 +682,11 @@ export default function HOTASConfigMainPage() {
 
       // Load profile - this will temporarily clear hotasOverrides
       if (savedProfile) {
-        console.log('[HC05] Restoring profile from localStorage:', savedProfile);
+        console.log(`${PAGE_LOG_SCOPE} Restoring profile from localStorage:`, savedProfile);
         handleLoadProfile(savedProfile);
       }
     } catch (error) {
-      console.error('[HC05] Error restoring state from localStorage:', error);
+      console.error(`${PAGE_LOG_SCOPE} Error restoring state from localStorage:`, error);
     }
   }, [applyHydratedModeOverrides]);
 
@@ -689,10 +720,10 @@ export default function HOTASConfigMainPage() {
         modeHotasOverrides,
         keyboardOverrides,
       };
-      localStorage.setItem('omnicore.hc05.state', JSON.stringify(stateToSave));
-      console.log('[HC05] State saved to localStorage');
+      localStorage.setItem(PAGE_STORAGE_KEY, JSON.stringify(stateToSave));
+      console.log(`${PAGE_LOG_SCOPE} State saved to localStorage`);
     } catch (error) {
-      console.error('[HC05] Error saving state to localStorage:', error);
+      console.error(`${PAGE_LOG_SCOPE} Error saving state to localStorage:`, error);
     }
   }, [selectedProfile, selectedCategory, selectedModeGroups, bindingLayout, activeBindingMode, hotasOverrides, modeHotasOverrides, keyboardOverrides]);
 
@@ -759,7 +790,7 @@ export default function HOTASConfigMainPage() {
           setModeOverridesSaveMessage('Mode overrides saved');
         })
         .catch((error) => {
-          console.error('[HC05] Failed to save mode overrides:', error);
+          console.error(`${PAGE_LOG_SCOPE} Failed to save mode overrides:`, error);
           setModeOverridesSaveStatus('error');
           setModeOverridesSaveMessage(error.message || 'Failed to save mode overrides');
         });
@@ -771,6 +802,81 @@ export default function HOTASConfigMainPage() {
       }
     };
   }, [selectedProfile, modeHotasOverrides, bindingLayout]);
+
+  useEffect(() => {
+    const hasProfile = Boolean(selectedProfile);
+    const hasConflict = Boolean(captureWarning);
+    const activeSaveState = xmlSaveStatus !== 'idle'
+      ? {
+          tone: xmlSaveStatus === 'saving' ? 'blue' : (xmlSaveStatus === 'saved' ? 'green' : 'red'),
+          icon: xmlSaveStatus === 'saving' ? '💾' : (xmlSaveStatus === 'saved' ? '✅' : '⛔'),
+          label: xmlSaveStatus === 'saving' ? 'Saving profile' : (xmlSaveStatus === 'saved' ? 'Profile saved' : 'Save failed'),
+          message: xmlSaveMessage || 'Profile XML status',
+        }
+      : (bindingLayout === 'modes' && modeOverridesSaveStatus !== 'idle'
+          ? {
+              tone: modeOverridesSaveStatus === 'saving' ? 'blue' : (modeOverridesSaveStatus === 'saved' ? 'green' : 'red'),
+              icon: modeOverridesSaveStatus === 'saving' ? '🎛' : (modeOverridesSaveStatus === 'saved' ? '✅' : '⛔'),
+              label: modeOverridesSaveStatus === 'saving' ? 'Saving modes' : (modeOverridesSaveStatus === 'saved' ? 'Modes saved' : 'Modes failed'),
+              message: modeOverridesSaveMessage || 'Mode override status',
+            }
+          : {
+              tone: hasProfile ? 'cyan' : 'gray',
+              icon: hasProfile ? '💾' : '📁',
+              label: hasProfile ? 'Auto-save ready' : 'Load a profile',
+              message: hasProfile
+                ? 'Assignments save back to the selected profile automatically.'
+                : 'Choose a Star Citizen profile before capturing or saving bindings.',
+            });
+
+    const contextDetail = bindingLayout === 'modes'
+      ? {
+          tone: 'violet',
+          icon: '🎛',
+          label: `${activeBindingMode[0].toUpperCase()}${activeBindingMode.slice(1)} mode`,
+          message: 'Per-mode editing is active. New HOTAS captures apply to the selected color mode.',
+        }
+      : {
+          tone: 'teal',
+          icon: '🕹',
+          label: 'Single HOTAS',
+          message: 'Single HOTAS editing is active. Captures write the same binding across your base layout.',
+        };
+
+    window.dispatchEvent(new CustomEvent(HOTAS_BAR_EVENT, {
+      detail: {
+        saveTone: activeSaveState.tone,
+        saveIcon: activeSaveState.icon,
+        saveLabel: activeSaveState.label,
+        saveMessage: activeSaveState.message,
+        contextTone: contextDetail.tone,
+        contextIcon: contextDetail.icon,
+        contextLabel: contextDetail.label,
+        contextMessage: contextDetail.message,
+        warningIcon: hasConflict ? '⚠️' : '',
+        warningLabel: hasConflict ? 'Conflict detected' : '',
+        warningMessage: captureWarning || '',
+        helperText: hasConflict
+          ? 'Resolve the highlighted clash before trusting the current layout.'
+          : (hasProfile ? 'Sticky status lives here while you scroll the table.' : 'Select a profile to start editing.'),
+      },
+    }));
+  }, [
+    selectedProfile,
+    xmlSaveStatus,
+    xmlSaveMessage,
+    modeOverridesSaveStatus,
+    modeOverridesSaveMessage,
+    captureWarning,
+    bindingLayout,
+    activeBindingMode,
+  ]);
+
+  useEffect(() => () => {
+    window.dispatchEvent(new CustomEvent(HOTAS_BAR_EVENT, {
+      detail: null,
+    }));
+  }, []);
 
   // Use shared filtering hook for defaults
   const hookResult = useHOTASFiltering(
@@ -988,82 +1094,8 @@ export default function HOTASConfigMainPage() {
       return;
     }
 
-    // Helper: Parse AI profile string and extract device type
-    const parseAIBindingString = (bindingStr) => {
-      if (!bindingStr) return { keyboard: null, hotas: null };
-      
-      // Check for device hints in the string
-      const isKeyboardBinding = bindingStr.toLowerCase().includes('keyboard') || 
-                                bindingStr.toLowerCase().includes('mouse');
-      const isHotasBinding = bindingStr.toLowerCase().includes('joystick');
-      
-      // If both types are mentioned or only partial info, classify smartly
-      if (bindingStr.includes('(keyboard)') || bindingStr.includes('(keyboard)')) {
-        return { keyboard: bindingStr, hotas: null };
-      }
-      if (bindingStr.includes('(joystick)') || bindingStr.includes('(HOTAS)')) {
-        return { keyboard: null, hotas: bindingStr };
-      }
-      
-      // Default heuristic: F-keys, mouse wheel, modifiers = keyboard; axis/buttons = HOTAS
-      if (/^[FfMm]\d+|Mouse|keyboard|Spacebar|Shift|Ctrl|Alt|Backspace|Tab|Return|Enter|Comma|Numpad/.test(bindingStr)) {
-        return { keyboard: bindingStr, hotas: null };
-      }
-      if (/Joystick|axis|button|Hat|Throttle/.test(bindingStr)) {
-        return { keyboard: null, hotas: bindingStr };
-      }
-      
-      // If contains both, try to split
-      if (bindingStr.includes(' | ') || bindingStr.includes(' & ')) {
-        const parts = bindingStr.split(/\s*[|&]\s*/);
-        return {
-          keyboard: parts[0]?.includes('keyboard') ? parts[0] : (parts.length > 0 && /keyboard|Mouse|Ctrl|Shift/.test(parts[0]) ? parts[0] : null),
-          hotas: parts[1]?.includes('joystick') ? parts[1] : (parts.length > 1 && /joystick|axis|button/.test(parts[1]) ? parts[1] : null),
-        };
-      }
-      
-      // Default: treat as keyboard binding
-      return { keyboard: bindingStr, hotas: null };
-    };
-
-    // Handle AI-generated profile
-    if (newProfileName === '__ai_x52_optimal') {
-      console.log('[HC05] Loading AI-generated X52 Optimal profile');
-      setSelectedProfile(newProfileName);
-      setProfileName(logitechX52ProOptimal.profileName);
-      setHotasOverrides({});
-      await loadModeOverridesForProfile(newProfileName);
-      setKeyboardOverrides({});
-      savedHotasOverridesRef.current = null;
-      savedKeyboardOverridesRef.current = null;
-      setXmlSaveStatus('idle');
-      setXmlSaveMessage('');
-      setModeOverridesSaveStatus('idle');
-      setModeOverridesSaveMessage('');
-      setCaptureWarning('');
-      
-      // Merge AI profile bindings with defaults
-      const merged = shipKeybindings.map(binding => {
-        const aiBinding = logitechX52ProOptimal.bindings[binding.id];
-        if (!aiBinding) return binding;
-        
-        // Parse the AI binding string to separate keyboard and HOTAS
-        const { keyboard, hotas } = parseAIBindingString(aiBinding);
-        
-        return {
-          ...binding,
-          primaryKey: binding.primaryKey, // Keep original default
-          keyboardBinding: keyboard,
-          hotasBinding: hotas,
-          _aiBinding: aiBinding, // For reference
-        };
-      });
-      setMergedBindings(merged);
-      return;
-    }
-
     try {
-      console.log(`[HC05] Loading profile: ${newProfileName}`);
+      console.log(`${PAGE_LOG_SCOPE} Loading profile: ${newProfileName}`);
       setSelectedProfile(newProfileName);
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
@@ -1075,8 +1107,8 @@ export default function HOTASConfigMainPage() {
       const response = await fetch(`/api/hotas/profile/${newProfileName}`);
       if (!response.ok) throw new Error('Failed to load profile');
       const data = await response.json();
-      console.log(`[HC05] Profile loaded:`, data.profile);
-      console.log('[HC05] Profile content length:', data.xmlContent?.length);
+      console.log(`${PAGE_LOG_SCOPE} Profile loaded:`, data.profile);
+      console.log(`${PAGE_LOG_SCOPE} Profile content length:`, data.xmlContent?.length);
       
       // Extract and set profile name from XML if available
       if (data.profileName) {
@@ -1091,11 +1123,11 @@ export default function HOTASConfigMainPage() {
       if (data.xmlContent) {
         try {
           const parser = new StarCitizenProfileParser(data.xmlContent);
-          console.log('[HC05] XML parsed successfully');
+          console.log(`${PAGE_LOG_SCOPE} XML parsed successfully`);
           
           // Get all bindings from profile (both keyboard and joystick)
           const allBindings = parser.getAllBindings();
-          console.log('[HC05] Found bindings in profile:', allBindings.length);
+          console.log(`${PAGE_LOG_SCOPE} Found bindings in profile:`, allBindings.length);
           
           // Create a map of actionName -> { keyboard, hotas }.
           // We intentionally key by action name (not action map) because feature
@@ -1117,7 +1149,7 @@ export default function HOTASConfigMainPage() {
             profileBindingsMap[actionName] = existing;
           });
           
-          console.log('[HC05] Profile bindings map created:', Object.keys(profileBindingsMap).length, 'actions');
+          console.log(`${PAGE_LOG_SCOPE} Profile bindings map created:`, Object.keys(profileBindingsMap).length, 'actions');
           
           // Merge profile bindings into our keybindings
           const merged = shipKeybindings.map(binding => {
@@ -1143,7 +1175,7 @@ export default function HOTASConfigMainPage() {
             });
 
             if (matched) {
-              console.log(`[HC05] Merged profile binding for ${binding.id}:`, {
+              console.log(`${PAGE_LOG_SCOPE} Merged profile binding for ${binding.id}:`, {
                 keyboardBinding: mergedBinding.keyboardBinding,
                 hotasBinding: mergedBinding.hotasBinding,
               });
@@ -1153,11 +1185,11 @@ export default function HOTASConfigMainPage() {
             return binding;
           });
           
-          console.log('[HC05] Profile merged into keybindings');
+          console.log(`${PAGE_LOG_SCOPE} Profile merged into keybindings`);
           setMergedBindings(merged);
           await loadModeOverridesForProfile(newProfileName);
         } catch (parseError) {
-          console.error('[HC05] Error parsing profile XML:', parseError);
+          console.error(`${PAGE_LOG_SCOPE} Error parsing profile XML:`, parseError);
           alert(`Could not parse profile: ${parseError.message}`);
           setSelectedProfile('');
           setProfileName('');
@@ -1170,7 +1202,7 @@ export default function HOTASConfigMainPage() {
         await loadModeOverridesForProfile(newProfileName);
       }
     } catch (error) {
-      console.error(`[HC05] Error loading profile:`, error);
+      console.error(`${PAGE_LOG_SCOPE} Error loading profile:`, error);
       alert(`Could not load profile: ${error.message}`);
       setSelectedProfile('');
       setProfileName('');
@@ -1201,7 +1233,7 @@ export default function HOTASConfigMainPage() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', alignItems: 'center' }}>
           <div>
             <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>
-              <DevTag tag="HC05" />
+              <DevTag tag={PAGE_DEV_TAG} />
               Peripheral Config{profileName ? ` - ${profileName}` : ''}
             </h1>
             <Text c="dimmed" mb="md">Configure your flight stick, mouse, and keyboard for precision control</Text>
@@ -1213,9 +1245,6 @@ export default function HOTASConfigMainPage() {
                   profiles={profiles}
                   selectedProfile={selectedProfile}
                   onSelect={handleLoadProfile}
-                  aiProfiles={[
-                    { value: '__ai_x52_optimal', name: '__ai_x52_optimal', label: logitechX52ProOptimal.profileName, meta: { color: '#b300ff', gameMode: 'default', description: 'AI-generated optimal X52 layout' } },
-                  ]}
                 />
               </div>
 
@@ -1318,14 +1347,10 @@ export default function HOTASConfigMainPage() {
         {/* Live Input Panel (restored) */}
         <Box mb="xl">
           <KeyPressIndicator
-            title="HC05 Live Input"
+            title="Live Input"
             inputLabel={liveInputLabel}
             assignmentLabel={inputAssignmentLabel}
             connected={gamepadConnected}
-            rawInput={lastHotasInput}
-            activeInputs={activeInputs}
-            axisValues={axisValues}
-            gamepadInfo={gamepadInfo}
           >
             <Box mt="md">
               <HC05LiveInputContainer
@@ -1397,27 +1422,6 @@ export default function HOTASConfigMainPage() {
               />
             </Group>
             <Group gap="sm" align="center">
-              {selectedProfile && !selectedProfile.startsWith('__ai_') && xmlSaveStatus !== 'idle' && (
-                <Badge
-                  color={xmlSaveStatus === 'saving' ? 'blue' : (xmlSaveStatus === 'saved' ? 'green' : 'red')}
-                  variant="light"
-                  size="xs"
-                >
-                  {xmlSaveStatus === 'saving' ? 'Saving...' : (xmlSaveStatus === 'saved' ? 'Saved' : 'Save failed')}
-                </Badge>
-              )}
-              {selectedProfile && bindingLayout === 'modes' && modeOverridesSaveStatus !== 'idle' && (
-                <Badge
-                  color={modeOverridesSaveStatus === 'saving' ? 'blue' : (modeOverridesSaveStatus === 'saved' ? 'green' : 'red')}
-                  variant="light"
-                  size="xs"
-                >
-                  {modeOverridesSaveStatus === 'saving' ? 'Modes saving...' : (modeOverridesSaveStatus === 'saved' ? 'Modes saved' : 'Modes failed')}
-                </Badge>
-              )}
-              {captureWarning && (
-                <Badge color="orange" variant="light" size="xs">Conflict</Badge>
-              )}
               <Text size="xs" c="dimmed" fw={600}>
                 {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
               </Text>

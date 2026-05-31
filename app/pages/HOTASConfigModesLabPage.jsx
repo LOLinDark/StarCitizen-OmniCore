@@ -24,7 +24,6 @@ import {
   getModePlayGroupOptions,
   getModePlayGroupsForBinding,
 } from '../data/hotas-mode-groups';
-import { logitechX52ProOptimal } from '../utils/defaultProfiles';
 import { StarCitizenProfileParser } from '../utils/starCitizenProfileParser';
 import { featureToStarCitizenAction, parseInputString, formatInputForDisplay } from '../utils/starCitizenActionMap';
 import {
@@ -42,6 +41,8 @@ import {
 import DevTag from '../components/DevTag';
 
 const MODE_KEYS = ['green', 'orange', 'red'];
+const PAGE_DEV_TAG = 'HC06';
+const PAGE_LOG_SCOPE = `[${PAGE_DEV_TAG}]`;
 
 const MODE_LABELS = {
   green: 'Green (safe/landing)',
@@ -55,7 +56,7 @@ const createEmptyModeMap = () => ({
   red: {},
 });
 
-const HC06_STORAGE_KEY = 'omnicore.hc06.modes.state';
+const PAGE_STORAGE_KEY = 'omnicore.hc06.modes.state';
 
 export default function HOTASConfigModesLabPage() {
   const CAPTURE_WINDOW_MS = 3000;
@@ -765,11 +766,11 @@ export default function HOTASConfigModesLabPage() {
 
       // Load profile - this will temporarily clear hotasOverrides
       if (savedProfile) {
-        console.log('[HC05] Restoring profile from localStorage:', savedProfile);
+        console.log(`${PAGE_LOG_SCOPE} Restoring profile from localStorage:`, savedProfile);
         handleLoadProfile(savedProfile);
       }
     } catch (error) {
-      console.error('[HC05] Error restoring state from localStorage:', error);
+      console.error(`${PAGE_LOG_SCOPE} Error restoring state from localStorage:`, error);
     }
   }, []);
 
@@ -814,10 +815,10 @@ export default function HOTASConfigModesLabPage() {
         modeHotasOverrides,
         modeKeyboardOverrides,
       };
-      localStorage.setItem(HC06_STORAGE_KEY, JSON.stringify(stateToSave));
-      console.log('[HC05] State saved to localStorage');
+      localStorage.setItem(PAGE_STORAGE_KEY, JSON.stringify(stateToSave));
+      console.log(`${PAGE_LOG_SCOPE} State saved to localStorage`);
     } catch (error) {
-      console.error('[HC05] Error saving state to localStorage:', error);
+      console.error(`${PAGE_LOG_SCOPE} Error saving state to localStorage:`, error);
     }
   }, [
     selectedProfile,
@@ -1221,79 +1222,8 @@ export default function HOTASConfigModesLabPage() {
       return;
     }
 
-    // Helper: Parse AI profile string and extract device type
-    const parseAIBindingString = (bindingStr) => {
-      if (!bindingStr) return { keyboard: null, hotas: null };
-      
-      // Check for device hints in the string
-      const isKeyboardBinding = bindingStr.toLowerCase().includes('keyboard') || 
-                                bindingStr.toLowerCase().includes('mouse');
-      const isHotasBinding = bindingStr.toLowerCase().includes('joystick');
-      
-      // If both types are mentioned or only partial info, classify smartly
-      if (bindingStr.includes('(keyboard)') || bindingStr.includes('(keyboard)')) {
-        return { keyboard: bindingStr, hotas: null };
-      }
-      if (bindingStr.includes('(joystick)') || bindingStr.includes('(HOTAS)')) {
-        return { keyboard: null, hotas: bindingStr };
-      }
-      
-      // Default heuristic: F-keys, mouse wheel, modifiers = keyboard; axis/buttons = HOTAS
-      if (/^[FfMm]\d+|Mouse|keyboard|Spacebar|Shift|Ctrl|Alt|Backspace|Tab|Return|Enter|Comma|Numpad/.test(bindingStr)) {
-        return { keyboard: bindingStr, hotas: null };
-      }
-      if (/Joystick|axis|button|Hat|Throttle/.test(bindingStr)) {
-        return { keyboard: null, hotas: bindingStr };
-      }
-      
-      // If contains both, try to split
-      if (bindingStr.includes(' | ') || bindingStr.includes(' & ')) {
-        const parts = bindingStr.split(/\s*[|&]\s*/);
-        return {
-          keyboard: parts[0]?.includes('keyboard') ? parts[0] : (parts.length > 0 && /keyboard|Mouse|Ctrl|Shift/.test(parts[0]) ? parts[0] : null),
-          hotas: parts[1]?.includes('joystick') ? parts[1] : (parts.length > 1 && /joystick|axis|button/.test(parts[1]) ? parts[1] : null),
-        };
-      }
-      
-      // Default: treat as keyboard binding
-      return { keyboard: bindingStr, hotas: null };
-    };
-
-    // Handle AI-generated profile
-    if (profileName === '__ai_x52_optimal') {
-      console.log('[HC05] Loading AI-generated X52 Optimal profile');
-      setSelectedProfile(profileName);
-      setProfileName(logitechX52ProOptimal.profileName);
-      setHotasOverrides({});
-      setKeyboardOverrides({});
-      setModeHotasOverrides(createEmptyModeMap());
-      setModeKeyboardOverrides(createEmptyModeMap());
-      setXmlSaveStatus('idle');
-      setXmlSaveMessage('');
-      setCaptureWarning('');
-      
-      // Merge AI profile bindings with defaults
-      const merged = shipKeybindings.map(binding => {
-        const aiBinding = logitechX52ProOptimal.bindings[binding.id];
-        if (!aiBinding) return binding;
-        
-        // Parse the AI binding string to separate keyboard and HOTAS
-        const { keyboard, hotas } = parseAIBindingString(aiBinding);
-        
-        return {
-          ...binding,
-          primaryKey: binding.primaryKey, // Keep original default
-          keyboardBinding: keyboard,
-          hotasBinding: hotas,
-          _aiBinding: aiBinding, // For reference
-        };
-      });
-      setMergedBindings(merged);
-      return;
-    }
-
     try {
-      console.log(`[HC05] Loading profile: ${profileName}`);
+      console.log(`${PAGE_LOG_SCOPE} Loading profile: ${profileName}`);
       setSelectedProfile(profileName);
       setXmlSaveStatus('idle');
       setXmlSaveMessage('');
@@ -1303,8 +1233,8 @@ export default function HOTASConfigModesLabPage() {
       const response = await fetch(`/api/hotas/profile/${profileName}`);
       if (!response.ok) throw new Error('Failed to load profile');
       const data = await response.json();
-      console.log(`[HC05] Profile loaded:`, data.profile);
-      console.log('[HC05] Profile content length:', data.xmlContent?.length);
+      console.log(`${PAGE_LOG_SCOPE} Profile loaded:`, data.profile);
+      console.log(`${PAGE_LOG_SCOPE} Profile content length:`, data.xmlContent?.length);
       
       // Extract and set profile name from XML if available
       if (data.profileName) {
@@ -1319,11 +1249,11 @@ export default function HOTASConfigModesLabPage() {
       if (data.xmlContent) {
         try {
           const parser = new StarCitizenProfileParser(data.xmlContent);
-          console.log('[HC05] XML parsed successfully');
+          console.log(`${PAGE_LOG_SCOPE} XML parsed successfully`);
           
           // Get all bindings from profile (both keyboard and joystick)
           const allBindings = parser.getAllBindings();
-          console.log('[HC05] Found bindings in profile:', allBindings.length);
+          console.log(`${PAGE_LOG_SCOPE} Found bindings in profile:`, allBindings.length);
           
           // Create a map of actionName -> { keyboard, hotas }.
           // We intentionally key by action name (not action map) because feature
@@ -1345,7 +1275,7 @@ export default function HOTASConfigModesLabPage() {
             profileBindingsMap[actionName] = existing;
           });
           
-          console.log('[HC05] Profile bindings map created:', Object.keys(profileBindingsMap).length, 'actions');
+          console.log(`${PAGE_LOG_SCOPE} Profile bindings map created:`, Object.keys(profileBindingsMap).length, 'actions');
           
           // Merge profile bindings into our keybindings
           const merged = shipKeybindings.map(binding => {
@@ -1371,7 +1301,7 @@ export default function HOTASConfigModesLabPage() {
             });
 
             if (matched) {
-              console.log(`[HC05] Merged profile binding for ${binding.id}:`, {
+              console.log(`${PAGE_LOG_SCOPE} Merged profile binding for ${binding.id}:`, {
                 keyboardBinding: mergedBinding.keyboardBinding,
                 hotasBinding: mergedBinding.hotasBinding,
               });
@@ -1381,10 +1311,10 @@ export default function HOTASConfigModesLabPage() {
             return binding;
           });
           
-          console.log('[HC05] Profile merged into keybindings');
+          console.log(`${PAGE_LOG_SCOPE} Profile merged into keybindings`);
           setMergedBindings(merged);
         } catch (parseError) {
-          console.error('[HC05] Error parsing profile XML:', parseError);
+          console.error(`${PAGE_LOG_SCOPE} Error parsing profile XML:`, parseError);
           alert(`Could not parse profile: ${parseError.message}`);
           setSelectedProfile('');
           setProfileName('');
@@ -1392,7 +1322,7 @@ export default function HOTASConfigModesLabPage() {
         }
       }
     } catch (error) {
-      console.error(`[HC05] Error loading profile:`, error);
+      console.error(`${PAGE_LOG_SCOPE} Error loading profile:`, error);
       alert(`Could not load profile: ${error.message}`);
       setSelectedProfile('');
       setProfileName('');
@@ -1459,7 +1389,7 @@ export default function HOTASConfigModesLabPage() {
               />
             </Group>
             <Badge color={enableModesLab ? 'orange' : 'gray'} variant="light" size="lg">
-              {enableModesLab ? `Mode Lab Active: ${MODE_LABELS[activeMode]}` : 'Mode Lab Disabled (HC05 behavior)'}
+              {enableModesLab ? `Mode Lab Active: ${MODE_LABELS[activeMode]}` : 'Mode Lab Disabled (single-layout behavior)'}
             </Badge>
           </Group>
           <Text size="xs" mt="sm" c="dimmed">
@@ -1665,21 +1595,7 @@ export default function HOTASConfigModesLabPage() {
             placeholder={profilesLoading ? 'Loading profiles...' : 'Select a profile'}
             value={selectedProfile}
             onChange={handleLoadProfile}
-            data={[
-              {
-                group: '🤖 OmniCore AI Profiles',
-                items: [
-                  {
-                    value: '__ai_x52_optimal',
-                    label: logitechX52ProOptimal.profileName,
-                  },
-                ],
-              },
-              {
-                group: '🎮 Your Game Profiles',
-                items: profiles.map(p => ({ value: p.name, label: p.name })),
-              },
-            ]}
+            data={profiles.map(p => ({ value: p.name, label: p.name }))}
             searchable
             clearable
             disabled={profilesLoading && profiles.length === 0}
@@ -1755,7 +1671,7 @@ export default function HOTASConfigModesLabPage() {
 
         {/* Live Input Panel – dockable */}
         <KeyPressIndicator
-          title="HC05 Live Input"
+          title="Live Input"
           inputLabel={liveInputLabel}
           assignmentLabel={inputAssignmentLabel}
           connected={gamepadConnected}

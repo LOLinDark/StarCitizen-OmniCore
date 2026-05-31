@@ -149,7 +149,10 @@ function findAssignedFeatures(input, bindings, hotasOverrides, { preferSingle = 
   const buttonName = String(buttonMeta?.name || '').toLowerCase();
   const buttonNum = input.type === 'Button' ? (X52_BUTTONS[input.index]?.windowsIndex ?? input.index + 1) : null;
   const modeKey = MODE_INDEX_TO_KEY[input.modeIdx];
-  const matches = [];
+  // Separate explicit user assignments from XML-loaded fallbacks so that
+  // an explicit assignment always takes priority over a stale XML binding.
+  const overrideMatches = [];
+  const xmlMatches = [];
 
   for (const binding of bindings) {
     if (input.type === 'Button' && !bindingMatchesPressType(binding, input.pressType)) continue;
@@ -160,49 +163,52 @@ function findAssignedFeatures(input, bindings, hotasOverrides, { preferSingle = 
     const greenFallbackValue = (!preferSingle && modeKey && modeKey !== 'green')
       ? String(binding.modeHotasBindings?.green || '')
       : '';
-    const singleValue = String(hotasOverrides[binding.id] || binding.hotasBinding || '');
+
+    // explicitOverride is undefined when the user hasn't touched this feature,
+    // '' when the user explicitly cleared it, or a token string when assigned.
+    const explicitOverride = hotasOverrides[binding.id];
+    // If explicitly cleared, exclude from all matches.
+    if (explicitOverride === '') continue;
+    const singleValue = explicitOverride !== undefined
+      ? String(explicitOverride)
+      : String(binding.hotasBinding || '');
     const hotasVal = String(modeValue || greenFallbackValue || singleValue || '').toLowerCase();
     if (!hotasVal) continue;
+
+    let matched = false;
     if (hotasVal === token) {
-      matches.push(binding);
-      continue;
-    }
-    if (input.type === 'Button' && buttonNum !== null) {
-      if (hotasVal === `button ${buttonNum}`) {
-        matches.push(binding);
-        continue;
-      }
-      if (hotasVal.includes(`button ${buttonNum}`) && !hotasVal.includes(`button ${buttonNum}0`)) {
-        matches.push(binding);
-        continue;
-      }
-      if (hotasVal.includes(`js1_button${buttonNum}`)) {
-        matches.push(binding);
-        continue;
-      }
+      matched = true;
+    } else if (input.type === 'Button' && buttonNum !== null) {
+      if (hotasVal === `button ${buttonNum}`) matched = true;
+      else if (hotasVal.includes(`button ${buttonNum}`) && !hotasVal.includes(`button ${buttonNum}0`)) matched = true;
+      else if (hotasVal.includes(`js1_button${buttonNum}`)) matched = true;
       // Some profiles/store views use X52 display labels instead of XML tokens.
       // Match those labels so existing assignments don't appear empty.
-      if (buttonName && hotasVal.includes(buttonName)) {
-        matches.push(binding);
-        continue;
-      }
-    }
-    if (input.type === 'Axis') {
+      else if (buttonName && hotasVal.includes(buttonName)) matched = true;
+    } else if (input.type === 'Axis') {
       const axisName = (X52_AXES[input.index]?.name || '').toLowerCase();
-      if (axisName && hotasVal.includes(axisName.split('(')[0].trim())) {
-        matches.push(binding);
-        continue;
-      }
-    }
-    if (input.type === 'POV') {
+      if (axisName && hotasVal.includes(axisName.split('(')[0].trim())) matched = true;
+    } else if (input.type === 'POV') {
       const povDirection = extractPovDirection(hotasVal);
-      if (povDirection === input.index) {
-        matches.push(binding);
+      if (povDirection === input.index) matched = true;
+    }
+
+    if (matched) {
+      // Mode-driven bindings (modeHotasBindings) are always explicit user assignments.
+      const isModeDriven = Boolean(modeValue || greenFallbackValue);
+      const isOverrideDriven = isModeDriven || explicitOverride !== undefined;
+      if (isOverrideDriven) {
+        overrideMatches.push(binding);
+      } else {
+        xmlMatches.push(binding);
       }
     }
   }
 
-  return matches;
+  // Explicit user overrides take precedence over XML-loaded fallbacks.
+  // If any feature has been explicitly assigned to this input, only show those —
+  // this prevents stale XML bindings from shadowing new assignments.
+  return overrideMatches.length > 0 ? overrideMatches : xmlMatches;
 }
 
 function readAxisValue(axisValues, axisIndex) {
