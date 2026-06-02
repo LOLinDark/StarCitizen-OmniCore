@@ -15,7 +15,6 @@ import {
   Text,
   Box,
   Badge,
-  Switch,
   SegmentedControl,
   MultiSelect,
   Button,
@@ -49,12 +48,15 @@ import { normalizeText, getInputKind, getInputAction } from '../utils/hotasUtils
 import { formatHotasBindingFromInput, formatHotasInputForXml } from '../utils/hotasInputFormatters';
 import ServerRequiredOverlay from '../components/ServerRequiredOverlay';
 import { useServerStatus } from '../hooks/useServerStatus';
+import { getAssetUrl } from '../utils/pathUtils';
 
 const HOTAS_MODE_KEYS = ['green', 'orange', 'red'];
 const HOTAS_BAR_EVENT = 'omnicore:hotas-bookmark-status';
 const PAGE_DEV_TAG = 'HC05';
 const PAGE_LOG_SCOPE = `[${PAGE_DEV_TAG}]`;
 const PAGE_STORAGE_KEY = 'omnicore.hc05.state';
+const CATEGORY_FILTER_PREFIX = 'category:';
+const ASSIGNMENT_MENU_HIDE_STICK_FEATURES = true;
 const TEMP_ACTIVITY_FILTER_BYPASS = false;
 const TEMP_MODE_GROUP_FILTER_BYPASS = false;
 const TEMP_ASSIGNMENT_MENU_FILTER_BYPASS = false;
@@ -70,6 +72,110 @@ const coerceModeMap = (input) => ({
   orange: input?.orange && typeof input.orange === 'object' ? input.orange : {},
   red: input?.red && typeof input.red === 'object' ? input.red : {},
 });
+
+// Activity icons — simple emoji that still read well at small sizes
+const ACTIVITY_META = {
+  '':          { icon: '◈', color: '#00d9ff' },
+  'vehicle':   { icon: '🚀', color: '#ff6b00' },
+  'on-foot':   { icon: '🥾', color: '#22d17b' },
+  'comms':     { icon: '📡', color: '#b300ff' },
+  'social':    { icon: '👥', color: '#00bcd4' },
+  'camera':    { icon: '📷', color: '#ff9800' },
+  'other':     { icon: '⚙', color: '#6a8898' },
+};
+
+/**
+ * Activity selector styled like ProfileCardScroller —
+ * active card always visible, click to open inline dropdown of alternatives.
+ */
+function ActivityCardPicker({ value, onChange, options }) {
+  const [open, setOpen] = React.useState(false);
+
+  const active = options.find((o) => o.value === value) || options[0];
+  const others = options.filter((o) => o.value !== active.value);
+  const activeMeta = ACTIVITY_META[active.value] || ACTIVITY_META[''];
+  const color = activeMeta.color;
+
+  return (
+    <div style={{ position: 'relative', width: 320, maxWidth: '100%' }}>
+      {/* Active card */}
+      <div
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          minHeight: 92,
+          borderRadius: 10,
+          padding: '0.75rem',
+          cursor: 'pointer',
+          border: `2px solid ${color}`,
+          background: `linear-gradient(135deg, ${color}22 0%, rgba(0,0,0,0.6) 100%)`,
+          boxShadow: `0 0 16px ${color}44`,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          transition: 'all 0.15s ease',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>{activeMeta.icon}</span>
+            <Text size="sm" fw={700} style={{ color: '#e0eaf4' }}>{active.label}</Text>
+          </div>
+          <Text size="xs" style={{ color: 'rgba(255,255,255,0.4)' }}>▾</Text>
+        </div>
+        <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+          <Badge size="xs" variant="filled" style={{ background: color, color: '#000', fontWeight: 700 }}>
+            {active.value === '' ? 'No filter' : 'Active filter'}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Dropdown */}
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 0.5rem)',
+            left: 0,
+            width: '100%',
+            zIndex: 20,
+            borderRadius: 10,
+            border: '1px solid rgba(0,217,255,0.3)',
+            background: 'rgba(9,12,20,0.97)',
+            boxShadow: '0 14px 28px rgba(0,0,0,0.4)',
+            padding: '0.4rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.35rem',
+          }}
+        >
+          {others.map((opt) => {
+            const meta = ACTIVITY_META[opt.value] || ACTIVITY_META[''];
+            return (
+              <div
+                key={opt.value}
+                onClick={() => { onChange(opt.value); setOpen(false); }}
+                style={{
+                  border: `1px solid ${meta.color}55`,
+                  borderRadius: 8,
+                  padding: '0.55rem 0.6rem',
+                  cursor: 'pointer',
+                  background: `${meta.color}16`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: 'background 0.1s ease',
+                }}
+              >
+                <span style={{ fontSize: '1rem', lineHeight: 1 }}>{meta.icon}</span>
+                <Text size="xs" fw={700} style={{ color: '#dce7f3' }}>{opt.label}</Text>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function HOTASConfigMainPage() {
       // Overlay state for HOTAS overlay demo (persisted in localStorage)
@@ -96,7 +202,6 @@ export default function HOTASConfigMainPage() {
       const CAPTURE_WINDOW_MS = 3000;
 
       const [selectedProfile, setSelectedProfile] = useState('');
-      const [selectedCategory, setSelectedCategory] = useState('');
       const [selectedActivity, setSelectedActivity] = useState('');
       const [searchQuery, setSearchQuery] = useState('');
       const [sortBy, setSortBy] = useState('feature');
@@ -110,7 +215,6 @@ export default function HOTASConfigMainPage() {
       const [profileFilter, setProfileFilter] = useState('all');
       const [hc05View, setHc05View] = useState('bindings');
       const [searchByLiveInput, setSearchByLiveInput] = useState(false);
-      const [hideStickFeatures, setHideStickFeatures] = useState(true);
       const [selectedModeGroups, setSelectedModeGroups] = useState([...DEFAULT_MODE_PLAY_GROUP_VALUES]);
       const [profileName, setProfileName] = useState('');
       const [mergedBindings, setMergedBindings] = useState(null);
@@ -131,6 +235,18 @@ export default function HOTASConfigMainPage() {
         || import.meta.env.MODE === 'development'
         || import.meta.env.NODE_ENV === 'development';
       const modeGroupOptions = useMemo(() => getModePlayGroupOptions(), []);
+      const mergedGroupOptions = useMemo(() => ([
+        ...modeGroupOptions,
+        ...Object.entries(shipControlsCategories).map(([key, category]) => ({
+          value: `${CATEGORY_FILTER_PREFIX}${key}`,
+          label: category.label,
+        })),
+      ]), [modeGroupOptions]);
+      const selectedCategoryFilters = useMemo(() => selectedModeGroups
+        .filter((value) => value.startsWith(CATEGORY_FILTER_PREFIX))
+        .map((value) => value.slice(CATEGORY_FILTER_PREFIX.length)), [selectedModeGroups]);
+      const selectedPlayModeGroups = useMemo(() => selectedModeGroups
+        .filter((value) => !value.startsWith(CATEGORY_FILTER_PREFIX)), [selectedModeGroups]);
       const captureStartedAtRef = useRef(0);
       const keyboardCaptureStartedAtRef = useRef(0);
       const captureInitialSignatureRef = useRef('');
@@ -676,10 +792,6 @@ export default function HOTASConfigMainPage() {
       if (HOTAS_MODE_KEYS.includes(savedActiveBindingMode)) {
         setActiveBindingMode(savedActiveBindingMode);
       }
-      
-      if (savedCategory) {
-        setSelectedCategory(savedCategory);
-      }
 
       if (typeof savedActivity === 'string') {
         setSelectedActivity(savedActivity);
@@ -689,8 +801,17 @@ export default function HOTASConfigMainPage() {
         setHc05View(savedHc05View);
       }
 
+      let restoredModeGroups = null;
       if (Array.isArray(savedModeGroups)) {
-        setSelectedModeGroups(savedModeGroups);
+        restoredModeGroups = savedModeGroups.filter((value) => typeof value === 'string');
+      }
+
+      if (typeof savedCategory === 'string' && savedCategory) {
+        restoredModeGroups = [...(restoredModeGroups || DEFAULT_MODE_PLAY_GROUP_VALUES), `${CATEGORY_FILTER_PREFIX}${savedCategory}`];
+      }
+
+      if (Array.isArray(restoredModeGroups)) {
+        setSelectedModeGroups(Array.from(new Set(restoredModeGroups)));
       }
 
       // Store overrides in ref to be restored after profile loads
@@ -738,7 +859,6 @@ export default function HOTASConfigMainPage() {
     try {
       const stateToSave = {
         selectedProfile,
-        selectedCategory,
         selectedActivity,
         hc05View,
         selectedModeGroups,
@@ -753,7 +873,7 @@ export default function HOTASConfigMainPage() {
     } catch (error) {
       console.error(`${PAGE_LOG_SCOPE} Error saving state to localStorage:`, error);
     }
-  }, [selectedProfile, selectedCategory, selectedActivity, hc05View, selectedModeGroups, bindingLayout, activeBindingMode, hotasOverrides, modeHotasOverrides, keyboardOverrides]);
+  }, [selectedProfile, selectedActivity, hc05View, selectedModeGroups, bindingLayout, activeBindingMode, hotasOverrides, modeHotasOverrides, keyboardOverrides]);
 
   useEffect(() => {
     const previousLayout = previousBindingLayoutRef.current;
@@ -908,13 +1028,13 @@ export default function HOTASConfigMainPage() {
 
   const filterPerfRef = useRef({ baseMs: 0, finalMs: 0 });
 
-  const { sortedBindings: unfilteredBindings, currentCategory, categoryList } = useMemo(() => {
+  const unfilteredBindings = useMemo(() => {
     const started = performance.now();
     const sourceBindings = mergedBindings || shipKeybindings;
     let results = sourceBindings;
 
-    if (selectedCategory) {
-      results = results.filter((b) => b.category === selectedCategory);
+    if (selectedCategoryFilters.length > 0) {
+      results = results.filter((binding) => selectedCategoryFilters.includes(binding.category));
     }
 
     if (!TEMP_ACTIVITY_FILTER_BYPASS) {
@@ -948,12 +1068,8 @@ export default function HOTASConfigMainPage() {
 
     filterPerfRef.current.baseMs = performance.now() - started;
 
-    return {
-      sortedBindings: sorted,
-      currentCategory: shipControlsCategories[selectedCategory],
-      categoryList: Object.entries(shipControlsCategories),
-    };
-  }, [mergedBindings, selectedCategory, selectedActivity, searchQuery, sortBy, sortOrder]);
+    return sorted;
+  }, [mergedBindings, selectedCategoryFilters, selectedActivity, searchQuery, sortBy, sortOrder]);
 
   const applyBindingOverrides = useCallback((bindings = []) => {
     if (!Array.isArray(bindings) || bindings.length === 0) return [];
@@ -1023,10 +1139,11 @@ export default function HOTASConfigMainPage() {
 
     return results.filter((binding) => {
       const bindingGroups = getModePlayGroupsForBinding(binding);
-      const inSelectedGroup = bindingGroups.some((group) => selectedModeGroups.includes(group));
-      return inSelectedGroup || hasVisibleBindingValue(binding);
+      const inSelectedGroup = bindingGroups.some((group) => selectedPlayModeGroups.includes(group));
+      const inSelectedCategory = selectedCategoryFilters.includes(binding.category);
+      return inSelectedGroup || inSelectedCategory || hasVisibleBindingValue(binding);
     });
-  }, [allEffectiveBindings, selectedActivity, selectedModeGroups, hasVisibleBindingValue]);
+  }, [allEffectiveBindings, selectedActivity, selectedPlayModeGroups, selectedCategoryFilters, hasVisibleBindingValue]);
 
   const modeGroupFilteredEffectiveBindings = useMemo(() => {
     if (TEMP_MODE_GROUP_FILTER_BYPASS) {
@@ -1035,10 +1152,11 @@ export default function HOTASConfigMainPage() {
 
     return effectiveBindings.filter((binding) => {
       const bindingGroups = getModePlayGroupsForBinding(binding);
-      const inSelectedGroup = bindingGroups.some((group) => selectedModeGroups.includes(group));
-      return inSelectedGroup || hasVisibleBindingValue(binding);
+      const inSelectedGroup = bindingGroups.some((group) => selectedPlayModeGroups.includes(group));
+      const inSelectedCategory = selectedCategoryFilters.includes(binding.category);
+      return inSelectedGroup || inSelectedCategory || hasVisibleBindingValue(binding);
     });
-  }, [effectiveBindings, selectedModeGroups, hasVisibleBindingValue]);
+  }, [effectiveBindings, selectedPlayModeGroups, selectedCategoryFilters, hasVisibleBindingValue]);
 
   // Filter by bound/unbound status
   const sortedBindings = useMemo(() => {
@@ -1273,7 +1391,7 @@ export default function HOTASConfigMainPage() {
           <div>
             <h1 style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>
               <DevTag tag={PAGE_DEV_TAG} />
-              Peripheral Config{profileName ? ` - ${profileName}` : ''}
+              Peripheral Config{hc05View === 'live' ? ' — HOTAS Live Input' : ' — Profile Bindings Table'}
             </h1>
             <Text c="dimmed" mb="md">Configure your flight stick, mouse, and keyboard for precision control</Text>
             <Group mb="xs" gap="sm" align="stretch" wrap="wrap">
@@ -1287,33 +1405,69 @@ export default function HOTASConfigMainPage() {
                 />
               </div>
 
+              {/* View flip switcher — two panels side by side */}
               <div>
-                <Text size="xs" c="dimmed" mb={4}>{isDevRuntime ? 'View' : 'Select view'}</Text>
-                <Box
+                <Text size="xs" c="dimmed" mb={4}>View</Text>
+                <div
                   style={{
                     width: 320,
                     maxWidth: '100%',
                     minHeight: 92,
                     borderRadius: 10,
                     border: '1px solid rgba(0, 217, 255, 0.25)',
-                    background: 'rgba(0, 12, 20, 0.45)',
-                    boxShadow: '0 0 14px rgba(0, 217, 255, 0.12)',
-                    padding: '0.75rem',
-                    display: 'flex',
-                    alignItems: 'center',
+                    background: 'rgba(0, 8, 16, 0.55)',
+                    boxShadow: '0 0 14px rgba(0, 217, 255, 0.10)',
+                    padding: 4,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 4,
                   }}
                 >
-                  <SegmentedControl
-                    value={hc05View}
-                    onChange={setHc05View}
-                    size="xs"
-                    fullWidth
-                    data={[
-                      { value: 'bindings', label: 'Bindings Table' },
-                      { value: 'live', label: 'HOTAS Live Input' },
-                    ]}
-                  />
-                </Box>
+                  {[
+                    { value: 'bindings', label: 'Bindings Table', icon: '⊞' },
+                    { value: 'live', label: 'HOTAS Live', icon: '◉' },
+                  ].map((opt) => {
+                    const active = hc05View === opt.value;
+                    return (
+                      <div
+                        key={opt.value}
+                        onClick={() => setHc05View(opt.value)}
+                        style={{
+                          borderRadius: 7,
+                          padding: '0.6rem 0.5rem',
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          border: active ? '1px solid rgba(0,217,255,0.55)' : '1px solid transparent',
+                          background: active
+                            ? 'linear-gradient(135deg, rgba(0,217,255,0.18) 0%, rgba(0,40,60,0.7) 100%)'
+                            : 'rgba(255,255,255,0.03)',
+                          boxShadow: active ? '0 0 10px rgba(0,217,255,0.2)' : 'none',
+                          transition: 'all 0.15s ease',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <span style={{ fontSize: '1.25rem', lineHeight: 1, color: active ? '#00d9ff' : 'rgba(255,255,255,0.3)' }}>
+                          {opt.icon}
+                        </span>
+                        <Text
+                          size="xs"
+                          fw={active ? 700 : 400}
+                          style={{
+                            color: active ? '#e0f4ff' : 'rgba(255,255,255,0.4)',
+                            letterSpacing: '0.04em',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {opt.label}
+                        </Text>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Reload profiles card */}
@@ -1341,30 +1495,14 @@ export default function HOTASConfigMainPage() {
                 </Button>
               </div>
 
+              {/* Activity card picker — matches ProfileCardScroller aesthetic */}
               <div>
                 <Text size="xs" c="dimmed" mb={4}>Select Activity</Text>
-                <Box
-                  style={{
-                    width: 320,
-                    maxWidth: '100%',
-                    minHeight: 92,
-                    borderRadius: 10,
-                    border: '1px solid rgba(0, 217, 255, 0.25)',
-                    background: 'rgba(0, 12, 20, 0.45)',
-                    boxShadow: '0 0 14px rgba(0, 217, 255, 0.12)',
-                    padding: '0.75rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  <Select
-                    value={selectedActivity}
-                    onChange={(value) => setSelectedActivity(value || '')}
-                    data={HOTAS_ACTIVITY_OPTIONS}
-                    style={{ width: '100%' }}
-                    size="md"
-                  />
-                </Box>
+                <ActivityCardPicker
+                  value={selectedActivity}
+                  onChange={setSelectedActivity}
+                  options={HOTAS_ACTIVITY_OPTIONS}
+                />
               </div>
             </Group>
             <Text size="xs" c="dimmed">
@@ -1382,7 +1520,7 @@ export default function HOTASConfigMainPage() {
             }}
           >
             <img
-              src="/assets/tools/hotas-config.png"
+              src={getAssetUrl('tools/hotas-config.png')}
               alt="Peripheral Configuration themed HOTAS setup"
               style={{
                 display: 'block',
@@ -1408,39 +1546,20 @@ export default function HOTASConfigMainPage() {
           <Text size="sm" fw={700} mb={8}>Groups</Text>
           <Group align="flex-end" gap="sm" wrap="wrap">
             <MultiSelect
-              label="Play Mode Groups"
-              description="Global filter applied to feature table, input table, and HOTAS overlay assignment menu"
-              placeholder="Show gameplay-specific groups"
-              data={modeGroupOptions}
+              label="Groups"
+              description="Global filter applied to the bindings table and HOTAS input views. Includes play-mode groups and categories."
+              placeholder="Show gameplay groups and categories"
+              data={mergedGroupOptions}
               value={selectedModeGroups}
               onChange={setSelectedModeGroups}
               searchable
               clearable
               style={{ minWidth: 360, flex: 1 }}
             />
-            <Select
-              label="Category"
-              placeholder="All Categories"
-              value={selectedCategory}
-              onChange={(value) => setSelectedCategory(value || '')}
-              data={[
-                { value: '', label: 'All Categories' },
-                ...categoryList.map(([key, category]) => ({ value: key, label: category.label })),
-              ]}
-              searchable
-              style={{ minWidth: 240 }}
-            />
-            <Switch
-              label="Groups"
-              checked={hideStickFeatures}
-              onChange={(event) => setHideStickFeatures(event.currentTarget.checked)}
-              size="sm"
-              title="Hide Yaw/Pitch/Roll in Assigned Feature menus for non-axis rows"
-            />
             <Button
               variant="light"
               size="xs"
-              onClick={() => setSelectedModeGroups(modeGroupOptions.map((option) => option.value))}
+              onClick={() => setSelectedModeGroups(mergedGroupOptions.map((option) => option.value))}
             >
               Select all
             </Button>
@@ -1449,7 +1568,7 @@ export default function HOTASConfigMainPage() {
               size="xs"
               onClick={() => setSelectedModeGroups([])}
             >
-              Hide all
+              Clear all
             </Button>
             <Badge color="cyan" variant="light" size="sm">
               {modeGroupFilteredAllBindings.length} visible bindings
@@ -1589,7 +1708,7 @@ export default function HOTASConfigMainPage() {
                 bindingFilter={profileFilter}
                 deviceFilter={profileFilter}
                 searchQuery={searchQuery}
-                hideStickFeatures={hideStickFeatures}
+                hideStickFeatures={ASSIGNMENT_MENU_HIDE_STICK_FEATURES}
                 showHideStickToggle={false}
                 disableAssignmentMenuFiltering={TEMP_ASSIGNMENT_MENU_FILTER_BYPASS}
                 onAssign={handleAssignHotasFeature}

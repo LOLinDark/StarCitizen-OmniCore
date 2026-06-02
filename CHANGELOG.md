@@ -100,6 +100,20 @@ All notable changes to OmniCore will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- HOTAS demo mode support for live display flows
+- Server-required UX components for pages that depend on backend availability
+
+### Changed
+- HOTAS groups filtering now supports merged play-mode groups and categories in one control
+- HOTAS filter persistence now migrates legacy saved category selections into the merged groups model
+- Frontend bundle chunking strategy refined to reduce broad vendor coupling and improve route-split loading behavior
+- Build output cleanup improved by clearing the out-of-root dist directory on build
+
+### Removed
+- Legacy HOTAS modes lab page and its redundant client/server route surfaces
+- Deprecated HOTAS modes route registration and unused modes client helpers
+
 ### Planned
 - Feature explanation column (hideable, with YouTube tutorial links)
 - Keyboard usage counter (top 5 most-pressed keys)
