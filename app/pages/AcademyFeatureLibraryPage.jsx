@@ -3,6 +3,7 @@ import {
   Anchor,
   Badge,
   Box,
+  Button,
   Card,
   Group,
   ScrollArea,
@@ -108,6 +109,7 @@ export default function AcademyFeatureLibraryPage() {
   const [category, setCategory] = useState('all');
   const [focusFeatureId, setFocusFeatureId] = useState('');
   const [expandedMediaRowId, setExpandedMediaRowId] = useState('');
+  const [mediaPreviewsEnabled, setMediaPreviewsEnabled] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -218,6 +220,16 @@ export default function AcademyFeatureLibraryPage() {
           data={categoryOptions}
           style={{ minWidth: 320 }}
         />
+        <Button
+          variant={mediaPreviewsEnabled ? 'light' : 'filled'}
+          color={mediaPreviewsEnabled ? 'gray' : 'orange'}
+          onClick={() => {
+            setExpandedMediaRowId('');
+            setMediaPreviewsEnabled((prev) => !prev);
+          }}
+        >
+          {mediaPreviewsEnabled ? 'Disable Media Previews' : 'Enable Media Previews'}
+        </Button>
       </Group>
 
       <Stack gap="xs">
@@ -262,15 +274,14 @@ export default function AcademyFeatureLibraryPage() {
         </SimpleGrid>
       </Stack>
 
-      <ScrollArea style={{ maxHeight: 'calc(100vh - 240px)' }}>
-        <Table striped highlightOnHover withTableBorder withColumnBorders horizontalSpacing="sm" verticalSpacing="sm" style={{ minWidth: 1900 }}>
+      <ScrollArea style={{ height: 'calc(100vh - 320px)', minHeight: 300 }}>
+        <Table striped highlightOnHover withTableBorder withColumnBorders horizontalSpacing="sm" verticalSpacing="sm" style={{ minWidth: 1400 }}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Feature</Table.Th>
               <Table.Th>Category</Table.Th>
-              <Table.Th>Default Key</Table.Th>
+              <Table.Th style={{ whiteSpace: 'nowrap', minWidth: 160 }}>Default Key</Table.Th>
               <Table.Th>Short Description</Table.Th>
-              <Table.Th>Long Description</Table.Th>
               <Table.Th>Media (Short Clip + Deep Tutorial)</Table.Th>
             </Table.Tr>
           </Table.Thead>
@@ -278,58 +289,85 @@ export default function AcademyFeatureLibraryPage() {
             {rows.map((row) => {
               const tooltipContext = Array.isArray(row.note.tooltipContext) ? row.note.tooltipContext : [];
               const isFocusedRow = focusFeatureId && row.id === focusFeatureId;
+              const isExpanded = expandedMediaRowId === row.id;
 
               return (
-                <Table.Tr
-                  key={row.id}
-                  id={`feature-row-${row.id}`}
-                  style={isFocusedRow ? { background: 'rgba(0, 217, 255, 0.1)', boxShadow: 'inset 0 0 0 1px rgba(0, 217, 255, 0.45)' } : undefined}
-                >
-                  <Table.Td>
-                    <Text fw={600}>{row.feature}</Text>
-                    <Text size="xs" c="dimmed">{row.id}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{row.categoryLabel}</Text>
-                  </Table.Td>
-                  <Table.Td>
-                    <Badge color="blue" variant="light">{row.primaryKey || '-'}</Badge>
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{row.shortDescription}</Text>
-                    {row.note.whenToUse && <Text size="xs" c="dimmed" mt={4}>When: {row.note.whenToUse}</Text>}
-                  </Table.Td>
-                  <Table.Td>
-                    <Text size="sm">{row.longDescription}</Text>
-                    {row.note.bestPractice && <Text size="xs" c="dimmed" mt={4}>Best practice: {row.note.bestPractice}</Text>}
-                    {tooltipContext.map((line, index) => (
-                      <Text key={`${row.id}-ctx-${index}`} size="xs" c="cyan" mt={4}>
-                        Tooltip context: {line}
-                      </Text>
-                    ))}
-                  </Table.Td>
-                  <Table.Td>
-                    <Stack gap={6}>
-                      <button
-                        type="button"
-                        onClick={() => setExpandedMediaRowId((prev) => (prev === row.id ? '' : row.id))}
-                        style={{
-                          alignSelf: 'flex-start',
-                          border: '1px solid rgba(0, 217, 255, 0.35)',
-                          borderRadius: 6,
-                          background: 'rgba(0, 20, 35, 0.5)',
-                          color: '#7dd3fc',
-                          padding: '4px 10px',
-                          cursor: 'pointer',
-                          fontSize: 12,
-                        }}
-                      >
-                        {expandedMediaRowId === row.id ? 'Hide Media' : 'Load Media'}
-                      </button>
-                      {expandedMediaRowId === row.id ? renderMediaCell(row.note) : null}
-                    </Stack>
-                  </Table.Td>
-                </Table.Tr>
+                <>
+                  <Table.Tr
+                    key={row.id}
+                    id={`feature-row-${row.id}`}
+                    style={{
+                      cursor: 'pointer',
+                      ...(isFocusedRow ? { background: 'rgba(0, 217, 255, 0.1)', boxShadow: 'inset 0 0 0 1px rgba(0, 217, 255, 0.45)' } : undefined),
+                    }}
+                    onClick={() => setExpandedMediaRowId((prev) => (prev === row.id ? '' : row.id))}
+                  >
+                    <Table.Td>
+                      <Group gap={6} wrap="nowrap">
+                        <Text size="xs" c={isExpanded ? 'cyan' : 'dimmed'} style={{ lineHeight: 1 }}>
+                          {isExpanded ? '▾' : '▸'}
+                        </Text>
+                        <div>
+                          <Text fw={600}>{row.feature}</Text>
+                          <Text size="xs" c="dimmed">{row.id}</Text>
+                        </div>
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{row.categoryLabel}</Text>
+                    </Table.Td>
+                    <Table.Td style={{ whiteSpace: 'nowrap' }}>
+                      <Badge color="blue" variant="light" style={{ whiteSpace: 'nowrap', maxWidth: 'none' }}>{row.primaryKey || '-'}</Badge>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm">{row.shortDescription}</Text>
+                      {row.note.whenToUse && <Text size="xs" c="dimmed" mt={4}>When: {row.note.whenToUse}</Text>}
+                    </Table.Td>
+                    <Table.Td onClick={(e) => e.stopPropagation()}>
+                      <Stack gap={6}>
+                        <button
+                          type="button"
+                          disabled={!mediaPreviewsEnabled}
+                          onClick={() => setExpandedMediaRowId((prev) => (prev === row.id ? '' : row.id))}
+                          style={{
+                            alignSelf: 'flex-start',
+                            border: '1px solid rgba(0, 217, 255, 0.35)',
+                            borderRadius: 6,
+                            background: mediaPreviewsEnabled ? 'rgba(0, 20, 35, 0.5)' : 'rgba(35, 35, 35, 0.45)',
+                            color: mediaPreviewsEnabled ? '#7dd3fc' : '#9ca3af',
+                            padding: '4px 10px',
+                            cursor: mediaPreviewsEnabled ? 'pointer' : 'not-allowed',
+                            opacity: mediaPreviewsEnabled ? 1 : 0.75,
+                            fontSize: 12,
+                          }}
+                        >
+                          {!mediaPreviewsEnabled
+                            ? 'Enable previews first'
+                            : (isExpanded ? 'Hide Media' : 'Load Media')}
+                        </button>
+                        {mediaPreviewsEnabled && isExpanded ? renderMediaCell(row.note) : null}
+                      </Stack>
+                    </Table.Td>
+                  </Table.Tr>
+                  {isExpanded && (
+                    <Table.Tr key={`${row.id}-expanded`} style={{ background: 'rgba(0, 10, 20, 0.55)' }}>
+                      <Table.Td colSpan={5} style={{ paddingLeft: 40, paddingTop: 10, paddingBottom: 14 }}>
+                        <Stack gap={6}>
+                          <Text size="xs" fw={600} c="cyan.4" tt="uppercase" style={{ letterSpacing: '0.05em' }}>Long Description</Text>
+                          <Text size="sm">{row.longDescription}</Text>
+                          {row.note.bestPractice && (
+                            <Text size="xs" c="dimmed" mt={4}>Best practice: {row.note.bestPractice}</Text>
+                          )}
+                          {tooltipContext.map((line, index) => (
+                            <Text key={`${row.id}-ctx-${index}`} size="xs" c="cyan" mt={4}>
+                              Tooltip context: {line}
+                            </Text>
+                          ))}
+                        </Stack>
+                      </Table.Td>
+                    </Table.Tr>
+                  )}
+                </>
               );
             })}
           </Table.Tbody>

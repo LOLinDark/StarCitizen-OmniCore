@@ -11,6 +11,18 @@
 
 import { importedSupplementalKeybindings } from './starcitizen-keybindings.imported-supplement.js';
 
+export const HOTAS_ACTIVITY_OPTIONS = [
+  { value: '', label: 'All Activities' },
+  { value: 'vehicle', label: 'Vehicle' },
+  { value: 'on-foot', label: 'On Foot' },
+  { value: 'comms', label: 'Comms' },
+  { value: 'social', label: 'Social' },
+  { value: 'camera', label: 'Camera' },
+  { value: 'other', label: 'Other' },
+];
+
+const ACTIVITY_BUCKETS = ['vehicle', 'on-foot', 'comms', 'social', 'camera', 'other'];
+
 // ============================================================================
 // SHIP CONTROLS - Categories
 // ============================================================================
@@ -94,12 +106,7 @@ export const shipControlsCategories = {
     color: '#00d9ff',
     description: 'Radar and targeting',
   },
-  future: {
-    id: 'future',
-    label: 'Future / Unsupported',
-    color: '#6b7280',
-    description: 'Not yet supported or non-ship mappings parked for future implementation.',
-  },
+
   lights: {
     id: 'lights',
     label: 'Lights',
@@ -1735,168 +1742,172 @@ const baseShipKeybindings = [
     pendingApply: false,
   },
 
-  // ===== FUTURE / UNSUPPORTED MAPPINGS =====
+  // ===== ON-FOOT / PLAYER MOVEMENT =====
   {
     id: 'player_sprint',
-    feature: '[Future] Player Sprint',
-    category: 'future',
-    primaryKey: null,
+    feature: 'Player Sprint',
+    category: 'seats',
+    primaryKey: 'L Shift',
     secondaryKey: null,
-    description: 'On-foot movement mapping parked for future support.',
-    hasModifier: false,
+    description: 'Sprint while on foot',
+    hasModifier: true,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'player_walk',
-    feature: '[Future] Player Walk',
-    category: 'future',
+    feature: 'Player Walk',
+    category: 'seats',
     primaryKey: null,
     secondaryKey: null,
-    description: 'On-foot movement mapping parked for future support.',
+    description: 'Walk speed toggle while on foot',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'player_crouch',
-    feature: '[Future] Player Crouch',
-    category: 'future',
-    primaryKey: null,
+    feature: 'Player Crouch',
+    category: 'seats',
+    primaryKey: 'L Ctrl',
     secondaryKey: null,
-    description: 'On-foot movement mapping parked for future support.',
-    hasModifier: false,
+    description: 'Crouch while on foot',
+    hasModifier: true,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'player_prone',
-    feature: '[Future] Player Prone',
-    category: 'future',
-    primaryKey: null,
+    feature: 'Player Prone',
+    category: 'seats',
+    primaryKey: 'X',
     secondaryKey: null,
-    description: 'On-foot movement mapping parked for future support.',
+    description: 'Go prone while on foot',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'player_jump',
-    feature: '[Future] Player Jump',
-    category: 'future',
-    primaryKey: null,
+    feature: 'Player Jump',
+    category: 'seats',
+    primaryKey: 'Spacebar',
     secondaryKey: null,
-    description: 'On-foot movement mapping parked for future support.',
+    description: 'Jump while on foot',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
+
+  // ===== TARGETING =====
   {
     id: 'targeting_lock',
-    feature: '[Future] Target Lock',
-    category: 'future',
+    feature: 'Target Lock',
+    category: 'radar',
     primaryKey: null,
     secondaryKey: null,
-    description: 'Targeting mapping parked for future support.',
+    description: 'Lock onto current target',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'targeting_cycle_attackers',
-    feature: '[Future] Cycle Attackers',
-    category: 'future',
-    primaryKey: null,
+    feature: 'Cycle Attackers',
+    category: 'radar',
+    primaryKey: '4',
     secondaryKey: null,
-    description: 'Targeting mapping parked for future support.',
+    description: 'Cycle through attacking targets',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'targeting_cycle_hostiles',
-    feature: '[Future] Cycle Hostiles',
-    category: 'future',
-    primaryKey: null,
+    feature: 'Cycle Hostiles',
+    category: 'radar',
+    primaryKey: '5',
     secondaryKey: null,
-    description: 'Targeting mapping parked for future support.',
+    description: 'Cycle through hostile targets',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'targeting_cycle_friendlies',
-    feature: '[Future] Cycle Friendlies',
-    category: 'future',
-    primaryKey: null,
+    feature: 'Cycle Friendlies',
+    category: 'radar',
+    primaryKey: '6',
     secondaryKey: null,
-    description: 'Targeting mapping parked for future support.',
+    description: 'Cycle through friendly targets',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
+
+  // ===== WEAPON PRESETS =====
   {
     id: 'weapons_preset_0',
-    feature: '[Future] Weapons Preset 0',
-    category: 'future',
-    primaryKey: null,
+    feature: 'Weapon Preset - Fire',
+    category: 'weapons',
+    primaryKey: 'Mouse 1',
     secondaryKey: null,
-    description: 'Weapon preset mapping parked for future support.',
+    description: 'Fire active weapon preset',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'weapons_preset_1',
-    feature: '[Future] Weapons Preset 1',
-    category: 'future',
+    feature: 'Weapon Preset - Guns Group 1',
+    category: 'weapons',
     primaryKey: null,
     secondaryKey: null,
-    description: 'Weapon preset mapping parked for future support.',
+    description: 'Fire guns group 1',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'weapons_preset_2',
-    feature: '[Future] Weapons Preset 2',
-    category: 'future',
+    feature: 'Weapon Preset - Guns Group 2',
+    category: 'weapons',
     primaryKey: null,
     secondaryKey: null,
-    description: 'Weapon preset mapping parked for future support.',
+    description: 'Fire guns group 2',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'weapons_preset_3',
-    feature: '[Future] Weapons Preset 3',
-    category: 'future',
+    feature: 'Weapon Preset - Guns Group 3',
+    category: 'weapons',
     primaryKey: null,
     secondaryKey: null,
-    description: 'Weapon preset mapping parked for future support.',
+    description: 'Fire guns group 3',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'weapons_preset_next',
-    feature: '[Future] Weapons Preset Next',
-    category: 'future',
+    feature: 'Weapon Preset - Next',
+    category: 'weapons',
     primaryKey: null,
     secondaryKey: null,
-    description: 'Weapon preset mapping parked for future support.',
+    description: 'Cycle to next weapon preset',
     hasModifier: false,
     changed: false,
     pendingApply: false,
   },
   {
     id: 'weapons_preset_prev',
-    feature: '[Future] Weapons Preset Previous',
-    category: 'future',
+    feature: 'Weapon Preset - Previous',
+    category: 'weapons',
     primaryKey: null,
     secondaryKey: null,
-    description: 'Weapon preset mapping parked for future support.',
+    description: 'Cycle to previous weapon preset',
     hasModifier: false,
     changed: false,
     pendingApply: false,
@@ -1928,4 +1939,93 @@ export const searchKeybindings = (keybindings, query) => {
 
 export const getCategoryMetadata = (categoryId) => {
   return shipControlsCategories[categoryId] || null;
+};
+
+const VEHICLE_CATEGORY_IDS = new Set([
+  'seats',
+  'cockpit',
+  'flight',
+  'quantum',
+  'docking',
+  'scanning',
+  'shields',
+  'weapons',
+  'power',
+  'radar',
+  'lights',
+  'stopwatch',
+]);
+
+const toSearchText = (binding) => {
+  return [
+    binding?.id,
+    binding?.sourceAction,
+    binding?.feature,
+    binding?.description,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+};
+
+export const getBindingActivityBucket = (binding) => {
+  const category = String(binding?.category || '').toLowerCase();
+  if (VEHICLE_CATEGORY_IDS.has(category)) return 'vehicle';
+
+  const text = toSearchText(binding);
+
+  if (/(emote|dance|salute|taunt|greet|laugh|wave|bow|gesture|social)/.test(text)) {
+    return 'social';
+  }
+
+  if (/(chat|comms|hail|notification|pushtotalk|foip|contact|cyclechannel|mobiglas)/.test(text)) {
+    return 'comms';
+  }
+
+  if (/(camera|spectate|freelook|orbit|zoom|thirdperson|hmd|headtrack|look_behind|starmap)/.test(text)) {
+    return 'camera';
+  }
+
+  if (/(^pc_|^move|^jump|^crouch|^prone|^sprint|^walk|^attack|^reload|^holster|^throw|^consume|^interact|inventory|melee|foot|on foot|eva|ground|character)/.test(text)) {
+    return 'on-foot';
+  }
+
+  return 'other';
+};
+
+const activityIndexCache = new WeakMap();
+
+export const buildActivityIndex = (bindings = []) => {
+  if (!Array.isArray(bindings)) return null;
+
+  const cached = activityIndexCache.get(bindings);
+  if (cached) return cached;
+
+  const index = {
+    all: bindings,
+    vehicle: [],
+    'on-foot': [],
+    comms: [],
+    social: [],
+    camera: [],
+    other: [],
+  };
+
+  bindings.forEach((binding) => {
+    const bucket = getBindingActivityBucket(binding);
+    if (ACTIVITY_BUCKETS.includes(bucket)) {
+      index[bucket].push(binding);
+    } else {
+      index.other.push(binding);
+    }
+  });
+
+  activityIndexCache.set(bindings, index);
+  return index;
+};
+
+export const getBindingsByActivity = (bindings = [], activity = '') => {
+  if (!activity) return bindings;
+  const index = buildActivityIndex(bindings);
+  return index?.[activity] || [];
 };

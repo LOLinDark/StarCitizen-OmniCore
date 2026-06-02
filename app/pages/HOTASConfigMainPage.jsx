@@ -26,8 +26,12 @@ import { HOTASTable } from '../components/HOTASTable';
 import HOTASInputView from '../components/HOTASInputView';
 import ProfileCardScroller from '../components/ProfileCardScroller';
 import { KeyPressIndicator } from '../components/KeyPressIndicator';
-import { useHOTASFiltering } from '../hooks/useHOTASFiltering';
-import { shipKeybindings, shipControlsCategories } from '../data/starcitizen-keybindings';
+import {
+  shipKeybindings,
+  shipControlsCategories,
+  HOTAS_ACTIVITY_OPTIONS,
+  getBindingsByActivity,
+} from '../data/starcitizen-keybindings';
 import {
   DEFAULT_MODE_PLAY_GROUP_VALUES,
   getModePlayGroupOptions,
@@ -49,6 +53,9 @@ const HOTAS_BAR_EVENT = 'omnicore:hotas-bookmark-status';
 const PAGE_DEV_TAG = 'HC05';
 const PAGE_LOG_SCOPE = `[${PAGE_DEV_TAG}]`;
 const PAGE_STORAGE_KEY = 'omnicore.hc05.state';
+const TEMP_ACTIVITY_FILTER_BYPASS = false;
+const TEMP_MODE_GROUP_FILTER_BYPASS = true;
+const TEMP_ASSIGNMENT_MENU_FILTER_BYPASS = false;
 
 const createEmptyModeMap = () => ({
   green: {},
@@ -87,6 +94,7 @@ export default function HOTASConfigMainPage() {
 
       const [selectedProfile, setSelectedProfile] = useState('');
       const [selectedCategory, setSelectedCategory] = useState('');
+      const [selectedActivity, setSelectedActivity] = useState('');
       const [searchQuery, setSearchQuery] = useState('');
       const [sortBy, setSortBy] = useState('feature');
       const [sortOrder, setSortOrder] = useState('asc');
@@ -97,6 +105,7 @@ export default function HOTASConfigMainPage() {
       const [profilesLoading, setProfilesLoading] = useState(true);
       const [profilesError, setProfilesError] = useState(null);
       const [profileFilter, setProfileFilter] = useState('all');
+      const [hc05View, setHc05View] = useState('bindings');
       const [searchByLiveInput, setSearchByLiveInput] = useState(false);
       const [selectedModeGroups, setSelectedModeGroups] = useState([...DEFAULT_MODE_PLAY_GROUP_VALUES]);
       const [profileName, setProfileName] = useState('');
@@ -114,6 +123,9 @@ export default function HOTASConfigMainPage() {
       const [modeOverridesSaveStatus, setModeOverridesSaveStatus] = useState('idle');
       const [modeOverridesSaveMessage, setModeOverridesSaveMessage] = useState('');
       const [captureWarning, setCaptureWarning] = useState('');
+      const isDevRuntime = import.meta.env.DEVELOPMENT_MODE === 'true'
+        || import.meta.env.MODE === 'development'
+        || import.meta.env.NODE_ENV === 'development';
       const modeGroupOptions = useMemo(() => getModePlayGroupOptions(), []);
       const captureStartedAtRef = useRef(0);
       const keyboardCaptureStartedAtRef = useRef(0);
@@ -643,6 +655,8 @@ export default function HOTASConfigMainPage() {
       const {
         selectedProfile: savedProfile,
         selectedCategory: savedCategory,
+        selectedActivity: savedActivity,
+        hc05View: savedHc05View,
         selectedModeGroups: savedModeGroups,
         bindingLayout: savedBindingLayout,
         activeBindingMode: savedActiveBindingMode,
@@ -661,6 +675,14 @@ export default function HOTASConfigMainPage() {
       
       if (savedCategory) {
         setSelectedCategory(savedCategory);
+      }
+
+      if (typeof savedActivity === 'string') {
+        setSelectedActivity(savedActivity);
+      }
+
+      if (savedHc05View === 'bindings' || savedHc05View === 'live') {
+        setHc05View(savedHc05View);
       }
 
       if (Array.isArray(savedModeGroups)) {
@@ -713,6 +735,8 @@ export default function HOTASConfigMainPage() {
       const stateToSave = {
         selectedProfile,
         selectedCategory,
+        selectedActivity,
+        hc05View,
         selectedModeGroups,
         bindingLayout,
         activeBindingMode,
@@ -725,7 +749,7 @@ export default function HOTASConfigMainPage() {
     } catch (error) {
       console.error(`${PAGE_LOG_SCOPE} Error saving state to localStorage:`, error);
     }
-  }, [selectedProfile, selectedCategory, selectedModeGroups, bindingLayout, activeBindingMode, hotasOverrides, modeHotasOverrides, keyboardOverrides]);
+  }, [selectedProfile, selectedCategory, selectedActivity, hc05View, selectedModeGroups, bindingLayout, activeBindingMode, hotasOverrides, modeHotasOverrides, keyboardOverrides]);
 
   useEffect(() => {
     const previousLayout = previousBindingLayoutRef.current;
@@ -878,60 +902,54 @@ export default function HOTASConfigMainPage() {
     }));
   }, []);
 
-  // Use shared filtering hook for defaults
-  const hookResult = useHOTASFiltering(
-    selectedCategory,
-    searchQuery,
-    sortBy,
-    sortOrder
-  );
+  const filterPerfRef = useRef({ baseMs: 0, finalMs: 0 });
 
-  // Use merged bindings if profile loaded, otherwise use defaults
   const { sortedBindings: unfilteredBindings, currentCategory, categoryList } = useMemo(() => {
-    if (mergedBindings) {
-      // Filter merged bindings by category and search
-      let results = mergedBindings;
-      if (selectedCategory) {
-        results = results.filter(b => b.category === selectedCategory);
-      }
-      if (searchQuery) {
-        results = results.filter(b => 
-          b.feature.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (b.primaryKey && b.primaryKey.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (b.description && b.description.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-      }
-      
-      // Sort
-      const sorted = [...results].sort((a, b) => {
-        const aRaw = a?.[sortBy];
-        const bRaw = b?.[sortBy];
+    const started = performance.now();
+    const sourceBindings = mergedBindings || shipKeybindings;
+    let results = sourceBindings;
 
-        // Normalize null/undefined to empty string and compare as lowercase text.
-        // This avoids runtime errors when sorting columns like hotasBinding where
-        // many rows are intentionally unbound.
-        const aVal = String(aRaw ?? '').toLowerCase();
-        const bVal = String(bRaw ?? '').toLowerCase();
-
-        if (sortOrder === 'asc') {
-          return aVal > bVal ? 1 : -1;
-        }
-        return aVal < bVal ? 1 : -1;
-      });
-      
-      return {
-        sortedBindings: sorted,
-        currentCategory: shipControlsCategories[selectedCategory],
-        categoryList: Object.entries(shipControlsCategories),
-      };
+    if (selectedCategory) {
+      results = results.filter((b) => b.category === selectedCategory);
     }
-    
+
+    if (!TEMP_ACTIVITY_FILTER_BYPASS) {
+      results = getBindingsByActivity(results, selectedActivity);
+    }
+
+    if (searchQuery) {
+      const normalizedSearch = searchQuery.toLowerCase();
+      results = results.filter((b) =>
+        b.feature.toLowerCase().includes(normalizedSearch)
+        || (b.primaryKey && b.primaryKey.toLowerCase().includes(normalizedSearch))
+        || (b.description && b.description.toLowerCase().includes(normalizedSearch))
+      );
+    }
+
+    const sorted = [...results].sort((a, b) => {
+      const aRaw = a?.[sortBy];
+      const bRaw = b?.[sortBy];
+
+      // Normalize null/undefined to empty string and compare as lowercase text.
+      // This avoids runtime errors when sorting columns like hotasBinding where
+      // many rows are intentionally unbound.
+      const aVal = String(aRaw ?? '').toLowerCase();
+      const bVal = String(bRaw ?? '').toLowerCase();
+
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      }
+      return aVal < bVal ? 1 : -1;
+    });
+
+    filterPerfRef.current.baseMs = performance.now() - started;
+
     return {
-      sortedBindings: hookResult.sortedBindings,
-      currentCategory: hookResult.currentCategory,
-      categoryList: hookResult.categoryList,
+      sortedBindings: sorted,
+      currentCategory: shipControlsCategories[selectedCategory],
+      categoryList: Object.entries(shipControlsCategories),
     };
-  }, [mergedBindings, selectedCategory, searchQuery, sortBy, sortOrder, hookResult]);
+  }, [mergedBindings, selectedCategory, selectedActivity, searchQuery, sortBy, sortOrder]);
 
   const applyBindingOverrides = useCallback((bindings = []) => {
     if (!Array.isArray(bindings) || bindings.length === 0) return [];
@@ -989,14 +1007,28 @@ export default function HOTASConfigMainPage() {
   }, []);
 
   const modeGroupFilteredAllBindings = useMemo(() => {
-    return allEffectiveBindings.filter((binding) => {
+    let results = allEffectiveBindings;
+
+    if (!TEMP_ACTIVITY_FILTER_BYPASS && selectedActivity) {
+      results = getBindingsByActivity(results, selectedActivity);
+    }
+
+    if (TEMP_MODE_GROUP_FILTER_BYPASS) {
+      return results;
+    }
+
+    return results.filter((binding) => {
       const bindingGroups = getModePlayGroupsForBinding(binding);
       const inSelectedGroup = bindingGroups.some((group) => selectedModeGroups.includes(group));
       return inSelectedGroup || hasVisibleBindingValue(binding);
     });
-  }, [allEffectiveBindings, selectedModeGroups, hasVisibleBindingValue]);
+  }, [allEffectiveBindings, selectedActivity, selectedModeGroups, hasVisibleBindingValue]);
 
   const modeGroupFilteredEffectiveBindings = useMemo(() => {
+    if (TEMP_MODE_GROUP_FILTER_BYPASS) {
+      return effectiveBindings;
+    }
+
     return effectiveBindings.filter((binding) => {
       const bindingGroups = getModePlayGroupsForBinding(binding);
       const inSelectedGroup = bindingGroups.some((group) => selectedModeGroups.includes(group));
@@ -1006,6 +1038,7 @@ export default function HOTASConfigMainPage() {
 
   // Filter by bound/unbound status
   const sortedBindings = useMemo(() => {
+    const started = performance.now();
     let results = modeGroupFilteredEffectiveBindings;
 
     if (searchByLiveInput) {
@@ -1024,6 +1057,7 @@ export default function HOTASConfigMainPage() {
       results = results.filter(binding => !binding.hotasBinding && !binding.keyboardBinding);
     }
 
+    filterPerfRef.current.finalMs = performance.now() - started;
     return results;
   }, [modeGroupFilteredEffectiveBindings, profileFilter, searchByLiveInput, lastHotasInput, isBindingLive]);
 
@@ -1238,9 +1272,9 @@ export default function HOTASConfigMainPage() {
             </h1>
             <Text c="dimmed" mb="md">Configure your flight stick, mouse, and keyboard for precision control</Text>
             <Group mb="xs" gap="sm" align="stretch" wrap="wrap">
-              {/* Step 1: Active profile card with click-to-select menu */}
+              {/* Active profile card with click-to-select menu */}
               <div>
-                <Text size="xs" c="dimmed" mb={4}>Step 1: Active profile</Text>
+                <Text size="xs" c="dimmed" mb={4}>Select profile</Text>
                 <ProfileCardScroller
                   profiles={profiles}
                   selectedProfile={selectedProfile}
@@ -1248,11 +1282,40 @@ export default function HOTASConfigMainPage() {
                 />
               </div>
 
-              {/* Step 2: Reload card-sized action */}
               <div>
-                <Text size="xs" c="dimmed" mb={4}>Step 2: Reload profiles from game files</Text>
+                <Text size="xs" c="dimmed" mb={4}>{isDevRuntime ? 'View' : 'Select view'}</Text>
+                <Box
+                  style={{
+                    width: 320,
+                    maxWidth: '100%',
+                    minHeight: 92,
+                    borderRadius: 10,
+                    border: '1px solid rgba(0, 217, 255, 0.25)',
+                    background: 'rgba(0, 12, 20, 0.45)',
+                    boxShadow: '0 0 14px rgba(0, 217, 255, 0.12)',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <SegmentedControl
+                    value={hc05View}
+                    onChange={setHc05View}
+                    size="xs"
+                    fullWidth
+                    data={[
+                      { value: 'bindings', label: 'Bindings Table' },
+                      { value: 'live', label: 'HOTAS Live Input' },
+                    ]}
+                  />
+                </Box>
+              </div>
+
+              {/* Reload profiles card */}
+              <div>
+                <Text size="xs" c="dimmed" mb={4}>Reload profiles from game files</Text>
                 <Button
-                  variant="filled"
+                  variant="light"
                   leftSection={<IconRefresh size={16} />}
                   onClick={() => void loadProfiles()}
                   loading={profilesLoading}
@@ -1261,16 +1324,42 @@ export default function HOTASConfigMainPage() {
                     maxWidth: '100%',
                     minHeight: 92,
                     borderRadius: 10,
-                    background: 'linear-gradient(135deg, rgba(255,107,0,0.85) 0%, rgba(185,76,0,0.9) 100%)',
-                    border: '2px solid rgba(255, 163, 102, 0.7)',
-                    boxShadow: '0 0 16px rgba(255, 107, 0, 0.35)',
-                    color: '#fff4e6',
+                    background: 'linear-gradient(135deg, rgba(0, 40, 56, 0.78) 0%, rgba(28, 44, 54, 0.76) 70%, rgba(163, 89, 24, 0.44) 100%)',
+                    border: '1px solid rgba(0, 217, 255, 0.32)',
+                    boxShadow: '0 0 12px rgba(0, 217, 255, 0.18)',
+                    color: '#d7edf7',
                     justifyContent: 'flex-start',
                     paddingLeft: '0.85rem',
                   }}
                 >
                   Reload profiles
                 </Button>
+              </div>
+
+              <div>
+                <Text size="xs" c="dimmed" mb={4}>Select Activity</Text>
+                <Box
+                  style={{
+                    width: 320,
+                    maxWidth: '100%',
+                    minHeight: 92,
+                    borderRadius: 10,
+                    border: '1px solid rgba(0, 217, 255, 0.25)',
+                    background: 'rgba(0, 12, 20, 0.45)',
+                    boxShadow: '0 0 14px rgba(0, 217, 255, 0.12)',
+                    padding: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Select
+                    value={selectedActivity}
+                    onChange={(value) => setSelectedActivity(value || '')}
+                    data={HOTAS_ACTIVITY_OPTIONS}
+                    style={{ width: '100%' }}
+                    size="md"
+                  />
+                </Box>
               </div>
             </Group>
             <Text size="xs" c="dimmed">
@@ -1343,130 +1432,135 @@ export default function HOTASConfigMainPage() {
           </Group>
         </Box>
 
-
-        {/* Live Input Panel (restored) */}
-        <Box mb="xl">
-          <KeyPressIndicator
-            title="Live Input"
-            inputLabel={liveInputLabel}
-            assignmentLabel={inputAssignmentLabel}
-            connected={gamepadConnected}
-          >
-            <Box mt="md">
-              <HC05LiveInputContainer
-                overlays={overlays}
-                onOverlayChange={setOverlays}
-                keybindings={modeGroupFilteredAllBindings}
-                allKeybindings={allEffectiveBindings}
-                hotasOverrides={hotasOverrides}
-                bindingLayout={bindingLayout}
-                onAssignFeature={handleAssignHotasFeature}
-                onClearFeature={handleClearHotasFeature}
-                activeInputs={activeInputs}
-                axisValues={axisValues}
-                lastHotasInput={lastHotasInput}
-                currentMode={currentMode}
-                deviceMap={LogitechX52Device}
-                devEditMode={devEditMode}
-                setDevEditMode={setDevEditMode}
-                isDevMode={import.meta.env.DEVELOPMENT_MODE === 'true' || import.meta.env.MODE === 'development' || import.meta.env.NODE_ENV === 'development'}
-                dragged={dragged}
-                setDragged={setDragged}
-              />
-              {/* Dev-only toggle for overlay edit mode moved to HC05LiveInputContainer */}
-            </Box>
-          </KeyPressIndicator>
-        </Box>
-
-        <Box>
-          <Title order={3} mb={4}>Profile Bindings Table</Title>
-          <Text size="sm" c="dimmed">
-            Feature-to-input bindings from the selected Star Citizen profile, local edits, and OmniCore per-mode HOTAS overrides.
-          </Text>
-        </Box>
-
-        {/* Consolidated toolbar: filters + controls + info */}
-        <Stack gap="xs">
-          {filterControls}
-          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-            <Group gap="sm" align="center" wrap="wrap">
-              <SegmentedControl
-                value={bindingLayout}
-                onChange={setBindingLayout}
-                size="xs"
-                data={[
-                  { label: 'Single HOTAS', value: 'single' },
-                  { label: 'Per-Mode', value: 'modes' },
-                ]}
-              />
-              {bindingLayout === 'modes' && (
-                <SegmentedControl
-                  value={activeBindingMode}
-                  onChange={setActiveBindingMode}
-                  size="xs"
-                  data={[
-                    { label: 'Green', value: 'green' },
-                    { label: 'Orange', value: 'orange' },
-                    { label: 'Red', value: 'red' },
-                  ]}
+        {hc05View === 'live' ? (
+          <Box mb="xl">
+            <KeyPressIndicator
+              title="Live Input"
+              inputLabel={liveInputLabel}
+              assignmentLabel={inputAssignmentLabel}
+              connected={gamepadConnected}
+            >
+              <Box mt="md">
+                <HC05LiveInputContainer
+                  overlays={overlays}
+                  onOverlayChange={setOverlays}
+                  keybindings={modeGroupFilteredAllBindings}
+                  allKeybindings={allEffectiveBindings}
+                  hotasOverrides={hotasOverrides}
+                  bindingLayout={bindingLayout}
+                  onAssignFeature={handleAssignHotasFeature}
+                  onClearFeature={handleClearHotasFeature}
+                  activeInputs={activeInputs}
+                  axisValues={axisValues}
+                  lastHotasInput={lastHotasInput}
+                  currentMode={currentMode}
+                  deviceMap={LogitechX52Device}
+                  devEditMode={devEditMode}
+                  setDevEditMode={setDevEditMode}
+                  isDevMode={import.meta.env.DEVELOPMENT_MODE === 'true' || import.meta.env.MODE === 'development' || import.meta.env.NODE_ENV === 'development'}
+                  dragged={dragged}
+                  setDragged={setDragged}
+                  disableAssignmentMenuFiltering={TEMP_ASSIGNMENT_MENU_FILTER_BYPASS}
                 />
-              )}
-              <SegmentedControl
-                value={tableView}
-                onChange={setTableView}
-                size="xs"
-                data={[
-                  { value: 'features', label: 'Features \u2192 Inputs' },
-                  { value: 'inputs', label: 'Inputs \u2192 Features' },
-                ]}
-              />
-            </Group>
-            <Group gap="sm" align="center">
-              <Text size="xs" c="dimmed" fw={600}>
-                {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
-              </Text>
-            </Group>
-          </Group>
-        </Stack>
-
-        {/* Table */}
-        {tableView === 'features' ? (
-          <HOTASTable
-            sortedBindings={sortedBindings}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            setSortBy={setSortBy}
-            setSortOrder={setSortOrder}
-            colors={colors}
-            getRowBackground={getRowBackground}
-            isBindingLive={isBindingLive}
-            showStatusColumn={false}
-            onStartHotasCapture={startHotasCapture}
-            activeCaptureBindingId={captureBindingId}
-            activeModeCaptureKey={captureBindingId && captureModeKey ? `${captureBindingId}:${captureModeKey}` : ''}
-            captureProgress={captureProgress}
-            showModeColumns={bindingLayout === 'modes'}
-            onStartKeyboardCapture={startKeyboardCapture}
-            onStartModeHotasCapture={startHotasCapture}
-            activeKeyboardCaptureBindingId={captureKeyboardBindingId}
-            keyboardCaptureProgress={captureKeyboardProgress}
-            trainingNotes={featureTrainingNotes}
-          />
+              </Box>
+            </KeyPressIndicator>
+          </Box>
         ) : (
-          <HOTASInputView
-            bindings={modeGroupFilteredEffectiveBindings}
-            allBindings={allEffectiveBindings}
-            hotasOverrides={hotasOverrides}
-            bindingFilter={profileFilter}
-            deviceFilter={profileFilter}
-            searchQuery={searchQuery}
-            onAssign={handleAssignHotasFeature}
-            onClear={handleClearHotasFeature}
-          />
-        )}
+          <>
+            <Box>
+              <Title order={3} mb={4}>Profile Bindings Table</Title>
+              <Text size="sm" c="dimmed">
+                Feature-to-input bindings from the selected Star Citizen profile, local edits, and OmniCore per-mode HOTAS overrides.
+              </Text>
+            </Box>
 
-        {/* Notes Section (extracted) */}
-        <HOTASNotesSection />
+            <Stack gap="xs">
+              {filterControls}
+              <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+                <Group gap="sm" align="center" wrap="wrap">
+                  <SegmentedControl
+                    value={bindingLayout}
+                    onChange={setBindingLayout}
+                    size="xs"
+                    data={[
+                      { label: 'Single HOTAS', value: 'single' },
+                      { label: 'Per-Mode', value: 'modes' },
+                    ]}
+                  />
+                  {bindingLayout === 'modes' && (
+                    <SegmentedControl
+                      value={activeBindingMode}
+                      onChange={setActiveBindingMode}
+                      size="xs"
+                      data={[
+                        { label: 'Green', value: 'green' },
+                        { label: 'Orange', value: 'orange' },
+                        { label: 'Red', value: 'red' },
+                      ]}
+                    />
+                  )}
+                  <SegmentedControl
+                    value={tableView}
+                    onChange={setTableView}
+                    size="xs"
+                    data={[
+                      { value: 'features', label: 'Features \u2192 Inputs' },
+                      { value: 'inputs', label: 'Inputs \u2192 Features' },
+                    ]}
+                  />
+                </Group>
+                <Group gap="sm" align="center">
+                  <Text size="xs" c="dimmed" fw={600}>
+                    {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
+                  </Text>
+                  {isDevRuntime && (
+                    <Text size="xs" c="dimmed">
+                      filter {filterPerfRef.current.baseMs.toFixed(1)}ms + final {filterPerfRef.current.finalMs.toFixed(1)}ms
+                    </Text>
+                  )}
+                </Group>
+              </Group>
+            </Stack>
+
+            {tableView === 'features' ? (
+              <HOTASTable
+                sortedBindings={sortedBindings}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                setSortBy={setSortBy}
+                setSortOrder={setSortOrder}
+                colors={colors}
+                getRowBackground={getRowBackground}
+                isBindingLive={isBindingLive}
+                showStatusColumn={false}
+                onStartHotasCapture={startHotasCapture}
+                activeCaptureBindingId={captureBindingId}
+                activeModeCaptureKey={captureBindingId && captureModeKey ? `${captureBindingId}:${captureModeKey}` : ''}
+                captureProgress={captureProgress}
+                showModeColumns={bindingLayout === 'modes'}
+                onStartKeyboardCapture={startKeyboardCapture}
+                onStartModeHotasCapture={startHotasCapture}
+                activeKeyboardCaptureBindingId={captureKeyboardBindingId}
+                keyboardCaptureProgress={captureKeyboardProgress}
+                trainingNotes={featureTrainingNotes}
+              />
+            ) : (
+              <HOTASInputView
+                bindings={modeGroupFilteredEffectiveBindings}
+                allBindings={allEffectiveBindings}
+                hotasOverrides={hotasOverrides}
+                bindingFilter={profileFilter}
+                deviceFilter={profileFilter}
+                searchQuery={searchQuery}
+                disableAssignmentMenuFiltering={TEMP_ASSIGNMENT_MENU_FILTER_BYPASS}
+                onAssign={handleAssignHotasFeature}
+                onClear={handleClearHotasFeature}
+              />
+            )}
+
+            <HOTASNotesSection />
+          </>
+        )}
       </Stack>
   );
 }

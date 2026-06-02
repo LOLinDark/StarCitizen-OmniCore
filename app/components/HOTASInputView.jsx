@@ -262,7 +262,7 @@ const MODE_SEGMENTS = [
 
 const ROWS_PER_PAGE = 120;
 
-export default function HOTASInputView({ bindings, allBindings = [], hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, onClear, activeInputs, axisValues, lastHotasInput, currentMode }) {
+export default function HOTASInputView({ bindings, allBindings = [], hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, onClear, activeInputs, axisValues, lastHotasInput, currentMode, disableAssignmentMenuFiltering = false }) {
   const [modeFilter, setModeFilter] = useState('none');
   const [modeOverride, setModeOverride] = useState(false);
   const [editingRowId, setEditingRowId] = useState(null);
@@ -405,6 +405,19 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
   }, [featureOptionsAxis, featureOptionsButtonShort, featureOptionsButtonLong, featureOptionsFiltered]);
 
   const getFeatureOptionsForRow = (row) => {
+    if (disableAssignmentMenuFiltering) {
+      const assignedBinding = row.assignedBinding;
+      if (!assignedBinding) return featureOptionsAll;
+      if (featureOptionsAll.some((opt) => opt.value === assignedBinding.id)) return featureOptionsAll;
+      return [
+        {
+          value: assignedBinding.id,
+          label: `${assignedBinding.feature}${assignedBinding.category ? ` (${assignedBinding.category})` : ''} [Currently Assigned]`,
+        },
+        ...featureOptionsAll,
+      ];
+    }
+
     let baseOptions = featureOptionsByType.other;
     if (row.type === 'Axis') {
       baseOptions = featureOptionsByType.axis;
@@ -567,7 +580,7 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
                         onBlur={() => setEditingRowId(null)}
                         styles={{ input: { background: 'rgba(0,0,0,0.6)', borderColor: 'rgba(0,217,255,0.3)', color: '#e0eaf4' } }}
                         maxDropdownHeight={200}
-                        limit={120}
+                        limit={disableAssignmentMenuFiltering ? undefined : 120}
                       />
                     ) : (
                       <Group gap="xs" wrap="nowrap" align="center">

@@ -1,5 +1,5 @@
-// Mock Star Citizen Keybinding Data
-// Structure for HOTAS Configuration system
+// Legacy mock dataset kept for prototyping/reference.
+// Production HOTAS pages should use app/data/starcitizen-keybindings.js.
 
 export const playerStates = [
   {

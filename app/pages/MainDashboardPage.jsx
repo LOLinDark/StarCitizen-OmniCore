@@ -253,8 +253,8 @@ const getToolsArray = () => [
     image: getAssetUrl('tools/new-player-guide.jpg'),
     alt: 'Training Academy - Citizen recruit training and course modules',
     color: '#00d9ff',
-    path: '/new-player-guide',
-    enabled: false,
+    path: '/academy',
+    enabled: true,
   },
   {
     id: 'economy-tracker',
