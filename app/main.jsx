@@ -60,7 +60,7 @@ function Root() {
   console.log('[OmniCore] 3. Stores loaded, colorScheme:', colorScheme);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <QueryClientProvider client={queryClient}>
         <MantineProvider theme={theme} forceColorScheme={colorScheme}>
           <Notifications position="top-right" />

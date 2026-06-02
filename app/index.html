@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OMNI-CORE</title>
-    <link rel="manifest" href="/manifest.json">
+    <title>OMNI-CORE for Star Citizen</title>
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0b7285">
         <script>
-            // GitHub Pages SPA restore: convert /?/path back to /path before React Router boots.
+            // GitHub Pages SPA restore: convert /?/path back to /base/path before React Router boots.
             (function (l) {
                 if (!l.search || l.search.length < 2 || l.search[1] !== '/') return;
                 var decoded = l.search
                     .slice(1)
                     .replace(/~and~/g, '&');
-                var nextUrl = l.pathname.slice(0, -1) + decoded + l.hash;
+                // pathname is /StarCitizen-OmniCore/ in prod or / in dev — strip trailing slash then append route
+                var base = l.pathname.replace(/\/$/, '');
+                var nextUrl = base + decoded + l.hash;
                 window.history.replaceState(null, '', nextUrl);
             }(window.location));
         </script>

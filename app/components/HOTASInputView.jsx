@@ -262,12 +262,19 @@ const MODE_SEGMENTS = [
 
 const ROWS_PER_PAGE = 120;
 
-export default function HOTASInputView({ bindings, allBindings = [], hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, onClear, activeInputs, axisValues, lastHotasInput, currentMode, disableAssignmentMenuFiltering = false }) {
+export default function HOTASInputView({ bindings, allBindings = [], hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, onClear, activeInputs, axisValues, lastHotasInput, currentMode, disableAssignmentMenuFiltering = false, hideStickFeatures = true, showHideStickToggle = true, onHideStickFeaturesChange }) {
   const [modeFilter, setModeFilter] = useState('none');
   const [modeOverride, setModeOverride] = useState(false);
   const [editingRowId, setEditingRowId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [localHideStickFeatures, setLocalHideStickFeatures] = useState(hideStickFeatures);
   const prevModeRef = useRef(currentMode);
+  const effectiveHideStickFeatures = onHideStickFeaturesChange ? hideStickFeatures : localHideStickFeatures;
+
+  useEffect(() => {
+    if (onHideStickFeaturesChange) return;
+    setLocalHideStickFeatures(hideStickFeatures);
+  }, [hideStickFeatures, onHideStickFeaturesChange]);
 
   // Auto-sync mode filter to device mode only when device mode changes
   useEffect(() => {
@@ -342,20 +349,7 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
     setCurrentPage(1);
   }, [modeFilter, bindingFilter, deviceFilter, searchQuery]);
 
-  const [hideStickFeatures, setHideStickFeatures] = useState(true);
-
-  const bindingById = useMemo(() => {
-    const index = new Map();
-    (bindings || []).forEach((binding) => {
-      if (!binding?.id) return;
-      index.set(binding.id, binding);
-    });
-    return index;
-  }, [bindings]);
-
   // Build feature options for the Select dropdown.
-  // When hideStickFeatures is on, axis-only features (yaw/pitch/roll) are
-  // excluded for Button and POV rows but kept for Axis rows.
   const featureOptionsAll = useMemo(() => {
     if (!bindings?.length) return [];
     const seen = new Set();
@@ -372,37 +366,9 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
   }, [bindings]);
 
   const featureOptionsFiltered = useMemo(() => {
-    if (!hideStickFeatures) return featureOptionsAll;
+    if (!effectiveHideStickFeatures) return featureOptionsAll;
     return featureOptionsAll.filter((opt) => !STICK_AXIS_FEATURE_IDS.has(opt.value));
-  }, [featureOptionsAll, hideStickFeatures]);
-
-  // For axis inputs: only show features that are continuous/axis-appropriate
-  const featureOptionsAxis = useMemo(() => {
-    return featureOptionsAll.filter((opt) => AXIS_COMPATIBLE_FEATURE_IDS.has(opt.value));
-  }, [featureOptionsAll]);
-
-  const featureOptionsButtonShort = useMemo(() => {
-    return featureOptionsFiltered.filter((opt) => {
-      const binding = bindingById.get(opt.value);
-      return bindingMatchesPressType(binding, 'short');
-    });
-  }, [featureOptionsFiltered, bindingById]);
-
-  const featureOptionsButtonLong = useMemo(() => {
-    return featureOptionsFiltered.filter((opt) => {
-      const binding = bindingById.get(opt.value);
-      return bindingMatchesPressType(binding, 'long');
-    });
-  }, [featureOptionsFiltered, bindingById]);
-
-  const featureOptionsByType = useMemo(() => {
-    return {
-      axis: featureOptionsAxis,
-      buttonShort: featureOptionsButtonShort,
-      buttonLong: featureOptionsButtonLong,
-      other: featureOptionsFiltered,
-    };
-  }, [featureOptionsAxis, featureOptionsButtonShort, featureOptionsButtonLong, featureOptionsFiltered]);
+  }, [featureOptionsAll, effectiveHideStickFeatures]);
 
   const getFeatureOptionsForRow = (row) => {
     if (disableAssignmentMenuFiltering) {
@@ -418,14 +384,7 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
       ];
     }
 
-    let baseOptions = featureOptionsByType.other;
-    if (row.type === 'Axis') {
-      baseOptions = featureOptionsByType.axis;
-    } else if (row.type === 'Button' && row.pressType === 'short') {
-      baseOptions = featureOptionsByType.buttonShort;
-    } else if (row.type === 'Button' && row.pressType === 'long') {
-      baseOptions = featureOptionsByType.buttonLong;
-    }
+    const baseOptions = row.type === 'Axis' ? featureOptionsAll : featureOptionsFiltered;
 
     const assignedBinding = row.assignedBinding;
 
@@ -506,13 +465,21 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
             Next
           </Button>
         </Group>
-        <Switch
-          label="Hide stick features"
-          checked={hideStickFeatures}
-          onChange={(e) => setHideStickFeatures(e.currentTarget.checked)}
-          size="xs"
-          title="Hide Yaw/Pitch/Roll from button and HAT assignment menus (they remain available for axis inputs)"
-        />
+        {showHideStickToggle && (
+          <Switch
+            label="Hide stick features"
+            checked={effectiveHideStickFeatures}
+            onChange={(e) => {
+              if (onHideStickFeaturesChange) {
+                onHideStickFeaturesChange(e.currentTarget.checked);
+                return;
+              }
+              setLocalHideStickFeatures(e.currentTarget.checked);
+            }}
+            size="xs"
+            title="Hide Yaw/Pitch/Roll from button and HAT assignment menus (they remain available for axis inputs)"
+          />
+        )}
       </Group>
 
       <div

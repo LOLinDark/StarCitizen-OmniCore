@@ -54,7 +54,7 @@ const PAGE_DEV_TAG = 'HC05';
 const PAGE_LOG_SCOPE = `[${PAGE_DEV_TAG}]`;
 const PAGE_STORAGE_KEY = 'omnicore.hc05.state';
 const TEMP_ACTIVITY_FILTER_BYPASS = false;
-const TEMP_MODE_GROUP_FILTER_BYPASS = true;
+const TEMP_MODE_GROUP_FILTER_BYPASS = false;
 const TEMP_ASSIGNMENT_MENU_FILTER_BYPASS = false;
 
 const createEmptyModeMap = () => ({
@@ -107,6 +107,7 @@ export default function HOTASConfigMainPage() {
       const [profileFilter, setProfileFilter] = useState('all');
       const [hc05View, setHc05View] = useState('bindings');
       const [searchByLiveInput, setSearchByLiveInput] = useState(false);
+      const [hideStickFeatures, setHideStickFeatures] = useState(true);
       const [selectedModeGroups, setSelectedModeGroups] = useState([...DEFAULT_MODE_PLAY_GROUP_VALUES]);
       const [profileName, setProfileName] = useState('');
       const [mergedBindings, setMergedBindings] = useState(null);
@@ -1251,9 +1252,6 @@ export default function HOTASConfigMainPage() {
     <HOTASFilterControls
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
-      selectedCategory={selectedCategory}
-      setSelectedCategory={setSelectedCategory}
-      categoryList={categoryList}
       profileFilter={profileFilter}
       setProfileFilter={setProfileFilter}
       searchByLiveInput={searchByLiveInput}
@@ -1400,6 +1398,7 @@ export default function HOTASConfigMainPage() {
             background: 'rgba(0, 217, 255, 0.04)',
           }}
         >
+          <Text size="sm" fw={700} mb={8}>Groups</Text>
           <Group align="flex-end" gap="sm" wrap="wrap">
             <MultiSelect
               label="Play Mode Groups"
@@ -1411,6 +1410,25 @@ export default function HOTASConfigMainPage() {
               searchable
               clearable
               style={{ minWidth: 360, flex: 1 }}
+            />
+            <Select
+              label="Category"
+              placeholder="All Categories"
+              value={selectedCategory}
+              onChange={(value) => setSelectedCategory(value || '')}
+              data={[
+                { value: '', label: 'All Categories' },
+                ...categoryList.map(([key, category]) => ({ value: key, label: category.label })),
+              ]}
+              searchable
+              style={{ minWidth: 240 }}
+            />
+            <Switch
+              label="Groups"
+              checked={hideStickFeatures}
+              onChange={(event) => setHideStickFeatures(event.currentTarget.checked)}
+              size="sm"
+              title="Hide Yaw/Pitch/Roll in Assigned Feature menus for non-axis rows"
             />
             <Button
               variant="light"
@@ -1475,51 +1493,63 @@ export default function HOTASConfigMainPage() {
             </Box>
 
             <Stack gap="xs">
-              {filterControls}
-              <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-                <Group gap="sm" align="center" wrap="wrap">
-                  <SegmentedControl
-                    value={bindingLayout}
-                    onChange={setBindingLayout}
-                    size="xs"
-                    data={[
-                      { label: 'Single HOTAS', value: 'single' },
-                      { label: 'Per-Mode', value: 'modes' },
-                    ]}
-                  />
-                  {bindingLayout === 'modes' && (
-                    <SegmentedControl
-                      value={activeBindingMode}
-                      onChange={setActiveBindingMode}
-                      size="xs"
-                      data={[
-                        { label: 'Green', value: 'green' },
-                        { label: 'Orange', value: 'orange' },
-                        { label: 'Red', value: 'red' },
-                      ]}
-                    />
-                  )}
-                  <SegmentedControl
-                    value={tableView}
-                    onChange={setTableView}
-                    size="xs"
-                    data={[
-                      { value: 'features', label: 'Features \u2192 Inputs' },
-                      { value: 'inputs', label: 'Inputs \u2192 Features' },
-                    ]}
-                  />
-                </Group>
-                <Group gap="sm" align="center">
-                  <Text size="xs" c="dimmed" fw={600}>
-                    {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
-                  </Text>
-                  {isDevRuntime && (
-                    <Text size="xs" c="dimmed">
-                      filter {filterPerfRef.current.baseMs.toFixed(1)}ms + final {filterPerfRef.current.finalMs.toFixed(1)}ms
-                    </Text>
-                  )}
-                </Group>
-              </Group>
+              <Box
+                p="sm"
+                style={{
+                  borderRadius: 8,
+                  border: '1px solid rgba(0, 217, 255, 0.2)',
+                  background: 'rgba(0, 217, 255, 0.04)',
+                }}
+              >
+                <Text size="sm" fw={700} mb={8}>Filters</Text>
+                <Stack gap="xs">
+                  {filterControls}
+                  <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+                    <Group gap="sm" align="center" wrap="wrap">
+                      <SegmentedControl
+                        value={bindingLayout}
+                        onChange={setBindingLayout}
+                        size="xs"
+                        data={[
+                          { label: 'Single HOTAS', value: 'single' },
+                          { label: 'Per-Mode', value: 'modes' },
+                        ]}
+                      />
+                      {bindingLayout === 'modes' && (
+                        <SegmentedControl
+                          value={activeBindingMode}
+                          onChange={setActiveBindingMode}
+                          size="xs"
+                          data={[
+                            { label: 'Green', value: 'green' },
+                            { label: 'Orange', value: 'orange' },
+                            { label: 'Red', value: 'red' },
+                          ]}
+                        />
+                      )}
+                      <SegmentedControl
+                        value={tableView}
+                        onChange={setTableView}
+                        size="xs"
+                        data={[
+                          { value: 'features', label: 'Features \u2192 Inputs' },
+                          { value: 'inputs', label: 'Inputs \u2192 Features' },
+                        ]}
+                      />
+                    </Group>
+                    <Group gap="sm" align="center">
+                      <Text size="xs" c="dimmed" fw={600}>
+                        {sortedBindings.length} binding{sortedBindings.length !== 1 ? 's' : ''}
+                      </Text>
+                      {isDevRuntime && (
+                        <Text size="xs" c="dimmed">
+                          filter {filterPerfRef.current.baseMs.toFixed(1)}ms + final {filterPerfRef.current.finalMs.toFixed(1)}ms
+                        </Text>
+                      )}
+                    </Group>
+                  </Group>
+                </Stack>
+              </Box>
             </Stack>
 
             {tableView === 'features' ? (
@@ -1552,6 +1582,8 @@ export default function HOTASConfigMainPage() {
                 bindingFilter={profileFilter}
                 deviceFilter={profileFilter}
                 searchQuery={searchQuery}
+                hideStickFeatures={hideStickFeatures}
+                showHideStickToggle={false}
                 disableAssignmentMenuFiltering={TEMP_ASSIGNMENT_MENU_FILTER_BYPASS}
                 onAssign={handleAssignHotasFeature}
                 onClear={handleClearHotasFeature}

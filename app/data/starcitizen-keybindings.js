@@ -1914,9 +1914,14 @@ const baseShipKeybindings = [
   },
 ];
 
+const normalizeImportedSupplementalBinding = (binding) => ({
+  ...binding,
+  feature: String(binding?.feature || '').replace(/^\[Future\]\s*/i, ''),
+});
+
 export const shipKeybindings = [
   ...baseShipKeybindings,
-  ...importedSupplementalKeybindings,
+  ...importedSupplementalKeybindings.map(normalizeImportedSupplementalBinding),
 ];
 
 // ============================================================================
