@@ -1,4 +1,4 @@
-import { Table, Badge, Text, Tooltip } from '@mantine/core';
+import { Table, Badge, Text, Tooltip, Anchor } from '@mantine/core';
 import { SciFiFrame } from './ui';
 import { StateIndicator } from './StateIndicator';
 
@@ -202,16 +202,27 @@ export const HOTASTable = ({
               const note = trainingNotes?.[binding.id] || null;
               const tutorialCount = note?.tutorialVideos?.length || 0;
               const discussionCount = (note?.devDiscussionVideos?.length || 0) + (note?.readingLinks?.length || 0);
+              const shortDescription = note?.shortDescription || note?.summary || binding.description || 'No training notes yet.';
+              const longDescription = note?.longDescription || '';
+              const tooltipContext = Array.isArray(note?.tooltipContext) ? note.tooltipContext.filter(Boolean) : [];
               const tooltipContent = (
                 <div style={{ maxWidth: 420 }}>
                   <Text size="xs" fw={700} c="cyan">{binding.feature}</Text>
-                  <Text size="xs" c="gray.3" mt={4}>{note?.summary || binding.description || 'No training notes yet.'}</Text>
+                  <Text size="xs" c="gray.3" mt={4}>{shortDescription}</Text>
+                  {longDescription && (
+                    <Text size="xs" c="gray.5" mt={4}>{longDescription}</Text>
+                  )}
                   {note?.whenToUse && (
                     <Text size="xs" c="orange.2" mt={4}>When: {note.whenToUse}</Text>
                   )}
                   {note?.bestPractice && (
                     <Text size="xs" c="teal.1" mt={2}>Best Practice: {note.bestPractice}</Text>
                   )}
+                  {tooltipContext.map((line, index) => (
+                    <Text key={`${binding.id}-context-${index}`} size="xs" c="blue.2" mt={2}>
+                      Context: {line}
+                    </Text>
+                  ))}
                   {(tutorialCount > 0 || discussionCount > 0) && (
                     <Text size="xs" c="dimmed" mt={4}>
                       {tutorialCount} tutorial link{tutorialCount === 1 ? '' : 's'} | {discussionCount} reference link{discussionCount === 1 ? '' : 's'}
@@ -332,6 +343,15 @@ export const HOTASTable = ({
                         {binding.feature}
                       </Text>
                     </Tooltip>
+                    <Anchor
+                      size="xs"
+                      href={`/academy/feature-library?feature=${encodeURIComponent(binding.id)}`}
+                      c="cyan"
+                      underline="hover"
+                      title="Open detailed feature guide"
+                    >
+                      Details
+                    </Anchor>
                     {!showStatusColumn && rowIsLive && (
                       <Badge color="green" size="xs" variant="filled">
                         LIVE

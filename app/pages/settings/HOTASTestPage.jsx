@@ -678,66 +678,6 @@ export default function HOTASTestPage() {
 
                     <div>
                       <Text size="sm" fw={600} style={{ color: '#00d9ff', marginBottom: '0.5rem' }}>
-                        Button Groups
-                      </Text>
-                      <div style={{ overflowX: 'auto' }}>
-                        <Table
-                          striped
-                          highlightOnHover
-                          style={{
-                            background: 'rgba(0, 217, 255, 0.03)',
-                          }}
-                        >
-                          <Table.Thead>
-                            <Table.Tr
-                              style={{
-                                background: 'rgba(0, 217, 255, 0.1)',
-                              }}
-                            >
-                              <Table.Th style={{ color: '#00d9ff' }}>Index</Table.Th>
-                              <Table.Th style={{ color: '#00d9ff' }}>Button Name</Table.Th>
-                              <Table.Th style={{ color: '#00d9ff' }}>Group</Table.Th>
-                              <Table.Th style={{ color: '#00d9ff' }}>Type</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {Object.entries(X52_LOOKUP)
-                              .filter(([_, btn]) => btn.type !== 'axis')
-                              .map(([index, btn]) => (
-                                <Table.Tr
-                                  key={index}
-                                  style={{
-                                    borderColor: 'rgba(0, 217, 255, 0.1)',
-                                  }}
-                                >
-                                  <Table.Td style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                    {index}
-                                  </Table.Td>
-                                  <Table.Td style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-                                    {btn.name}
-                                    {btn.note && (
-                                      <Text size="xs" c="dimmed">
-                                        ({btn.note})
-                                      </Text>
-                                    )}
-                                  </Table.Td>
-                                  <Table.Td style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                                    {btn.group}
-                                  </Table.Td>
-                                  <Table.Td>
-                                    <Badge size="sm" color="cyan" variant="light">
-                                      {btn.type}
-                                    </Badge>
-                                  </Table.Td>
-                                </Table.Tr>
-                              ))}
-                          </Table.Tbody>
-                        </Table>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Text size="sm" fw={600} style={{ color: '#00d9ff', marginBottom: '0.5rem' }}>
                         All Inputs (Interactive - Active inputs highlight when monitoring)
                       </Text>
                       <div
@@ -862,6 +802,66 @@ export default function HOTASTestPage() {
                             </Box>
                           );
                         })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Text size="sm" fw={600} style={{ color: '#00d9ff', marginBottom: '0.5rem' }}>
+                        Button Groups
+                      </Text>
+                      <div style={{ overflowX: 'auto' }}>
+                        <Table
+                          striped
+                          highlightOnHover
+                          style={{
+                            background: 'rgba(0, 217, 255, 0.03)',
+                          }}
+                        >
+                          <Table.Thead>
+                            <Table.Tr
+                              style={{
+                                background: 'rgba(0, 217, 255, 0.1)',
+                              }}
+                            >
+                              <Table.Th style={{ color: '#00d9ff' }}>Index</Table.Th>
+                              <Table.Th style={{ color: '#00d9ff' }}>Button Name</Table.Th>
+                              <Table.Th style={{ color: '#00d9ff' }}>Group</Table.Th>
+                              <Table.Th style={{ color: '#00d9ff' }}>Type</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {Object.entries(X52_LOOKUP)
+                              .filter(([_, btn]) => btn.type !== 'axis')
+                              .map(([index, btn]) => (
+                                <Table.Tr
+                                  key={index}
+                                  style={{
+                                    borderColor: 'rgba(0, 217, 255, 0.1)',
+                                  }}
+                                >
+                                  <Table.Td style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                    {index}
+                                  </Table.Td>
+                                  <Table.Td style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                                    {btn.name}
+                                    {btn.note && (
+                                      <Text size="xs" c="dimmed">
+                                        ({btn.note})
+                                      </Text>
+                                    )}
+                                  </Table.Td>
+                                  <Table.Td style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                                    {btn.group}
+                                  </Table.Td>
+                                  <Table.Td>
+                                    <Badge size="sm" color="cyan" variant="light">
+                                      {btn.type}
+                                    </Badge>
+                                  </Table.Td>
+                                </Table.Tr>
+                              ))}
+                          </Table.Tbody>
+                        </Table>
                       </div>
                     </div>
                   </Stack>

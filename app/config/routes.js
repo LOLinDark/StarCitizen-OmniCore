@@ -80,6 +80,12 @@ export const routeConfig = {
       category: 'Main App',
       color: 'cyan',
     },
+    {
+      label: '/academy/feature-library',
+      path: '/academy/feature-library',
+      category: 'Main App',
+      color: 'cyan',
+    },
   ],
 
   themeLab: [

@@ -375,6 +375,7 @@ export default function NewPlayerGuidePage() {
                     </Button>
                   ))}
                   <Button size="xs" variant="outline" color="gray" onClick={() => navigate("/new-player-guide")}>General Academy</Button>
+                  <Button size="xs" variant="outline" color="cyan" onClick={() => navigate("/academy/feature-library")}>Feature Library</Button>
                 </Group>
 
                 {activeTrack && (

@@ -8,12 +8,9 @@ import DashboardPage from './pages/DashboardPage';
 import MainDashboardPage from './pages/MainDashboardPage';
 import AerobookPage from './pages/AerobookPage';
 import OnboardingChecklistPage from './pages/OnboardingChecklistPage';
-import NewPlayerGuidePage from './pages/NewPlayerGuidePage';
 import LoadoutBuilderPage from './pages/LoadoutBuilderPage';
 import EconomyTrackerPage from './pages/EconomyTrackerPage';
 import LocationGuidePage from './pages/LocationGuidePage';
-import HOTASConfigMainPage from './pages/HOTASConfigMainPage';
-import HOTASConfigModesLabPage from './pages/HOTASConfigModesLabPage';
 import ShipDatabasePage from './pages/ShipDatabasePage';
 import GameSettingsPage from './pages/GameSettingsPage';
 import { trackAppView, installGlobalErrorHandlers, startPerformanceMonitoring, useAppStore } from './platform-core';
@@ -30,6 +27,10 @@ const ErrorLogPage = lazy(() => import('./pages/ErrorLogPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ScreenshotsPage = lazy(() => import('./pages/ScreenshotsPage'));
 const APITestPage = lazy(() => import('./pages/APITestPage'));
+const AcademyFeatureLibraryPage = lazy(() => import('./pages/AcademyFeatureLibraryPage'));
+const NewPlayerGuidePage = lazy(() => import('./pages/NewPlayerGuidePage'));
+const HOTASConfigMainPage = lazy(() => import('./pages/HOTASConfigMainPage'));
+const HOTASConfigModesLabPage = lazy(() => import('./pages/HOTASConfigModesLabPage'));
 const DeveloperContextIndexPage = lazy(() => import('./pages/DeveloperContextIndexPage'));
 const DeveloperNavChartsLabPage = lazy(() => import('./pages/DeveloperNavChartsLabPage'));
 const HOTASDiagramPage = lazy(() => import('./pages/HOTASDiagramPage'));
@@ -95,15 +96,16 @@ function App() {
         <Route element={<MainLayout />}>
           <Route index element={<MainDashboardPage />} />
           <Route path="aerobook" element={<AerobookPage />} />
-          <Route path="new-player-guide" element={<NewPlayerGuidePage />} />
-          <Route path="academy/:track" element={<NewPlayerGuidePage />} />
-          <Route path="academy/:track/:shipId" element={<NewPlayerGuidePage />} />
+          <Route path="new-player-guide" element={<Lazy Component={NewPlayerGuidePage} />} />
+          <Route path="academy/feature-library" element={<Lazy Component={AcademyFeatureLibraryPage} />} />
+          <Route path="academy/:track" element={<Lazy Component={NewPlayerGuidePage} />} />
+          <Route path="academy/:track/:shipId" element={<Lazy Component={NewPlayerGuidePage} />} />
           <Route path="loadout-builder" element={<LoadoutBuilderPage />} />
           <Route path="economy-tracker" element={<EconomyTrackerPage />} />
           <Route path="location-guide" element={<LocationGuidePage />} />
-          <Route path="hotas-config" element={<HOTASConfigMainPage />} />
+          <Route path="hotas-config" element={<Lazy Component={HOTASConfigMainPage} />} />
           <Route path="hotas-testing-routine" element={<Lazy Component={HOTASCommunityTestingPage} />} />
-          <Route path="hotas-config-modes-lab" element={<HOTASConfigModesLabPage />} />
+          <Route path="hotas-config-modes-lab" element={<Lazy Component={HOTASConfigModesLabPage} />} />
           <Route path="ship-database" element={<ShipDatabasePage />} />
           <Route path="game-settings" element={<GameSettingsPage />} />
           <Route path="settings" element={<Lazy Component={SettingsPage} />} />

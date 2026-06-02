@@ -9,6 +9,8 @@
  *     - Keybindings (individual actions)
  */
 
+import { importedSupplementalKeybindings } from './starcitizen-keybindings.imported-supplement.js';
+
 // ============================================================================
 // SHIP CONTROLS - Categories
 // ============================================================================
@@ -118,7 +120,7 @@ export const shipControlsCategories = {
 // Organized by situation: Seats, Cockpit, View, Flight, Quantum, Docking, etc.
 // ============================================================================
 
-export const shipKeybindings = [
+const baseShipKeybindings = [
   // ===== VEHICLES - SEATS & OPERATOR MODES =====
   {
     id: 'seats_emergency_exit',
@@ -1899,6 +1901,11 @@ export const shipKeybindings = [
     changed: false,
     pendingApply: false,
   },
+];
+
+export const shipKeybindings = [
+  ...baseShipKeybindings,
+  ...importedSupplementalKeybindings,
 ];
 
 // ============================================================================

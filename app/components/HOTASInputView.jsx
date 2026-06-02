@@ -260,10 +260,13 @@ const MODE_SEGMENTS = [
   { value: 'all', label: 'All Modes' },
 ];
 
+const ROWS_PER_PAGE = 120;
+
 export default function HOTASInputView({ bindings, allBindings = [], hotasOverrides, bindingFilter, deviceFilter, searchQuery, onAssign, onClear, activeInputs, axisValues, lastHotasInput, currentMode }) {
   const [modeFilter, setModeFilter] = useState('none');
   const [modeOverride, setModeOverride] = useState(false);
   const [editingRowId, setEditingRowId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const prevModeRef = useRef(currentMode);
 
   // Auto-sync mode filter to device mode only when device mode changes
@@ -335,7 +338,20 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
     return result;
   }, [rows, bindingFilter, deviceFilter, searchQuery]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [modeFilter, bindingFilter, deviceFilter, searchQuery]);
+
   const [hideStickFeatures, setHideStickFeatures] = useState(true);
+
+  const bindingById = useMemo(() => {
+    const index = new Map();
+    (bindings || []).forEach((binding) => {
+      if (!binding?.id) return;
+      index.set(binding.id, binding);
+    });
+    return index;
+  }, [bindings]);
 
   // Build feature options for the Select dropdown.
   // When hideStickFeatures is on, axis-only features (yaw/pitch/roll) are
@@ -367,17 +383,17 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
 
   const featureOptionsButtonShort = useMemo(() => {
     return featureOptionsFiltered.filter((opt) => {
-      const binding = bindings?.find((b) => b.id === opt.value);
+      const binding = bindingById.get(opt.value);
       return bindingMatchesPressType(binding, 'short');
     });
-  }, [featureOptionsFiltered, bindings]);
+  }, [featureOptionsFiltered, bindingById]);
 
   const featureOptionsButtonLong = useMemo(() => {
     return featureOptionsFiltered.filter((opt) => {
-      const binding = bindings?.find((b) => b.id === opt.value);
+      const binding = bindingById.get(opt.value);
       return bindingMatchesPressType(binding, 'long');
     });
-  }, [featureOptionsFiltered, bindings]);
+  }, [featureOptionsFiltered, bindingById]);
 
   const featureOptionsByType = useMemo(() => {
     return {
@@ -426,6 +442,17 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
   }
 
   const boundCount = filteredRows.filter((r) => r.assignedBinding).length;
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / ROWS_PER_PAGE));
+  const pageStart = (currentPage - 1) * ROWS_PER_PAGE;
+  const pageRows = useMemo(() => {
+    return filteredRows.slice(pageStart, pageStart + ROWS_PER_PAGE);
+  }, [filteredRows, pageStart]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <>
@@ -445,6 +472,27 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
         <Badge color="cyan" variant="light" size="sm">
           {boundCount}/{filteredRows.length} assigned
         </Badge>
+        <Badge color="blue" variant="light" size="sm">
+          Page {currentPage}/{totalPages}
+        </Badge>
+        <Group gap="xs">
+          <Button
+            size="xs"
+            variant="light"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </Button>
+          <Button
+            size="xs"
+            variant="light"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </Button>
+        </Group>
         <Switch
           label="Hide stick features"
           checked={hideStickFeatures}
@@ -481,7 +529,7 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
                 </td>
               </tr>
             ) : (
-              filteredRows.map((row) => (
+              pageRows.map((row) => (
                 <tr
                   key={row.id}
                   style={{
@@ -519,6 +567,7 @@ export default function HOTASInputView({ bindings, allBindings = [], hotasOverri
                         onBlur={() => setEditingRowId(null)}
                         styles={{ input: { background: 'rgba(0,0,0,0.6)', borderColor: 'rgba(0,217,255,0.3)', color: '#e0eaf4' } }}
                         maxDropdownHeight={200}
+                        limit={120}
                       />
                     ) : (
                       <Group gap="xs" wrap="nowrap" align="center">
