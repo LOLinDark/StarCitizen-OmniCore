@@ -27,7 +27,6 @@ import { execSync } from 'child_process';
 import { registerMediaRoutes } from './api/media/index.js';
 import { registerShipRoutes } from './api/ships/index.js';
 import { registerVersemailRoutes } from './api/versemail/index.js';
-import { registerHotasModeRoutes } from './peripherals/hotas/index.js';
 import { registerDownloadRoutes } from './api/dev/download/index.js';
 import { registerHotasOverlayRoutes } from './api/hotasOverlayApi.js';
 import { upsertDeviceRebind, removeDeviceRebind } from './peripherals/hotas/xmlRebind.js';
@@ -1191,7 +1190,6 @@ app.post('/api/backup/sync', (req, res) => {
 registerMediaRoutes(app);
 registerShipRoutes(app);
 registerVersemailRoutes(app);
-registerHotasModeRoutes(app);
 registerDownloadRoutes(app);
 registerHotasOverlayRoutes(app);
 

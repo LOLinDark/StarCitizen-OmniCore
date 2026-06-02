@@ -47,6 +47,8 @@ import DevTag from '../components/DevTag';
 import HC05LiveInputContainer from '../containers/HC05LiveInputContainer';
 import { normalizeText, getInputKind, getInputAction } from '../utils/hotasUtils';
 import { formatHotasBindingFromInput, formatHotasInputForXml } from '../utils/hotasInputFormatters';
+import ServerRequiredOverlay from '../components/ServerRequiredOverlay';
+import { useServerStatus } from '../hooks/useServerStatus';
 
 const HOTAS_MODE_KEYS = ['green', 'orange', 'red'];
 const HOTAS_BAR_EVENT = 'omnicore:hotas-bookmark-status';
@@ -74,6 +76,7 @@ export default function HOTASConfigMainPage() {
       // Always load overlays from the overlays JSONC file for X52
       // Use custom hook for overlays and devEditMode state
       const { overlays, setOverlays, devEditMode, setDevEditMode } = useHotasOverlayState([]);
+      const { isChecking: serverChecking, serverAvailable } = useServerStatus();
       const [dragged, setDragged] = React.useState(null);
       // Load overlays from JSONC file on mount
       useEffect(() => {
@@ -1261,6 +1264,10 @@ export default function HOTASConfigMainPage() {
 
   return (
     <Stack gap="xl">
+        {/* Server required guard — shown on GitHub Pages / any static host */}
+        {!serverChecking && !serverAvailable && (
+          <ServerRequiredOverlay featureName="Peripheral Configuration" />
+        )}
         {/* Header + Profiles + Banner */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1.5rem', alignItems: 'center' }}>
           <div>

@@ -31,7 +31,6 @@ const AcademyFeatureLibraryPage = lazy(() => import('./pages/AcademyFeatureLibra
 const AcademyHubPage = lazy(() => import('./pages/AcademyHubPage'));
 const NewPlayerGuidePage = lazy(() => import('./pages/NewPlayerGuidePage'));
 const HOTASConfigMainPage = lazy(() => import('./pages/HOTASConfigMainPage'));
-const HOTASConfigModesLabPage = lazy(() => import('./pages/HOTASConfigModesLabPage'));
 const DeveloperContextIndexPage = lazy(() => import('./pages/DeveloperContextIndexPage'));
 const DeveloperNavChartsLabPage = lazy(() => import('./pages/DeveloperNavChartsLabPage'));
 const HOTASDiagramPage = lazy(() => import('./pages/HOTASDiagramPage'));
@@ -93,7 +92,7 @@ function App() {
         {/* Login Route */}
         <Route
           path="/login"
-          element={<Lazy Component={RSILoginPage} componentProps={{ onComplete: () => { completeWelcome(); window.location.href = '/'; } }} />}
+          element={<Lazy Component={RSILoginPage} componentProps={{ onComplete: () => { completeWelcome(); window.location.href = import.meta.env.BASE_URL; } }} />}
         />
         
         {/* Main User-Facing Dashboard & Feature Pages (with MainLayout) */}
@@ -110,7 +109,6 @@ function App() {
           <Route path="location-guide" element={<Lazy Component={LocationGuidePage} />} />
           <Route path="hotas-config" element={<Lazy Component={HOTASConfigMainPage} />} />
           <Route path="hotas-testing-routine" element={<Lazy Component={HOTASCommunityTestingPage} />} />
-          <Route path="hotas-config-modes-lab" element={<Lazy Component={HOTASConfigModesLabPage} />} />
           <Route path="ship-database" element={<Lazy Component={ShipDatabasePage} />} />
           <Route path="game-settings" element={<Lazy Component={GameSettingsPage} />} />
           <Route path="settings" element={<Lazy Component={SettingsPage} />} />

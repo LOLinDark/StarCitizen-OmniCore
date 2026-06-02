@@ -52,7 +52,6 @@ const devTags = {
 
   // ── HOTAS / Theme Lab ─────────────────────────
   HC05:      { label: 'Peripheral Configuration',       path: '/hotas-config',               file: 'pages/HOTASConfigMainPage.jsx' },
-  HC06:      { label: 'HOTAS Modes Lab',         path: '/hotas-config-modes-lab',     file: 'pages/HOTASConfigModesLabPage.jsx' },
   HC07:      { label: 'HOTAS Live Input Page',   path: '/hotas-live-input',           file: 'pages/HOTASLiveInputPage.jsx' },
   HC08:      { label: 'HOTAS Overlay Demo',      path: '/hotas-overlay',              file: 'pages/HOTASOverlayPage.jsx' },
   HC09:      { label: 'Overlay Save Test',       path: '/hotas-overlay-save-test',    file: 'pages/HOTASOverlaySaveTestPage.jsx' },

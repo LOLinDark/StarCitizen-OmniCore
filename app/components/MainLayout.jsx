@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import AppHeader from './AppHeader';
 import AerobookBar from './AerobookBar';
 import AppFooter from './AppFooter';
+import DemoModeBanner from './DemoModeBanner';
 import { trackAppView } from '../platform-core';
 
 export default function MainLayout() {
@@ -21,6 +22,7 @@ export default function MainLayout() {
       <div style={{ position: 'sticky', top: 0, zIndex: 100 }}>
         <AppHeader />
         <AerobookBar />
+        <DemoModeBanner />
       </div>
 
       {/* Permanent gradient overlay — positioned below header + bookmark bar, scrolls with content */}
@@ -49,7 +51,7 @@ export default function MainLayout() {
 
       {/* Made By The Community badge */}
       <img
-        src="/assets/branding/MadeByTheCommunity_White.png"
+        src={`${import.meta.env.BASE_URL}assets/branding/MadeByTheCommunity_White.png`}
         alt="Made by the Community"
         style={{
           position: 'fixed',

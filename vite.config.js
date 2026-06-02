@@ -17,6 +17,7 @@ export default defineConfig(({ command }) => ({
   },
   build: {
     outDir: '../dist',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'app/index.html'),
@@ -24,23 +25,65 @@ export default defineConfig(({ command }) => ({
       },
       output: {
         manualChunks(id) {
-          if (!id.includes('node_modules')) {
+          const normalizedId = id.split(path.sep).join('/')
+
+          if (!normalizedId.includes('/node_modules/')) {
             return undefined
           }
 
-          if (id.includes('@mantine/')) {
+          if (normalizedId.includes('/@mantine/')) {
             return 'mantine'
           }
 
-          if (id.includes('@arwes/') || id.includes('/arwes/')) {
+          if (normalizedId.includes('/@arwes/') || normalizedId.includes('/arwes/')) {
             return 'arwes'
           }
 
-          if (id.includes('@tanstack/')) {
+          if (normalizedId.includes('/@tanstack/')) {
             return 'query-vendor'
           }
 
-          return 'vendor'
+          if (
+            normalizedId.includes('/react/') ||
+            normalizedId.includes('/react-dom/')
+          ) {
+            return 'react-vendor'
+          }
+
+          if (
+            normalizedId.includes('/react-router/') ||
+            normalizedId.includes('/react-router-dom/') ||
+            normalizedId.includes('/history/')
+          ) {
+            return 'router-vendor'
+          }
+
+          if (
+            normalizedId.includes('/motion/') ||
+            normalizedId.includes('/react-draggable/') ||
+            normalizedId.includes('/react-moveable/') ||
+            normalizedId.includes('/react-resizable/') ||
+            normalizedId.includes('/@daybrush/')
+          ) {
+            return 'interaction-vendor'
+          }
+
+          if (
+            normalizedId.includes('/@tabler/icons-react/') ||
+            normalizedId.includes('/tabler-icons-react/')
+          ) {
+            return 'icons-vendor'
+          }
+
+          if (
+            normalizedId.includes('/zustand/') ||
+            normalizedId.includes('/dayjs/') ||
+            normalizedId.includes('/web-vitals/')
+          ) {
+            return 'state-vendor'
+          }
+
+          return undefined
         }
       }
     }
