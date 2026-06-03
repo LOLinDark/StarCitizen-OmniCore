@@ -1546,7 +1546,6 @@ export default function HOTASConfigMainPage() {
           <Text size="sm" fw={700} mb={8}>Groups</Text>
           <Group align="flex-end" gap="sm" wrap="wrap">
             <MultiSelect
-              label="Groups"
               description="Global filter applied to the bindings table and HOTAS input views. Includes play-mode groups and categories."
               placeholder="Show gameplay groups and categories"
               data={mergedGroupOptions}
@@ -1611,12 +1610,6 @@ export default function HOTASConfigMainPage() {
           </Box>
         ) : (
           <>
-            <Box>
-              <Title order={3} mb={4}>Profile Bindings Table</Title>
-              <Text size="sm" c="dimmed">
-                Feature-to-input bindings from the selected Star Citizen profile, local edits, and OmniCore per-mode HOTAS overrides.
-              </Text>
-            </Box>
 
             <Stack gap="xs">
               <Box
